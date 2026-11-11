@@ -1,0 +1,19 @@
+/* Self-hosted, unicode-range subset fonts: browsers fetch only the scripts a page actually uses. */
+@import '@fontsource-variable/cormorant-garamond/wght.css';
+@import '@fontsource-variable/cormorant-garamond/wght-italic.css';
+@import '@fontsource-variable/fraunces/wght.css';
+@import '@fontsource-variable/manrope/wght.css';
+@import '@fontsource/cinzel/500.css';
+@import '@fontsource/cinzel/700.css';
+@import '@fontsource/pinyon-script/400.css';
+@import '@fontsource/marcellus/400.css';
+@import '@fontsource-variable/noto-serif-devanagari/wght.css';
+@import '@fontsource-variable/noto-serif-gujarati/wght.css';
+@import '@fontsource/amiri/400.css';
+@import '@fontsource/amiri/700.css';
+@import '@fontsource-variable/reem-kufi/wght.css';
+@import '@fontsource/aref-ruqaa/400.css';
+@import '@fontsource/aref-ruqaa/700.css';
+@import '@fontsource-variable/noto-nastaliq-urdu/wght.css';
+@import '@fontsource-variable/noto-serif-hebrew/wght.css';
+@import '@fontsource-variable/noto-sans-gurmukhi/wght.css';

@@ -1,0 +1,352 @@
+@import 'tailwindcss';
+@import './fonts.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Studio design tokens: ivory, champagne, burgundy, muted gold — luxury editorial, not SaaS. */
+@theme {
+    --color-ivory: #fbf7f0;
+    --color-cream: #f3ebdd;
+    --color-champagne: #e8d9bd;
+    --color-sand: #d8c3a0;
+    --color-gold: #c39a4e;
+    --color-gold-deep: #9c7633;
+    --color-gold-bright: #e8c477;
+    --color-burgundy: #6e1a2e;
+    --color-wine: #4a0f1f;
+    --color-rose: #b5566c;
+    --color-sage: #7d8c6e;
+    --color-ink: #1d1416;
+    --color-night: #120b0d;
+    --color-smoke: #6f625f;
+
+    --font-display:
+        'Cormorant Garamond Variable', 'Noto Serif Devanagari Variable',
+        'Noto Serif Gujarati Variable', Amiri, serif;
+    --font-serif:
+        'Fraunces Variable', 'Noto Serif Devanagari Variable', 'Noto Serif Gujarati Variable',
+        Amiri, serif;
+    --font-sans:
+        'Manrope Variable', 'Noto Serif Devanagari Variable', 'Noto Serif Gujarati Variable',
+        'Noto Nastaliq Urdu Variable', system-ui, sans-serif;
+    --font-script: 'Pinyon Script', cursive;
+    --font-arabic: Amiri, serif;
+
+    --ease-silk: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-thread: cubic-bezier(0.65, 0, 0.35, 1);
+    --ease-door: cubic-bezier(0.83, 0, 0.17, 1);
+
+    --animate-shimmer: shimmer 3.2s var(--ease-thread) infinite;
+    --animate-float: float 7s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 50%;
+    }
+    100% {
+        background-position: 200% 50%;
+    }
+}
+
+@keyframes float {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0) rotate(0);
+    }
+    50% {
+        transform: translate3d(0, -10px, 0) rotate(2deg);
+    }
+}
+
+@layer base {
+    :root {
+        color-scheme: light;
+        --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+    }
+
+    html {
+        -webkit-text-size-adjust: 100%;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+        background: var(--color-ivory);
+        color: var(--color-ink);
+        font-family: var(--font-sans);
+        overflow-wrap: anywhere;
+    }
+
+    ::selection {
+        background: color-mix(in oklab, var(--color-gold) 35%, transparent);
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-gold);
+        outline-offset: 3px;
+        border-radius: 4px;
+    }
+
+    [dir='rtl'] {
+        --font-display: Amiri, 'Noto Nastaliq Urdu Variable', serif;
+        --font-serif: Amiri, 'Noto Nastaliq Urdu Variable', serif;
+    }
+
+    :lang(ur) {
+        line-height: 2.1;
+    }
+}
+
+@layer components {
+    .grain::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image: var(--grain);
+        mix-blend-mode: multiply;
+        opacity: 0.08;
+    }
+
+    .foil-text {
+        background: linear-gradient(
+            105deg,
+            var(--foil-a, #9c7633) 0%,
+            var(--foil-b, #f3d98f) 22%,
+            var(--foil-a, #9c7633) 40%,
+            var(--foil-c, #e8c477) 60%,
+            var(--foil-a, #9c7633) 100%
+        );
+        background-size: 200% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: var(--animate-shimmer);
+    }
+
+    .hairline {
+        background: linear-gradient(
+            90deg,
+            transparent,
+            currentColor 20%,
+            currentColor 80%,
+            transparent
+        );
+        height: 1px;
+        opacity: 0.35;
+    }
+
+    /* Invitation surfaces read only from --inv-* variables injected per couple. */
+    .inv-root {
+        --foil-a: color-mix(in oklab, var(--inv-gold) 70%, black);
+        --foil-b: color-mix(in oklab, var(--inv-gold) 40%, white);
+        --foil-c: var(--inv-gold);
+        background: var(--inv-bg);
+        color: var(--inv-ink);
+        font-family: var(--inv-body);
+        position: relative;
+        isolation: isolate;
+    }
+
+    .inv-display {
+        font-family: var(--inv-display);
+        letter-spacing: 0.01em;
+    }
+
+    .inv-script {
+        font-family: var(--inv-script, var(--inv-display));
+    }
+
+    .inv-card {
+        background: color-mix(in oklab, var(--inv-surface) 82%, transparent);
+        border: 1px solid color-mix(in oklab, var(--inv-gold) 35%, transparent);
+        backdrop-filter: blur(6px);
+    }
+
+    .texture-paper {
+        background-image:
+            radial-gradient(
+                circle at 20% 10%,
+                color-mix(in oklab, var(--inv-gold) 8%, transparent),
+                transparent 40%
+            ),
+            radial-gradient(
+                circle at 80% 90%,
+                color-mix(in oklab, var(--inv-primary) 7%, transparent),
+                transparent 45%
+            );
+    }
+
+    .texture-silk {
+        background-image:
+            linear-gradient(
+                115deg,
+                transparent 30%,
+                color-mix(in oklab, var(--inv-gold) 10%, transparent) 48%,
+                transparent 66%
+            ),
+            radial-gradient(
+                ellipse at top,
+                color-mix(in oklab, var(--inv-primary) 14%, transparent),
+                transparent 60%
+            );
+        background-size:
+            300% 300%,
+            100% 100%;
+        animation: silk 18s ease-in-out infinite alternate;
+    }
+
+    .texture-linen {
+        background-image:
+            repeating-linear-gradient(
+                0deg,
+                color-mix(in oklab, var(--inv-ink) 3%, transparent) 0 1px,
+                transparent 1px 4px
+            ),
+            repeating-linear-gradient(
+                90deg,
+                color-mix(in oklab, var(--inv-ink) 3%, transparent) 0 1px,
+                transparent 1px 4px
+            );
+    }
+}
+
+@keyframes silk {
+    from {
+        background-position:
+            0% 50%,
+            0 0;
+    }
+    to {
+        background-position:
+            100% 50%,
+            0 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Generative ornament: strokes stitch in, fills bloom in. */
+.ornament-draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation-name: ornament-stitch;
+    animation-timing-function: var(--ease-thread);
+    animation-fill-mode: forwards;
+}
+
+path.ornament-draw[fill]:not([fill='none']) {
+    stroke-dasharray: none;
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation-name: ornament-bloom;
+}
+
+@keyframes ornament-stitch {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes ornament-bloom {
+    from {
+        opacity: 0;
+        transform: scale(0.2);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.diya-flicker {
+    transform-origin: 100px 104px;
+    animation: diya-flicker 1.6s ease-in-out infinite;
+}
+
+@keyframes diya-flicker {
+    0%,
+    100% {
+        transform: scaleY(1) skewX(0deg);
+    }
+    30% {
+        transform: scaleY(1.06) skewX(2deg);
+    }
+    60% {
+        transform: scaleY(0.96) skewX(-2deg);
+    }
+}
+
+@keyframes flip-in {
+    from {
+        transform: rotateX(-90deg);
+        opacity: 0.2;
+    }
+    to {
+        transform: rotateX(0);
+        opacity: 1;
+    }
+}
+
+/* Pop-up diorama: layers unfold as --p (0→1 scroll progress) grows. */
+.diorama {
+    perspective: 900px;
+}
+.diorama [data-plane] {
+    transform-origin: 50% 100%;
+    transition: transform 80ms linear;
+    transform: rotateX(calc((1 - var(--p, 1)) * var(--fold, 60deg)))
+        translateZ(calc(var(--depth, 0px) * var(--p, 1)));
+}
+
+@keyframes sky-rise {
+    0% {
+        transform: translateY(0) scale(0.6);
+        opacity: 0;
+    }
+    15% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-260px) translateX(12px) scale(1);
+        opacity: 0.85;
+    }
+}
+
+@keyframes shard {
+    from {
+        transform: rotate(var(--a)) translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: rotate(var(--a)) translateY(calc(-1 * var(--r))) rotate(140deg);
+        opacity: 0;
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Tracking breaks shaping in Indic, Arabic and Hebrew scripts; Latin-only letter-spacing. */
+:is(:lang(gu), :lang(hi), :lang(ar), :lang(ur), :lang(he), :lang(pa)),
+:is(:lang(gu), :lang(hi), :lang(ar), :lang(ur), :lang(he), :lang(pa)) * {
+    letter-spacing: 0 !important;
+    text-transform: none;
+}

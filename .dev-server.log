@@ -1,0 +1,542 @@
+✔ [paraglide-js] Compilation complete (virtual-modules)
+
+  VITE v8.3.8  ready in 2946 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+  ➜  Debug:   http://localhost:5173/__debug
+
+The Cloudflare Vite plugin detected this dev session is running in an AI agent.
+The Local Explorer API is available at http://localhost:5173/cdn-cgi/local/explorer/api
+Useful routes:
+  GET http://localhost:5173/cdn-cgi/local/explorer/api/local/workers - local Workers and bindings
+  POST http://localhost:5173/cdn-cgi/local/explorer/api/local/scheduled?worker=<name> - invoke a Worker's scheduled handler; cron is required (see the OpenAPI schema for the full request)
+  GET http://localhost:5173/cdn-cgi/local/explorer/api/storage/kv/namespaces - KV namespaces
+  GET http://localhost:5173/cdn-cgi/local/explorer/api/d1/database - D1 databases
+  GET http://localhost:5173/cdn-cgi/local/explorer/api/r2/buckets - R2 buckets
+  GET http://localhost:5173/cdn-cgi/local/explorer/api/workers/durable_objects/namespaces - Durable Object namespaces
+  GET http://localhost:5173/cdn-cgi/local/explorer/api/workflows - Workflows
+  POST http://localhost:5173/cdn-cgi/local/explorer/api/local/observability/query - run a read-only SQL query (SELECT/WITH only) over captured request traces and console logs. Tables: spans, logs (read attributes via json(attributes)). Example:
+    curl -X POST http://localhost:5173/cdn-cgi/local/explorer/api/local/observability/query -H 'Content-Type: application/json' -d '{"sql":"SELECT service, name, outcome, duration_ms FROM spans WHERE parent_id IS NULL LIMIT 20"}'
+  POST http://localhost:5173/cdn-cgi/local/explorer/api/local/observability/clear - clear all captured traces and logs
+If the routes above don't cover what you need, fetch the full OpenAPI schema (large - use only as a last resort):
+  GET http://localhost:5173/cdn-cgi/local/explorer/api - OpenAPI schema
+
+7:42:07 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+7:45:36 PM [vite] (client) [console.error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <MatchInnerImpl match={{id:"/$slug...", ...}}>
+      <Lazy>
+        <InvitationPage>
+          <InvitationView data={{...}} initialLocale={undefined} guest={undefined}>
+            <InviteProvider data={{...}} initialLocale={undefined} tier="lite" guest={undefined}>
+              <Experience>
+                <div className="inv-root t..." style={{--inv-bg:"...", ...}} dir="ltr" lang="en">
+                  <Opening>
+                  <main aria-hidden={true} className="">
+                    <Hero>
+                    <Countdown>
+                    <Welcome>
+                    <Story>
+                    <Family>
+                    <Events>
+                      <section className="px-5 py-24">
+                        <Reveal>
+                        <div className="mx-auto gr...">
+                          <EventCard event={{id:"inv_de...", ...}} index={0}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-rajwada-mehndi.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 Add to calendar
+                          <EventCard event={{id:"inv_de...", ...}} index={1}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-rajwada-garba.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 Add to calendar
+                          <EventCard event={{id:"inv_de...", ...}} index={2}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-rajwada-pheras.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 Add to calendar
+                          <EventCard event={{id:"inv_de...", ...}} index={3}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-rajwada-reception.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 Add to calendar
+                    ...
+
+7:46:17 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Events.tsx
+7:46:17 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:17 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Hero.tsx
+7:46:17 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:17 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/OpeningShell.tsx
+7:46:17 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Hero.tsx, /src/invitation/sections/Countdown.tsx, /src/invitation/sections/Events.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/InvitationView.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/BloomOpening.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/ChuppahOpening.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/CurtainOpening.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/DoorsOpening.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/context.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/EnvelopeOpening.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Extras.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/DiyaOpening.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/LanternOpening.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Celebration.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/TextSections.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Countdown.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Rsvp.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/InvitationView.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/InvitationView.tsx, /src/invitation/sections/Hero.tsx, /src/invitation/sections/TextSections.tsx, /src/invitation/sections/Countdown.tsx, /src/invitation/sections/Extras.tsx, /src/invitation/sections/Rsvp.tsx, /src/invitation/sections/Events.tsx, /src/invitation/openings/DiyaOpening.tsx, /src/invitation/sections/Celebration.tsx, /src/invitation/openings/OpeningShell.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/motion/GenerativeOrnament.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry, /src/server-fns/invitations.ts?tss-serverfn-split
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Events.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/routes/$slug.tsx
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry, /src/server-fns/invitations.ts?tss-serverfn-split
+7:46:31 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/routes/$slug.tsx, /src/routes/$slug.tsx?tsr-split=component
+7:46:31 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: /src/server-fns/invitations.ts?tss-serverfn-split
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: /src/server-fns/invitations.ts?tss-serverfn-split
+[vite] hot updated: virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry, /src/server-fns/invitations.ts?tss-serverfn-split
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry, /src/server-fns/invitations.ts?tss-serverfn-split
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: /src/server-fns/invitations.ts?tss-serverfn-split
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: /src/server-fns/invitations.ts?tss-serverfn-split
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Events.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Hero.tsx, /src/invitation/sections/Countdown.tsx, /src/invitation/sections/Events.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/context.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/InvitationView.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/BloomOpening.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/ChuppahOpening.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/CurtainOpening.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/DiyaOpening.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/DoorsOpening.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/EnvelopeOpening.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/LanternOpening.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/OpeningShell.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Celebration.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Countdown.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Events.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Extras.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Hero.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Rsvp.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/TextSections.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/InvitationView.tsx, /src/invitation/sections/Hero.tsx, /src/invitation/sections/TextSections.tsx, /src/invitation/sections/Countdown.tsx, /src/invitation/sections/Extras.tsx, /src/invitation/sections/Rsvp.tsx, /src/invitation/sections/Events.tsx, /src/invitation/openings/DiyaOpening.tsx, /src/invitation/sections/Celebration.tsx, /src/invitation/openings/OpeningShell.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/InvitationView.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/motion/GenerativeOrnament.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/motion/Reveal.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/motion/Reveal.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/routes/$slug.tsx
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry, /src/server-fns/invitations.ts?tss-serverfn-split
+7:46:32 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/routes/$slug.tsx, /src/routes/$slug.tsx?tsr-split=component
+7:46:32 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: /src/server-fns/invitations.ts?tss-serverfn-split
+[vite] hot updated: virtual:cloudflare/worker-entry
+7:46:33 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/routes/__root.tsx
+7:46:33 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/InvitationView.tsx
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry, /src/server-fns/invitations.ts?tss-serverfn-split
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry, /src/server-fns/invitations.ts?tss-serverfn-split
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/context.tsx
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/InvitationView.tsx
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/BloomOpening.tsx
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/openings/DoorsOpening.tsx
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Celebration.tsx
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Events.tsx
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Countdown.tsx
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Extras.tsx
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/invitation/sections/Rsvp.tsx
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct
+7:47:49 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/routes/$slug.tsx, /src/routes/$slug.tsx?tsr-split=component
+7:47:49 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: /src/server-fns/invitations.ts?tss-serverfn-split
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: /src/server-fns/invitations.ts?tss-serverfn-split
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+[vite] hot updated: virtual:cloudflare/worker-entry
+7:48:31 PM [vite] (client) [console.error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <MatchInnerImpl match={{id:"/$slug...", ...}}>
+      <Lazy>
+        <InvitationPage>
+          <InvitationView data={{...}} initialLocale={undefined} guest={undefined}>
+            <InviteProvider data={{...}} initialLocale={undefined} tier="lite" guest={undefined}>
+              <Experience>
+                <div className="inv-root t..." style={{--inv-bg:"...", ...}} dir="rtl" lang="ar">
+                  <Opening>
+                  <main aria-hidden={true} className="">
+                    <Hero>
+                    <Countdown>
+                    <Welcome>
+                    <Story>
+                    <Events>
+                      <section className="px-5 py-24">
+                        <Reveal>
+                        <div className="mx-auto gr...">
+                          <EventCard event={{id:"inv_de...", ...}} index={0}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-mashrabiya-nikah.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 أضف إلى التقويم
+                          <EventCard event={{id:"inv_de...", ...}} index={1}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-mashrabiya-reception.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 أضف إلى التقويم
+                    ...
+
+7:49:18 PM [vite] (client) hmr update /src/styles/app.css?direct, /src/routes/__root.tsx
+7:49:18 PM [vite] (ssr) hmr update virtual:cloudflare/worker-entry
+7:49:18 PM [vite] (client) hmr update /src/styles/app.css?direct
+[vite] hot updated: virtual:cloudflare/worker-entry
+Warning: A notFoundError was encountered on the route with ID "/$slug", but a notFoundComponent option was not configured, nor was a router level defaultNotFoundComponent configured. Consider configuring at least one of these to avoid TanStack Router's overly generic defaultNotFoundComponent (<p>Not Found</p>)
+7:52:19 PM [vite] (client) [console.error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <MatchInnerImpl match={{id:"/$slug...", ...}}>
+      <Lazy>
+        <InvitationPage>
+          <InvitationView data={{...}} initialLocale={undefined} guest={undefined}>
+            <InviteProvider data={{...}} initialLocale={undefined} tier="lite" guest={undefined}>
+              <Experience>
+                <div className="inv-root t..." style={{--inv-bg:"...", ...}} dir="ltr" lang="en">
+                  <Opening>
+                  <main aria-hidden={true} className="">
+                    <Hero>
+                    <Countdown>
+                    <Welcome>
+                    <Story>
+                    <Family>
+                    <Events>
+                      <section className="px-5 py-24">
+                        <Reveal>
+                        <div className="mx-auto gr...">
+                          <EventCard event={{id:"inv_de...", ...}} index={0}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-rajwada-mehndi.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 Add to calendar
+                          <EventCard event={{id:"inv_de...", ...}} index={1}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-rajwada-garba.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 Add to calendar
+                          <EventCard event={{id:"inv_de...", ...}} index={2}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-rajwada-pheras.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 Add to calendar
+                          <EventCard event={{id:"inv_de...", ...}} index={3}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-rajwada-reception.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 Add to calendar
+                    ...
+
+7:57:25 PM [vite] (client) [console.error] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <MatchInnerImpl match={{id:"/$slug...", ...}}>
+      <Lazy>
+        <InvitationPage>
+          <InvitationView data={{...}} initialLocale={undefined} guest={undefined}>
+            <InviteProvider data={{...}} initialLocale={undefined} tier="lite" guest={undefined}>
+              <Experience>
+                <div className="inv-root t..." style={{--inv-bg:"...", ...}} dir="ltr" lang="gu">
+                  <Opening>
+                  <main aria-hidden={true} className="">
+                    <Hero>
+                    <Countdown>
+                    <Welcome>
+                    <Story>
+                    <Family>
+                    <Events>
+                      <section className="px-5 py-24">
+                        <Reveal>
+                        <div className="mx-auto gr...">
+                          <EventCard event={{id:"inv_de...", ...}} index={0}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-kamal-sangeet.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 કેલેન્ડરમાં ઉમેરો
+                          <EventCard event={{id:"inv_de...", ...}} index={1}>
+                            <div ref={{current:null}} className="diorama re...">
+                              <div>
+                              <div className="mt-4 flex ...">
+                                <a>
+                                <a>
+                                <a
++                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+-                                 href="data:text/calendar;charset=utf-8,BEGIN%3AVCALENDAR%0D%0AVERSION%3A2.0%0D%0APRO..."
+                                  download="demo-kamal-lagna.ics"
+                                  className="rounded-full border border-(--inv-gold) px-4 py-2"
+                                >
++                                 કેલેન્ડરમાં ઉમેરો
+                    ...
+

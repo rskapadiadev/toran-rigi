@@ -1,0 +1,11 @@
+node_modules
+dist
+.wrangler
+.output
+.dev
+migrations
+package-lock.json
+src/routeTree.gen.ts
+src/paraglide
+worker-configuration.d.ts
+*.md

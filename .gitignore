@@ -1,0 +1,15 @@
+node_modules
+dist
+.output
+.wrangler
+.dev
+.env
+.env.*
+!.env.example
+.dev.vars
+*.local
+.DS_Store
+coverage
+playwright-report
+test-results
+src/paraglide
