@@ -1,22 +1,39 @@
+import { blockKey, resolveBlock, type ResolvedBlock } from '@shared/blocks';
 import { localeNames } from '@shared/locales';
 import type { SectionType } from '@shared/types';
-import { type ComponentType, useEffect, useRef, useState } from 'react';
+import { domAnimation, LazyMotion } from 'motion/react';
+import { type ComponentType, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useMotionTier } from '../motion/capability';
 import { InviteProvider, useInvite } from './context';
 import { Opening } from './openings/Opening';
+import { Scene } from './scenes';
 import { Countdown } from './sections/Countdown';
 import { Events } from './sections/Events';
 import { Gallery, Live, Shagun, Travel, Wishes } from './sections/Extras';
 import { Hero } from './sections/Hero';
+import { InvitationCard } from './sections/InvitationCard';
 import { Rsvp } from './sections/Rsvp';
 import { Closing, Family, Story, Welcome } from './sections/TextSections';
-import { s } from './strings';
 import { designStyle } from './tokens';
 import type { GuestIdentity, PublicInvitationData } from './types';
 
-const sectionRegistry: Partial<Record<SectionType, ComponentType>> = {
+function scrollParent(el: HTMLElement): HTMLElement | null {
+    for (let p = el.parentElement; p; p = p.parentElement) {
+        const { overflowY } = getComputedStyle(p);
+        if (overflowY === 'auto' || overflowY === 'scroll') return p;
+    }
+    return null;
+}
+
+interface BlockProps {
+    variant: string;
+}
+
+// Section type → component; each component renders the variant it is handed.
+const sectionRegistry: Partial<Record<SectionType, ComponentType<BlockProps>>> = {
     cover: Hero,
+    card: InvitationCard,
     countdown: Countdown,
     welcome: Welcome,
     story: Story,
@@ -32,7 +49,7 @@ const sectionRegistry: Partial<Record<SectionType, ComponentType>> = {
 };
 
 function Chrome({ audio }: { audio: HTMLAudioElement | null }) {
-    const { data, locale, setLocale } = useInvite();
+    const { data, locale, setLocale, copy } = useInvite();
     const [playing, setPlaying] = useState(false);
     const locales = data.invitation.locales;
     useEffect(() => {
@@ -72,7 +89,7 @@ function Chrome({ audio }: { audio: HTMLAudioElement | null }) {
             {audio && (
                 <button
                     type="button"
-                    aria-label={s('music', locale)}
+                    aria-label={copy('music')}
                     aria-pressed={playing}
                     onClick={() => {
                         if (playing) audio.pause();
@@ -98,32 +115,72 @@ function Chrome({ audio }: { audio: HTMLAudioElement | null }) {
     );
 }
 
-function Experience() {
-    const { data, dir, locale, culture } = useInvite();
+interface ExperienceProps {
+    embedded: boolean;
+    skipOpening: boolean;
+}
+
+function Experience({ embedded, skipOpening }: ExperienceProps) {
+    const { data, dir, locale, culture, occasion } = useInvite();
     const { invitation } = data;
-    const [opened, setOpened] = useState(false);
+    const [opened, setOpened] = useState(skipOpening);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
     useEffect(() => {
+        if (embedded) return;
         document.documentElement.style.overflow = opened ? '' : 'hidden';
         return () => {
             document.documentElement.style.overflow = '';
         };
-    }, [opened]);
+    }, [opened, embedded]);
 
     const begin = () => {
         // The tap that opens the invitation is the user gesture browsers require for audio.
-        if (audioRef.current && culture.sensitivity.musicDefault === 'on')
+        if (
+            audioRef.current &&
+            culture.sensitivity.musicDefault === 'on' &&
+            occasion.motion.music !== 'off'
+        )
             void audioRef.current.play().catch(() => undefined);
     };
 
-    const sections = invitation.sections.filter(
-        (section) => section.enabled && sectionRegistry[section.type],
-    );
+    const blocks = useMemo(() => {
+        const list: ResolvedBlock[] = [];
+        for (const section of invitation.sections) {
+            if (!section.enabled || !sectionRegistry[section.type]) continue;
+            list.push(resolveBlock(section, list.at(-1)?.scene));
+        }
+        return list;
+    }, [invitation.sections]);
+
+    // In the composer preview, bring the block that was just edited into view so its new look plays at once.
+    const rootRef = useRef<HTMLDivElement>(null);
+    const seenKeys = useRef<string[] | null>(null);
+    useEffect(() => {
+        const keys = blocks.map(blockKey);
+        const previous = seenKeys.current;
+        seenKeys.current = keys;
+        if (!embedded || !previous) return;
+        const changed = keys.findIndex((k) => !previous.includes(k));
+        if (changed < 0) return;
+        const el = rootRef.current?.querySelector<HTMLElement>(
+            `[data-block-key="${CSS.escape(keys[changed] ?? '')}"]`,
+        );
+        const scroller = el && scrollParent(el);
+        if (!el || !scroller) return;
+        scroller.scrollTo({
+            top:
+                el.getBoundingClientRect().top -
+                scroller.getBoundingClientRect().top +
+                scroller.scrollTop,
+            behavior: 'smooth',
+        });
+    }, [blocks, embedded]);
 
     return (
         <div
+            ref={rootRef}
             className={`inv-root texture-${invitation.design.texture} min-h-svh`}
             style={designStyle(invitation.design)}
             dir={dir}
@@ -135,7 +192,7 @@ function Experience() {
                     onBegin={begin}
                     onOpened={() => {
                         setOpened(true);
-                        window.scrollTo({ top: 0 });
+                        if (!embedded) window.scrollTo({ top: 0 });
                     }}
                 />
             )}
@@ -143,10 +200,17 @@ function Experience() {
                 aria-hidden={!opened}
                 className={opened ? 'animate-[fade-in_1.2s_var(--ease-silk)]' : ''}
             >
-                {sections.map((section) => {
-                    const Section = sectionRegistry[section.type];
-                    return Section ? <Section key={section.type} /> : null;
-                })}
+                <LazyMotion features={domAnimation} strict>
+                    {blocks.map((block, i) => {
+                        const Section = sectionRegistry[block.type];
+                        if (!Section) return null;
+                        return (
+                            <Scene key={blockKey(block)} block={block} index={i}>
+                                <Section variant={block.variant} />
+                            </Scene>
+                        );
+                    })}
+                </LazyMotion>
             </main>
             {invitation.musicBlobKey && (
                 // Instrumental background music only; there is no speech to caption.
@@ -170,13 +234,22 @@ interface InvitationViewProps {
     data: PublicInvitationData;
     initialLocale?: string;
     guest?: GuestIdentity;
+    // Composer preview: renders inside a phone frame without touching page scroll.
+    embedded?: boolean;
+    skipOpening?: boolean;
 }
 
-export function InvitationView({ data, initialLocale, guest }: InvitationViewProps) {
+export function InvitationView({
+    data,
+    initialLocale,
+    guest,
+    embedded = false,
+    skipOpening = false,
+}: InvitationViewProps) {
     const tier = useMotionTier();
     return (
         <InviteProvider data={data} initialLocale={initialLocale} tier={tier} guest={guest}>
-            <Experience />
+            <Experience embedded={embedded} skipOpening={skipOpening} />
         </InviteProvider>
     );
 }

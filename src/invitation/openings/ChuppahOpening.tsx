@@ -69,7 +69,7 @@ export function ChuppahOpening({ onBegin, onOpened }: OpeningProps) {
                 ref={stage}
                 className="texture-paper absolute inset-0 flex items-end justify-center pb-[22svh]"
             >
-                <div className="relative h-[46svh] w-[min(84vw,520px)]">
+                <div className="relative h-[46svh] w-[min(84cqw,520px)]">
                     <div
                         data-canopy
                         className="absolute inset-x-[-4%] top-0 h-[22%] origin-top rounded-b-[40%] shadow-xl"

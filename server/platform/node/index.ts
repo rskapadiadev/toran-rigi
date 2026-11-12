@@ -9,7 +9,7 @@ import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from '../../db/schema';
 import { createMemoryCache, createMemoryRateLimiter } from '../shared/memory';
 import { createS3Blob } from '../shared/s3-blob';
-import type { BlobStore, Platform } from '../types';
+import type { BlobStore, Db, Platform } from '../types';
 
 function diskBlob(root: string): BlobStore {
     const path = (key: string) => join(root, key.replace(/\.\./g, ''));
@@ -85,7 +85,7 @@ export function getNodePlatform(): Platform {
     platform = {
         name: 'node',
         config,
-        db: drizzle(client, { schema }),
+        db: drizzle(client, { schema }) as unknown as Db,
         blob,
         cache: createMemoryCache(),
         rateLimit: createMemoryRateLimiter(30, 60),

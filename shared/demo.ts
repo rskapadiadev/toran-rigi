@@ -1,49 +1,13 @@
 // Demo invitations shown in the theme gallery (seeded as is_demo rows). Names are fictional.
+export type { DemoEvent, DemoInvitation } from './demo-kit';
+import { applyLayout } from './blocks';
 import type { CultureId } from './cultures';
 import { cultures } from './cultures';
-import { themeBySlug } from './themes';
-import type { InvitationContent, InvitationExtras, LocalizedText, SectionConfig } from './types';
-
-export interface DemoDressCode {
-    note?: LocalizedText;
-    swatches: string[];
-}
-
-export interface DemoEvent {
-    kind: string;
-    title: LocalizedText;
-    startsAt: string;
-    endsAt?: string;
-    timezone: string;
-    venue: string;
-    address: string;
-    mapsUrl: string;
-    description?: LocalizedText;
-    dressCode?: DemoDressCode;
-}
-
-export interface DemoInvitation {
-    slug: string;
-    themeSlug: string;
-    culture: string;
-    locales: string[];
-    calendars: string[];
-    seed: number;
-    content: InvitationContent;
-    events: DemoEvent[];
-    extras: InvitationExtras;
-    sections: SectionConfig[];
-}
-
-// t('English', 'gu', 'ગુજરાતી', 'hi', 'हिन्दी') → { en, gu, hi }
-function t(en: string, ...pairs: string[]): LocalizedText {
-    const text: LocalizedText = { en };
-    for (let i = 0; i + 1 < pairs.length; i += 2) text[pairs[i] ?? ''] = pairs[i + 1] ?? '';
-    return text;
-}
-
-const maps = (q: string) =>
-    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+import { type DemoInvitation, maps, t } from './demo-kit';
+import { occasionDemos } from './demo-occasions';
+import type { OccasionId } from './occasions';
+import { themeBySlug, themeLayouts } from './themes';
+import type { SectionConfig } from './types';
 
 function sectionsFor(culture: CultureId, extra: SectionConfig['type'][] = []): SectionConfig[] {
     const base = cultures[culture].defaultSections;
@@ -53,7 +17,7 @@ function sectionsFor(culture: CultureId, extra: SectionConfig['type'][] = []): S
     }));
 }
 
-export const demoInvitations: DemoInvitation[] = [
+const rawDemos: DemoInvitation[] = [
     {
         slug: 'demo-rajwada',
         themeSlug: 'rajwada',
@@ -62,7 +26,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: [],
         seed: 1021,
         content: {
-            couple: {
+            people: {
                 one: {
                     name: t('Aarav', 'gu', 'આરવ', 'hi', 'आरव'),
                     parents: t('Son of Mr & Mrs Mehul Shah', 'gu', 'શ્રી મેહુલભાઈ શાહના સુપુત્ર'),
@@ -165,7 +129,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: [],
         seed: 2207,
         content: {
-            couple: {
+            people: {
                 one: { name: t('Krish', 'gu', 'ક્રિશ') },
                 two: { name: t('Meera', 'gu', 'મીરા') },
             },
@@ -214,7 +178,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: [],
         seed: 3391,
         content: {
-            couple: {
+            people: {
                 one: { name: t('Vihaan', 'hi', 'विहान') },
                 two: { name: t('Anaya', 'hi', 'अनाया') },
             },
@@ -263,7 +227,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: ['islamic-umalqura'],
         seed: 4471,
         content: {
-            couple: {
+            people: {
                 one: { name: t('Omar', 'ar', 'عمر') },
                 two: { name: t('Layla', 'ar', 'ليلى') },
             },
@@ -312,7 +276,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: ['islamic-umalqura'],
         seed: 5503,
         content: {
-            couple: {
+            people: {
                 one: { name: t('Zayan', 'ur', 'زیان') },
                 two: { name: t('Inaya', 'ur', 'عنایہ') },
             },
@@ -370,7 +334,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: [],
         seed: 6619,
         content: {
-            couple: {
+            people: {
                 one: { name: t('Parshva', 'gu', 'પાર્શ્વ', 'hi', 'पार्श्व') },
                 two: { name: t('Siddhi', 'gu', 'સિદ્ધિ', 'hi', 'सिद्धि') },
             },
@@ -415,7 +379,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: [],
         seed: 7727,
         content: {
-            couple: {
+            people: {
                 one: { name: t('Arjan', 'pa', 'ਅਰਜਨ') },
                 two: { name: t('Noor', 'pa', 'ਨੂਰ') },
             },
@@ -469,7 +433,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: [],
         seed: 8803,
         content: {
-            couple: {
+            people: {
                 one: { name: t('Daniel') },
                 two: { name: t('Sophia') },
             },
@@ -510,7 +474,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: ['hebrew'],
         seed: 9917,
         content: {
-            couple: {
+            people: {
                 one: { name: t('David', 'he', 'דוד') },
                 two: { name: t('Miriam', 'he', 'מרים') },
             },
@@ -555,7 +519,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: [],
         seed: 10333,
         content: {
-            couple: {
+            people: {
                 one: { name: t('Kabir') },
                 two: { name: t('Ira') },
             },
@@ -595,7 +559,7 @@ export const demoInvitations: DemoInvitation[] = [
         calendars: [],
         seed: 11447,
         content: {
-            couple: {
+            people: {
                 one: { name: t('Rohan', 'hi', 'रोहन') },
                 two: { name: t('Sara', 'ar', 'سارة') },
             },
@@ -639,6 +603,16 @@ export const demoInvitations: DemoInvitation[] = [
         sections: sectionsFor('universal'),
     },
 ];
+
+// Demos ship with their theme's full layout preset applied.
+export const demoInvitations: (DemoInvitation & { occasion: OccasionId })[] = [
+    ...rawDemos,
+    ...occasionDemos,
+].map((demo) => ({
+    ...demo,
+    occasion: demo.occasion ?? 'wedding',
+    sections: applyLayout(demo.sections, themeLayouts[demo.themeSlug]),
+}));
 
 export const demoForTheme = (themeSlug: string) =>
     demoInvitations.find((d) => d.themeSlug === themeSlug);

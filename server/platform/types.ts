@@ -1,9 +1,12 @@
 import type { AppConfig } from '@shared/config';
+import type { DrizzleD1Database } from 'drizzle-orm/d1';
 import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core';
 
 import type * as schema from '../db/schema';
 
-export type Db = BaseSQLiteDatabase<'async', unknown, typeof schema>;
+// Both D1 and libSQL drivers support batch(): atomic multi-statement writes without interactive transactions.
+export type Db = BaseSQLiteDatabase<'async', unknown, typeof schema> &
+    Pick<DrizzleD1Database<typeof schema>, 'batch'>;
 
 export interface BlobObject {
     body: ReadableStream;

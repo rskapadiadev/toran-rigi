@@ -5,7 +5,7 @@ import { type SyntheticEvent, useState } from 'react';
 import { formString } from '../../motion/hooks';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
-import { dietaryLabels, s } from '../strings';
+import { dietaryLabels } from '../strings';
 import { BreakTheGlass, LightSky } from './Celebration';
 
 type Status = 'idle' | 'sending' | 'done' | 'error';
@@ -19,7 +19,7 @@ const field =
     'w-full rounded-xl border border-(--inv-gold)/40 bg-(--inv-bg)/60 px-4 py-3 text-base outline-none transition focus:border-(--inv-gold) focus:ring-2 focus:ring-(--inv-gold)/30';
 
 export function Rsvp() {
-    const { data, t, locale, culture, guest } = useInvite();
+    const { data, t, locale, culture, guest, copy, occasion } = useInvite();
     const { invitation, events } = data;
     const [attending, setAttending] = useState(true);
     const [status, setStatus] = useState<Status>('idle');
@@ -60,17 +60,16 @@ export function Rsvp() {
     return (
         <section className="px-5 py-24" id="rsvp">
             <Reveal className="mb-10 text-center">
-                <h2 className="inv-display text-[clamp(2rem,6vw,3.4rem)]">
-                    {s('rsvpTitle', locale)}
-                </h2>
+                <h2 className="inv-display text-[clamp(2rem,6cqw,3.4rem)]">{copy('rsvpTitle')}</h2>
             </Reveal>
             <div className="mx-auto max-w-xl">
                 {status === 'done' ? (
                     <div className="space-y-6 text-center">
                         <p className="inv-display text-2xl">
-                            {attending ? s('thanks', locale) : s('thanksDecline', locale)}
+                            {attending ? copy('thanks') : copy('thanksDecline')}
                         </p>
-                        {culture.id === 'jewish' ? (
+                        {/* Breaking the glass belongs to the Jewish wedding only. */}
+                        {culture.id === 'jewish' && occasion.id === 'wedding' ? (
                             <BreakTheGlass />
                         ) : (
                             <LightSky count={lights} highlight={attending} />
@@ -79,7 +78,7 @@ export function Rsvp() {
                 ) : (
                     <form
                         onSubmit={(e) => void submit(e)}
-                        className="inv-card space-y-5 rounded-3xl p-6 sm:p-8"
+                        className="inv-card space-y-5 rounded-3xl p-6 @2xl:p-8"
                     >
                         <div
                             className="grid grid-cols-2 gap-2 rounded-full bg-(--inv-bg)/50 p-1"
@@ -96,12 +95,12 @@ export function Rsvp() {
                                     }}
                                     className={`rounded-full px-3 py-3 text-sm transition ${attending === value ? 'bg-(--inv-primary) text-(--inv-bg) shadow-lg' : 'opacity-70'}`}
                                 >
-                                    {value ? s('attending', locale) : s('declining', locale)}
+                                    {value ? copy('attending') : copy('declining')}
                                 </button>
                             ))}
                         </div>
                         <label className="block space-y-1.5 text-sm">
-                            <span className="opacity-80">{s('yourName', locale)}</span>
+                            <span className="opacity-80">{copy('yourName')}</span>
                             <input
                                 name="name"
                                 required
@@ -112,7 +111,7 @@ export function Rsvp() {
                             />
                         </label>
                         <label className="block space-y-1.5 text-sm">
-                            <span className="opacity-80">{s('phone', locale)}</span>
+                            <span className="opacity-80">{copy('phone')}</span>
                             <input
                                 name="phone"
                                 type="tel"
@@ -125,7 +124,7 @@ export function Rsvp() {
                         {attending && (
                             <>
                                 <label className="block space-y-1.5 text-sm">
-                                    <span className="opacity-80">{s('guests', locale)}</span>
+                                    <span className="opacity-80">{copy('guests')}</span>
                                     <select name="guestCount" defaultValue="2" className={field}>
                                         {Array.from({ length: 10 }, (_, i) => (
                                             <option key={i + 1} value={i + 1}>
@@ -137,7 +136,7 @@ export function Rsvp() {
                                 {events.length > 1 && (
                                     <fieldset className="space-y-2 text-sm">
                                         <legend className="mb-2 opacity-80">
-                                            {s('whichEvents', locale)}
+                                            {copy('whichEvents')}
                                         </legend>
                                         <div className="flex flex-wrap gap-2">
                                             {events.map((ev) => {
@@ -171,7 +170,7 @@ export function Rsvp() {
                                     </fieldset>
                                 )}
                                 <label className="block space-y-1.5 text-sm">
-                                    <span className="opacity-80">{s('dietary', locale)}</span>
+                                    <span className="opacity-80">{copy('dietary')}</span>
                                     <select name="dietary" className={field} defaultValue="">
                                         <option value="">—</option>
                                         {culture.dietary.map((d) => (
@@ -186,7 +185,7 @@ export function Rsvp() {
                             </>
                         )}
                         <label className="block space-y-1.5 text-sm">
-                            <span className="opacity-80">{s('note', locale)}</span>
+                            <span className="opacity-80">{copy('note')}</span>
                             <textarea name="message" rows={3} maxLength={1000} className={field} />
                         </label>
                         <button
@@ -194,7 +193,7 @@ export function Rsvp() {
                             disabled={status === 'sending'}
                             className="w-full rounded-full bg-(--inv-primary) px-6 py-4 text-sm tracking-[0.25em] text-(--inv-bg) uppercase shadow-xl transition hover:brightness-110 disabled:opacity-60"
                         >
-                            {status === 'sending' ? s('sending', locale) : s('send', locale)}
+                            {status === 'sending' ? copy('sending') : copy('send')}
                         </button>
                         {status === 'error' && (
                             <p role="alert" className="text-center text-sm text-(--inv-primary)">

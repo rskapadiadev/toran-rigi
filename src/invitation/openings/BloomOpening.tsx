@@ -69,7 +69,7 @@ export function BloomOpening({ onBegin, onOpened }: OpeningProps) {
                     className="absolute size-[40vmin] rounded-full opacity-40 blur-3xl"
                     style={glowStyle}
                 />
-                <div data-medallion className="relative w-[min(88vw,560px)]">
+                <div data-medallion className="relative w-[min(88cqw,560px)]">
                     <GenerativeOrnament
                         kind={design.generative.kind}
                         seed={seed}

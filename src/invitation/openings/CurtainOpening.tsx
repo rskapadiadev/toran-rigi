@@ -7,9 +7,8 @@ import type { OpeningProps } from './types';
 
 // Editorial: rows of giant serif letters slide apart like a theatre curtain.
 export function CurtainOpening({ onBegin, onOpened }: OpeningProps) {
-    const { data, t, tier } = useInvite();
-    const { couple } = data.invitation.content;
-    const word = `${t(couple.one.name)} · ${t(couple.two.name)} · `.toUpperCase();
+    const { tier, names } = useInvite();
+    const word = `${[names.one, names.two].filter(Boolean).join(' · ')} · `.toUpperCase();
     const stage = useRef<HTMLDivElement>(null);
     const [busy, setBusy] = useState(false);
 

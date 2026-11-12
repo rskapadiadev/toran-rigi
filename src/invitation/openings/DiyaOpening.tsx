@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 
 import { loadGsap } from '../../motion/gsap';
 import { useInvite } from '../context';
-import { s } from '../strings';
 import { OpeningShell } from './OpeningShell';
 import type { OpeningProps } from './types';
 
@@ -11,7 +10,7 @@ const BLOW_THRESHOLD = 0.16;
 
 // Signature ritual: blow on the phone (mic loudness only, never recorded) or press-and-hold to light the diya.
 export function DiyaOpening({ onBegin, onOpened }: OpeningProps) {
-    const { locale, tier } = useInvite();
+    const { tier, copy } = useInvite();
     const stage = useRef<HTMLDivElement>(null);
     const [heat, setHeat] = useState(0);
     const [lit, setLit] = useState(false);
@@ -133,18 +132,18 @@ export function DiyaOpening({ onBegin, onOpened }: OpeningProps) {
             hidePrompt
             footer={
                 <div className="absolute inset-x-0 bottom-[7svh] z-30 flex flex-col items-center gap-3 px-6 text-center">
-                    <p className="text-sm tracking-[0.2em] uppercase">{s('blowToLight', locale)}</p>
-                    <p className="text-xs opacity-70">{s('orHold', locale)}</p>
+                    <p className="text-sm tracking-[0.2em] uppercase">{copy('blowToLight')}</p>
+                    <p className="text-xs opacity-70">{copy('orHold')}</p>
                     {!listening && !lit && (
                         <button
                             type="button"
                             onClick={() => void listen()}
                             className="mt-2 rounded-full border border-(--inv-gold) px-5 py-2 text-xs tracking-widest uppercase"
                         >
-                            {s('useMic', locale)}
+                            {copy('useMic')}
                         </button>
                     )}
-                    <p className="max-w-xs text-[11px] opacity-60">{s('micPrivacy', locale)}</p>
+                    <p className="max-w-xs text-[11px] opacity-60">{copy('micPrivacy')}</p>
                 </div>
             }
         >
@@ -159,14 +158,14 @@ export function DiyaOpening({ onBegin, onOpened }: OpeningProps) {
                 />
                 <button
                     type="button"
-                    aria-label={s('orHold', locale)}
+                    aria-label={copy('orHold')}
                     onPointerDown={startHold}
                     onPointerUp={endHold}
                     onPointerLeave={endHold}
                     onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') void ignite();
                     }}
-                    className="relative w-[min(48vw,240px)] touch-none select-none"
+                    className="relative w-[min(48cqw,240px)] touch-none select-none"
                 >
                     <svg viewBox="0 0 200 200" className="w-full overflow-visible" aria-hidden>
                         <g

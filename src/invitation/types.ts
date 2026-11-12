@@ -43,6 +43,8 @@ export interface PublicInvitationData {
         id: string;
         slug: string;
         culture: string;
+        // Occasion id (wedding, naming, prayer_meet…); stored in the `event_kind` column.
+        eventKind: string;
         locales: string[];
         calendars: string[];
         seed: number;

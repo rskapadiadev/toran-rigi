@@ -14,6 +14,20 @@ import tseslint from 'typescript-eslint';
 
 // Physical-direction utilities break RTL (Arabic/Urdu/Hebrew); use logical ms-/me-/ps-/pe-/start-/end-.
 const physicalClass = String.raw`(^|\s)-?(ml|mr|pl|pr|left|right|rounded-l|rounded-r|border-l|border-r|text-left|text-right)-`;
+// Invites render inside the admin's phone preview too, so they must respond to their container, not the screen.
+const viewportClass = String.raw`(^|\s)(sm|md|lg|xl|2xl):`;
+const rtlRules = [
+    {
+        selector: `JSXAttribute[name.name='className'] Literal[value=/${physicalClass}/]`,
+        message: 'Use logical Tailwind utilities (ms-/me-/ps-/pe-/start-/end-/text-start) for RTL.',
+    },
+    {
+        selector: `JSXAttribute[name.name='className'] TemplateElement[value.raw=/${physicalClass}/]`,
+        message: 'Use logical Tailwind utilities (ms-/me-/ps-/pe-/start-/end-/text-start) for RTL.',
+    },
+];
+const viewportMessage =
+    'Invitations use container breakpoints (@2xl:, @3xl:) so the admin phone preview matches a real phone.';
 
 export default tseslint.config(
     {
@@ -170,17 +184,22 @@ export default tseslint.config(
             ...pluginRouter.configs.recommended.rules,
             ...jsxA11y.configs.recommended.rules,
             'react-refresh/only-export-components': 'off',
+            'no-restricted-syntax': ['error', ...rtlRules],
+        },
+    },
+    {
+        files: ['src/invitation/**/*.tsx'],
+        rules: {
             'no-restricted-syntax': [
                 'error',
+                ...rtlRules,
                 {
-                    selector: `JSXAttribute[name.name='className'] Literal[value=/${physicalClass}/]`,
-                    message:
-                        'Use logical Tailwind utilities (ms-/me-/ps-/pe-/start-/end-/text-start) for RTL.',
+                    selector: `JSXAttribute[name.name='className'] Literal[value=/${viewportClass}/]`,
+                    message: viewportMessage,
                 },
                 {
-                    selector: `JSXAttribute[name.name='className'] TemplateElement[value.raw=/${physicalClass}/]`,
-                    message:
-                        'Use logical Tailwind utilities (ms-/me-/ps-/pe-/start-/end-/text-start) for RTL.',
+                    selector: `JSXAttribute[name.name='className'] TemplateElement[value.raw=/${viewportClass}/]`,
+                    message: viewportMessage,
                 },
             ],
         },
@@ -211,6 +230,39 @@ export default tseslint.config(
                 'error',
                 { allowAllPropertiesOnSameLine: false },
             ],
+        },
+    },
+    // Vendored shadcn/ui primitives stay close to upstream so `npx shadcn add` diffs stay readable.
+    // Only the RTL guard (no-restricted-syntax) and type-checking stay on.
+    {
+        files: ['src/components/ui/**/*.tsx', 'src/hooks/**/*.ts'],
+        rules: {
+            '@stylistic/object-curly-newline': 'off',
+            '@stylistic/object-property-newline': 'off',
+            'simple-import-sort/imports': 'off',
+            'simple-import-sort/exports': 'off',
+            'jsx-a11y-x/click-events-have-key-events': 'off',
+            'jsx-a11y-x/no-static-element-interactions': 'off',
+            '@typescript-eslint/no-unnecessary-condition': 'off',
+            '@typescript-eslint/restrict-template-expressions': 'off',
+            '@typescript-eslint/no-confusing-void-expression': 'off',
+            '@typescript-eslint/no-unnecessary-type-conversion': 'off',
+            '@typescript-eslint/no-unnecessary-type-parameters': 'off',
+            '@typescript-eslint/no-unsafe-assignment': 'off',
+            '@typescript-eslint/no-unsafe-member-access': 'off',
+            '@typescript-eslint/no-unsafe-call': 'off',
+            '@typescript-eslint/no-unsafe-argument': 'off',
+            '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+            '@typescript-eslint/no-base-to-string': 'off',
+            '@typescript-eslint/no-non-null-assertion': 'off',
+            '@typescript-eslint/prefer-nullish-coalescing': 'off',
+            '@typescript-eslint/no-deprecated': 'off',
+            'jsx-a11y-x/anchor-has-content': 'off',
+            'jsx-a11y-x/heading-has-content': 'off',
+            'jsx-a11y-x/no-noninteractive-element-interactions': 'off',
+            'react-hooks/purity': 'off',
+            'react-hooks/set-state-in-effect': 'off',
+            'react-hooks/refs': 'off',
         },
     },
 );

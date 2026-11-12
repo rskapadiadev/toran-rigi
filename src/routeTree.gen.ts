@@ -11,6 +11,20 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as DevMailRouteImport } from './routes/dev-mail'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminBillingRouteImport } from './routes/admin/billing'
+import { Route as AdminLoginRouteImport } from './routes/admin/login'
+import { Route as PTokenRouteImport } from './routes/p.$token'
+import { Route as AdminCustomersIndexRouteImport } from './routes/admin/customers/index'
+import { Route as AdminCustomersIdRouteImport } from './routes/admin/customers/$id'
+import { Route as AdminInvitationsIndexRouteImport } from './routes/admin/invitations/index'
+import { Route as AdminOrdersIndexRouteImport } from './routes/admin/orders/index'
+import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
+import { Route as AdminOrdersNewRouteImport } from './routes/admin/orders/new'
+import { Route as AdminInvitationsIdIndexRouteImport } from './routes/admin/invitations/$id.index'
+import { Route as AdminInvitationsIdGuestsRouteImport } from './routes/admin/invitations/$id.guests'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +36,194 @@ const SlugRoute = SlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevMailRoute = DevMailRouteImport.update({
+  id: '/dev-mail',
+  path: '/dev-mail',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminBillingRoute = AdminBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const PTokenRoute = PTokenRouteImport.update({
+  id: '/p/$token',
+  path: '/p/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCustomersIndexRoute = AdminCustomersIndexRouteImport.update({
+  id: '/customers/',
+  path: '/customers/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminCustomersIdRoute = AdminCustomersIdRouteImport.update({
+  id: '/customers/$id',
+  path: '/customers/$id',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminInvitationsIndexRoute = AdminInvitationsIndexRouteImport.update({
+  id: '/invitations/',
+  path: '/invitations/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminOrdersIndexRoute = AdminOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminOrdersIdRoute = AdminOrdersIdRouteImport.update({
+  id: '/orders/$id',
+  path: '/orders/$id',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminOrdersNewRoute = AdminOrdersNewRouteImport.update({
+  id: '/orders/new',
+  path: '/orders/new',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminInvitationsIdIndexRoute = AdminInvitationsIdIndexRouteImport.update({
+  id: '/invitations/$id/',
+  path: '/invitations/$id/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminInvitationsIdGuestsRoute =
+  AdminInvitationsIdGuestsRouteImport.update({
+    id: '/invitations/$id/guests',
+    path: '/invitations/$id/guests',
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/$slug': typeof SlugRoute
+  '/dev-mail': typeof DevMailRoute
+  '/admin/billing': typeof AdminBillingRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/p/$token': typeof PTokenRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/customers/$id': typeof AdminCustomersIdRoute
+  '/admin/orders/$id': typeof AdminOrdersIdRoute
+  '/admin/orders/new': typeof AdminOrdersNewRoute
+  '/admin/customers/': typeof AdminCustomersIndexRoute
+  '/admin/invitations/': typeof AdminInvitationsIndexRoute
+  '/admin/orders/': typeof AdminOrdersIndexRoute
+  '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
+  '/admin/invitations/$id/': typeof AdminInvitationsIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
+  '/dev-mail': typeof DevMailRoute
+  '/admin/billing': typeof AdminBillingRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/p/$token': typeof PTokenRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/customers/$id': typeof AdminCustomersIdRoute
+  '/admin/orders/$id': typeof AdminOrdersIdRoute
+  '/admin/orders/new': typeof AdminOrdersNewRoute
+  '/admin/customers': typeof AdminCustomersIndexRoute
+  '/admin/invitations': typeof AdminInvitationsIndexRoute
+  '/admin/orders': typeof AdminOrdersIndexRoute
+  '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
+  '/admin/invitations/$id': typeof AdminInvitationsIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
   '/$slug': typeof SlugRoute
+  '/dev-mail': typeof DevMailRoute
+  '/admin/billing': typeof AdminBillingRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/p/$token': typeof PTokenRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/customers/$id': typeof AdminCustomersIdRoute
+  '/admin/orders/$id': typeof AdminOrdersIdRoute
+  '/admin/orders/new': typeof AdminOrdersNewRoute
+  '/admin/customers/': typeof AdminCustomersIndexRoute
+  '/admin/invitations/': typeof AdminInvitationsIndexRoute
+  '/admin/orders/': typeof AdminOrdersIndexRoute
+  '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
+  '/admin/invitations/$id/': typeof AdminInvitationsIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$slug'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/$slug'
+    | '/dev-mail'
+    | '/admin/billing'
+    | '/admin/login'
+    | '/p/$token'
+    | '/admin/'
+    | '/admin/customers/$id'
+    | '/admin/orders/$id'
+    | '/admin/orders/new'
+    | '/admin/customers/'
+    | '/admin/invitations/'
+    | '/admin/orders/'
+    | '/admin/invitations/$id/guests'
+    | '/admin/invitations/$id/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$slug'
-  id: '__root__' | '/' | '/$slug'
+  to:
+    | '/'
+    | '/$slug'
+    | '/dev-mail'
+    | '/admin/billing'
+    | '/admin/login'
+    | '/p/$token'
+    | '/admin'
+    | '/admin/customers/$id'
+    | '/admin/orders/$id'
+    | '/admin/orders/new'
+    | '/admin/customers'
+    | '/admin/invitations'
+    | '/admin/orders'
+    | '/admin/invitations/$id/guests'
+    | '/admin/invitations/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/$slug'
+    | '/dev-mail'
+    | '/admin/billing'
+    | '/admin/login'
+    | '/p/$token'
+    | '/admin/'
+    | '/admin/customers/$id'
+    | '/admin/orders/$id'
+    | '/admin/orders/new'
+    | '/admin/customers/'
+    | '/admin/invitations/'
+    | '/admin/orders/'
+    | '/admin/invitations/$id/guests'
+    | '/admin/invitations/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   SlugRoute: typeof SlugRoute
+  DevMailRoute: typeof DevMailRoute
+  PTokenRoute: typeof PTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +242,145 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev-mail': {
+      id: '/dev-mail'
+      path: '/dev-mail'
+      fullPath: '/dev-mail'
+      preLoaderRoute: typeof DevMailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/billing': {
+      id: '/admin/billing'
+      path: '/billing'
+      fullPath: '/admin/billing'
+      preLoaderRoute: typeof AdminBillingRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/p/$token': {
+      id: '/p/$token'
+      path: '/p/$token'
+      fullPath: '/p/$token'
+      preLoaderRoute: typeof PTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/customers/': {
+      id: '/admin/customers/'
+      path: '/customers'
+      fullPath: '/admin/customers/'
+      preLoaderRoute: typeof AdminCustomersIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/customers/$id': {
+      id: '/admin/customers/$id'
+      path: '/customers/$id'
+      fullPath: '/admin/customers/$id'
+      preLoaderRoute: typeof AdminCustomersIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/invitations/': {
+      id: '/admin/invitations/'
+      path: '/invitations'
+      fullPath: '/admin/invitations/'
+      preLoaderRoute: typeof AdminInvitationsIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/orders/': {
+      id: '/admin/orders/'
+      path: '/orders'
+      fullPath: '/admin/orders/'
+      preLoaderRoute: typeof AdminOrdersIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/orders/$id': {
+      id: '/admin/orders/$id'
+      path: '/orders/$id'
+      fullPath: '/admin/orders/$id'
+      preLoaderRoute: typeof AdminOrdersIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/orders/new': {
+      id: '/admin/orders/new'
+      path: '/orders/new'
+      fullPath: '/admin/orders/new'
+      preLoaderRoute: typeof AdminOrdersNewRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/invitations/$id/': {
+      id: '/admin/invitations/$id/'
+      path: '/invitations/$id'
+      fullPath: '/admin/invitations/$id/'
+      preLoaderRoute: typeof AdminInvitationsIdIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/invitations/$id/guests': {
+      id: '/admin/invitations/$id/guests'
+      path: '/invitations/$id/guests'
+      fullPath: '/admin/invitations/$id/guests'
+      preLoaderRoute: typeof AdminInvitationsIdGuestsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
   }
 }
 
+interface AdminRouteRouteChildren {
+  AdminBillingRoute: typeof AdminBillingRoute
+  AdminLoginRoute: typeof AdminLoginRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminCustomersIdRoute: typeof AdminCustomersIdRoute
+  AdminOrdersIdRoute: typeof AdminOrdersIdRoute
+  AdminOrdersNewRoute: typeof AdminOrdersNewRoute
+  AdminCustomersIndexRoute: typeof AdminCustomersIndexRoute
+  AdminInvitationsIndexRoute: typeof AdminInvitationsIndexRoute
+  AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
+  AdminInvitationsIdGuestsRoute: typeof AdminInvitationsIdGuestsRoute
+  AdminInvitationsIdIndexRoute: typeof AdminInvitationsIdIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminBillingRoute: AdminBillingRoute,
+  AdminLoginRoute: AdminLoginRoute,
+  AdminIndexRoute: AdminIndexRoute,
+  AdminCustomersIdRoute: AdminCustomersIdRoute,
+  AdminOrdersIdRoute: AdminOrdersIdRoute,
+  AdminOrdersNewRoute: AdminOrdersNewRoute,
+  AdminCustomersIndexRoute: AdminCustomersIndexRoute,
+  AdminInvitationsIndexRoute: AdminInvitationsIndexRoute,
+  AdminOrdersIndexRoute: AdminOrdersIndexRoute,
+  AdminInvitationsIdGuestsRoute: AdminInvitationsIdGuestsRoute,
+  AdminInvitationsIdIndexRoute: AdminInvitationsIdIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   SlugRoute: SlugRoute,
+  DevMailRoute: DevMailRoute,
+  PTokenRoute: PTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -20,7 +20,8 @@ const escape = (s: string) =>
         .replace(/\n/g, '\\n')
         .replace(/[,;]/g, (m) => `\\${m}`);
 
-export function buildIcs(events: CalendarEvent[]): string {
+// `stampedAt` is injectable so server and browser render identical links (no hydration drift).
+export function buildIcs(events: CalendarEvent[], stampedAt: Date = new Date()): string {
     const lines = [
         'BEGIN:VCALENDAR',
         'VERSION:2.0',
@@ -32,7 +33,7 @@ export function buildIcs(events: CalendarEvent[]): string {
         lines.push(
             'BEGIN:VEVENT',
             `UID:${e.uid}@toran`,
-            `DTSTAMP:${stamp(new Date())}`,
+            `DTSTAMP:${stamp(stampedAt)}`,
             `DTSTART:${stamp(e.start)}`,
             `DTEND:${stamp(end)}`,
             `SUMMARY:${escape(e.title)}`,

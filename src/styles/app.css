@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 @import './fonts.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -137,8 +138,17 @@
         opacity: 0.35;
     }
 
+    /* A section with nothing to show (no photos, past countdown) disappears with its edge, leaving no stray strip. */
+    .inv-root [data-block]:has(> [data-block-body]:empty) {
+        display: none;
+    }
+
     /* Invitation surfaces read only from --inv-* variables injected per couple. */
     .inv-root {
+        /* Invitations size type against their own frame (cqw), so they look right full-screen and inside the Composer phone. */
+        container-type: inline-size;
+        /* Body uses 'anywhere', which lets grids squeeze words to one letter; invites only break words that cannot fit. */
+        overflow-wrap: break-word;
         --foil-a: color-mix(in oklab, var(--inv-gold) 70%, black);
         --foil-b: color-mix(in oklab, var(--inv-gold) 40%, white);
         --foil-c: var(--inv-gold);
@@ -349,4 +359,180 @@ path.ornament-draw[fill]:not([fill='none']) {
 :is(:lang(gu), :lang(hi), :lang(ar), :lang(ur), :lang(he), :lang(pa)) * {
     letter-spacing: 0 !important;
     text-transform: none;
+}
+
+@keyframes dapple {
+    from {
+        transform: translate3d(-2%, -1%, 0) rotate(-2deg) scale(1);
+    }
+    to {
+        transform: translate3d(3%, 2%, 0) rotate(3deg) scale(1.06);
+    }
+}
+
+/*
+ * Studio admin theme (shadcn/ui tokens). Invitations never read these names: they render inside
+ * `.inv-root`, which paints only from --inv-* variables, so the admin palette cannot leak into them.
+ */
+:root {
+    --radius: 0.625rem;
+    --background: #fbf8f3;
+    --foreground: #1d1416;
+    --card: #fffdf9;
+    --card-foreground: #1d1416;
+    --popover: #fffdf9;
+    --popover-foreground: #1d1416;
+    --primary: #6e1a2e;
+    --primary-foreground: #fbf7f0;
+    --secondary: #f3ede3;
+    --secondary-foreground: #2a1e1f;
+    --muted: #f3ede3;
+    --muted-foreground: #6f625f;
+    --accent: #f1e9dc;
+    --accent-foreground: #1d1416;
+    --destructive: #b42335;
+    --success: #2f7a4f;
+    --warning: #9c7633;
+    --info: #3a5f8a;
+    --border: #ebe2d4;
+    --input: #e3d8c6;
+    --ring: #c39a4e;
+    --chart-1: #93304a;
+    --chart-2: #a9802f;
+    --chart-3: #7d8c6e;
+    --chart-4: #b5566c;
+    --chart-5: #d8c3a0;
+    --sidebar: #f5efe5;
+    --sidebar-foreground: #3b2f2e;
+    --sidebar-primary: #6e1a2e;
+    --sidebar-primary-foreground: #fbf7f0;
+    --sidebar-accent: #ebe1d1;
+    --sidebar-accent-foreground: #1d1416;
+    --sidebar-border: #e6dccb;
+    --sidebar-ring: #c39a4e;
+}
+
+.dark {
+    --background: #141011;
+    --foreground: #f3ebdd;
+    --card: #1b1517;
+    --card-foreground: #f3ebdd;
+    --popover: #1d1719;
+    --popover-foreground: #f3ebdd;
+    --primary: #d98ea0;
+    --primary-foreground: #1d1416;
+    --secondary: #2a2123;
+    --secondary-foreground: #f3ebdd;
+    --muted: #251d1f;
+    --muted-foreground: #b3a59f;
+    --accent: #2c2325;
+    --accent-foreground: #f3ebdd;
+    --destructive: #e26d7d;
+    --success: #6cc08f;
+    --warning: #e8c477;
+    --info: #8db3df;
+    --border: rgb(243 235 221 / 0.1);
+    --input: rgb(243 235 221 / 0.15);
+    --ring: #e8c477;
+    --chart-1: #cf5f79;
+    --chart-2: #b38a35;
+    --chart-3: #a7b896;
+    --chart-4: #b5566c;
+    --chart-5: #8a7a62;
+    --sidebar: #181314;
+    --sidebar-foreground: #e6dccb;
+    --sidebar-primary: #e8c477;
+    --sidebar-primary-foreground: #1d1416;
+    --sidebar-accent: #2a2123;
+    --sidebar-accent-foreground: #f3ebdd;
+    --sidebar-border: rgb(243 235 221 / 0.08);
+    --sidebar-ring: #e8c477;
+}
+
+/* Radius tokens are left at Tailwind defaults on purpose: invitations use rounded-* too. */
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --color-info: var(--info);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* shadcn's global border/outline defaults, applied only while the admin is mounted and never inside an invitation. */
+@layer base {
+    html.admin-ui *:not(:where(.inv-root, .inv-root *)) {
+        border-color: var(--border);
+        outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+    }
+
+    html.admin-ui body {
+        background: var(--background);
+        color: var(--foreground);
+        font-variant-numeric: lining-nums tabular-nums;
+    }
+}
+
+@keyframes twinkle {
+    0%,
+    100% {
+        opacity: 0.15;
+        transform: scale(0.6);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+/* Liquid-gold opening: drops bob towards and away from the pool so the goo filter keeps fusing them. */
+@keyframes goo-bob {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(-1.5px, 3px) scale(1.15);
+    }
+}
+
+/* Ink opening: the idle drop breathes on the paper. */
+@keyframes ink-breathe {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(1.12);
+        opacity: 1;
+    }
 }

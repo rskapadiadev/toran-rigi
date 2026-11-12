@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { useInvite } from '../context';
-import { s } from '../strings';
 
 function Diya({ lantern }: { lantern: boolean }) {
     return lantern ? (
@@ -30,7 +29,7 @@ interface LightSkyProps {
 }
 
 export function LightSky({ count, highlight }: LightSkyProps) {
-    const { data, locale, t, culture } = useInvite();
+    const { culture, copy, names } = useInvite();
     const lantern = culture.id === 'islamic';
     const lights = useMemo(
         () =>
@@ -42,13 +41,12 @@ export function LightSky({ count, highlight }: LightSkyProps) {
             })),
         [count],
     );
-    const { couple } = data.invitation.content;
     return (
         <div
             className="relative h-80 overflow-hidden rounded-3xl"
             style={{
                 background:
-                    'radial-gradient(ellipse at 50% 120%, color-mix(in oklab, var(--inv-gold) 30%, transparent), color-mix(in oklab, var(--inv-ink) 88%, var(--inv-primary)))',
+                    'radial-gradient(ellipse at 50% 120%, color-mix(in oklab, var(--inv-gold) 30%, transparent), color-mix(in oklab, #0b0716 82%, var(--inv-primary)))',
             }}
         >
             {lights.map((l, i) => (
@@ -74,7 +72,7 @@ export function LightSky({ count, highlight }: LightSkyProps) {
             )}
             <p className="absolute inset-x-0 bottom-6 px-6 text-center text-sm text-white/90">
                 <span className="inv-display block text-4xl text-(--inv-gold)">{count}</span>
-                {s('lightsLit', locale)} {t(couple.one.name)} & {t(couple.two.name)}
+                {copy('lightsLit')} {names.title}
             </p>
         </div>
     );

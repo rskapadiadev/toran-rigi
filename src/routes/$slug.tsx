@@ -1,4 +1,5 @@
 import { pickText } from '@shared/cultures';
+import { titleOf } from '@shared/people';
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { z } from 'zod';
 
@@ -28,7 +29,7 @@ export const Route = createFileRoute('/$slug')({
         if (!loaderData) return {};
         const { content, locales } = loaderData.invitation.invitation;
         const locale = locales[0] ?? 'en';
-        const title = `${pickText(content.couple.one.name, locale)} & ${pickText(content.couple.two.name, locale)}`;
+        const title = titleOf(content, locale);
         const description = pickText(content.headline, locale);
         return {
             meta: [

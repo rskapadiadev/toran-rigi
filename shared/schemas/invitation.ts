@@ -1,16 +1,11 @@
 import { z } from 'zod';
 
+import { occasionIds } from '../occasions';
+
 export const localizedText = z.record(z.string(), z.string());
 
-export const eventKinds = [
-    'wedding',
-    'engagement',
-    'birthday',
-    'baby_shower',
-    'anniversary',
-    'corporate',
-    'other',
-] as const;
+// Kept as the column name (`event_kind`); its values are occasion ids.
+export const eventKinds = occasionIds;
 
 export const openingKinds = [
     'doors',
@@ -25,6 +20,12 @@ export const openingKinds = [
     'phulkari',
     'chuppah',
     'garden-arch',
+    'scratch',
+    'liquid-gold',
+    'ink',
+    'origami',
+    'warp',
+    'fireworks',
 ] as const;
 
 export const generativeKinds = [
@@ -40,6 +41,7 @@ export const generativeKinds = [
 export const sectionTypes = [
     'cover',
     'names',
+    'card',
     'countdown',
     'welcome',
     'story',
@@ -83,31 +85,103 @@ export const designSchema = z.object({
     motion: z.enum(['calm', 'rich', 'cinematic']).default('rich'),
 });
 
+const isoDate = z.iso.date();
+
 const person = z.object({
     name: localizedText,
     parents: localizedText.optional(),
+    // "Late Shri", "Smt.", "Dr." — shown before the name where the occasion asks for it.
+    honorific: localizedText.optional(),
+    born: isoDate.optional(),
+    passed: isoDate.optional(),
+    photoKey: z.string().optional(),
 });
 
-export const contentSchema = z.object({
-    couple: z.object({
-        one: person,
-        two: person,
-    }),
-    greetingKey: z.string().optional(),
-    headline: localizedText,
-    welcome: localizedText,
-    story: localizedText.optional(),
-    family: localizedText.optional(),
-    closing: localizedText,
-    hashtag: z.string().optional(),
-    coverPhotoKey: z.string().optional(),
-    gallery: z.array(z.string()).default([]),
+// Who the invitation is about: a couple, a baby, a departed parent, a company. `two` is optional.
+const peopleSchema = z.object({
+    one: person,
+    two: person.optional(),
 });
+
+// Older rows stored a wedding-only `couple`; read them as `people`.
+const legacyCouple = (value: unknown) => {
+    if (value && typeof value === 'object' && 'couple' in value && !('people' in value)) {
+        const { couple, ...rest } = value;
+        return {
+            ...rest,
+            people: couple,
+        };
+    }
+    return value;
+};
+
+export const contentSchema = z.preprocess(
+    legacyCouple,
+    z.object({
+        people: peopleSchema,
+        greetingKey: z.string().optional(),
+        headline: localizedText,
+        welcome: localizedText,
+        story: localizedText.optional(),
+        family: localizedText.optional(),
+        closing: localizedText,
+        hashtag: z.string().optional(),
+        coverPhotoKey: z.string().optional(),
+        gallery: z.array(z.string()).default([]),
+    }),
+);
+
+// Modular blocks: every section picks a layout variant, an entrance, a backdrop and an edge.
+export const enterPresets = [
+    'rise',
+    'curtain',
+    'unfold',
+    'bloom',
+    'ink',
+    'wipe',
+    'drift',
+    'tilt',
+    'none',
+] as const;
+
+export const sceneKinds = [
+    'silk',
+    'jacquard',
+    'paper',
+    'blush',
+    'velvet',
+    'night',
+    'plain',
+] as const;
+
+export const edgeKinds = ['seam', 'torn', 'scallop', 'arch', 'none'] as const;
+
+export const motifIds = [
+    'paisley',
+    'lotus',
+    'girih',
+    'rose',
+    'phulkari',
+    'pomegranate',
+    'marigold',
+    'arabesque',
+    'olive',
+    'diya',
+    'moon',
+    'leaf',
+    'kalash',
+    'confetti',
+    'spark',
+] as const;
 
 export const sectionConfigSchema = z.object({
     type: z.enum(sectionTypes),
     enabled: z.boolean().default(true),
-    variant: z.string().optional(),
+    variant: z.string().max(40).optional(),
+    enter: z.enum(enterPresets).optional(),
+    scene: z.enum(sceneKinds).optional(),
+    edge: z.enum(edgeKinds).optional(),
+    motif: z.enum(motifIds).optional(),
 });
 
 export const extrasSchema = z.object({

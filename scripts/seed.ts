@@ -168,7 +168,7 @@ for (const demo of demoInvitations) {
                 slug: demo.slug,
                 theme_id: `thm_${theme.slug}`,
                 culture: demo.culture,
-                event_kind: 'wedding',
+                event_kind: demo.occasion,
                 locales: demo.locales,
                 calendars: demo.calendars,
                 seed: demo.seed,
