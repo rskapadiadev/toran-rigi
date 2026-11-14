@@ -11,7 +11,8 @@
             "@/*": ["./src/*"],
             "@shared/*": ["./shared/*"],
             "@server/*": ["./server/*"],
-            "@platform-entry": ["./server/entries/cloudflare.ts"]
+            "@platform-entry": ["./server/entries/cloudflare.ts"],
+            "@og-assets": ["./server/og/assets.cloudflare.ts"]
         },
         "allowImportingTsExtensions": true,
         "verbatimModuleSyntax": true,

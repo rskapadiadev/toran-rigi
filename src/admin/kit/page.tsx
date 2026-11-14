@@ -23,25 +23,26 @@ interface PageHeaderProps {
     className?: string;
 }
 
+// PayD's PDAPageHeader: a title block on the page's grey ground, actions on the right.
 export function PageHeader({ title, description, eyebrow, actions, className }: PageHeaderProps) {
     return (
         <div
             className={cn(
-                'mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between',
+                'page-header mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between',
                 className,
             )}
         >
-            <div className="min-w-0 space-y-1">
+            <div className="min-w-0">
                 {eyebrow && (
-                    <div className="text-xs font-medium tracking-wide text-muted-foreground">
+                    <div className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
                         {eyebrow}
                     </div>
                 )}
-                <h1 className="truncate text-2xl font-semibold tracking-tight text-foreground">
+                <h1 className="truncate text-xl leading-tight font-semibold text-foreground">
                     {title}
                 </h1>
                 {description && (
-                    <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
+                    <p className="mt-1 truncate text-sm text-muted-foreground">{description}</p>
                 )}
             </div>
             {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
@@ -85,13 +86,13 @@ export function StatCard({
     const up = trend ? trend.delta >= 0 : false;
     return (
         <Card className={cn('gap-0 py-0', className)}>
-            <CardContent className="flex flex-col gap-3 p-5">
+            <CardContent className="flex flex-col gap-1 p-4">
                 <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">{label}</span>
+                    <span className="truncate text-xs text-muted-foreground">{label}</span>
                     {Icon && (
                         <span
                             className={cn(
-                                'flex size-8 items-center justify-center rounded-lg',
+                                'flex size-8 items-center justify-center rounded-control',
                                 accentClass[accent],
                             )}
                         >
@@ -99,7 +100,7 @@ export function StatCard({
                         </span>
                     )}
                 </div>
-                <div className="text-[1.75rem] leading-none font-semibold tracking-tight text-foreground">
+                <div className="text-2xl leading-tight font-semibold text-foreground tabular-nums">
                     {value}
                 </div>
                 <div className="flex min-h-5 flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -139,20 +140,19 @@ export function Panel({
     contentClassName,
 }: PanelProps) {
     return (
+        // PayD's section card: p-4 header with a rule, text-base medium title, p-4 body.
         <Card className={cn('gap-0 py-0', className)}>
-            <CardHeader className="flex flex-row items-start justify-between gap-3 border-b px-5 py-4 [.border-b]:pb-4">
-                <div className="min-w-0 space-y-1">
-                    <CardTitle className="flex items-center gap-2 text-sm font-semibold">
-                        {Icon && <Icon className="size-4 text-muted-foreground" />}
+            <CardHeader className="flex flex-row items-start justify-between gap-3 border-b p-4 [.border-b]:pb-4">
+                <div className="grid min-w-0 gap-0.5">
+                    <CardTitle className="flex items-center gap-2 text-base leading-snug font-medium">
+                        {Icon && <Icon className="size-4" />}
                         {title}
                     </CardTitle>
-                    {description && (
-                        <CardDescription className="text-xs">{description}</CardDescription>
-                    )}
+                    {description && <CardDescription>{description}</CardDescription>}
                 </div>
                 {action}
             </CardHeader>
-            <CardContent className={cn('p-5', contentClassName)}>{children}</CardContent>
+            <CardContent className={cn('p-4', contentClassName)}>{children}</CardContent>
         </Card>
     );
 }

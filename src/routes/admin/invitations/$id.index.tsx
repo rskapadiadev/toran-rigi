@@ -1,23 +1,39 @@
+import { localeNames } from '@shared/locales';
+import { cappedMotion, isSolemn, occasionOf } from '@shared/occasions';
+import { titleOf } from '@shared/people';
+import type { SectionType } from '@shared/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import {
+    ArrowDown,
+    ArrowLeft,
+    ArrowUp,
     CalendarHeart,
     Check,
+    DoorOpen,
     ExternalLink,
+    Eye,
+    EyeOff,
     Gift,
-    Globe,
-    LayoutList,
+    Layers,
     Loader2,
-    Lock,
+    Minus,
+    Monitor,
+    MousePointerClick,
     Palette,
     Play,
+    Plus,
+    Redo2,
     Rocket,
     Save,
     Smartphone,
+    Tablet,
     Type,
+    Undo2,
     Users,
+    X,
 } from 'lucide-react';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -26,105 +42,221 @@ import {
     type EditableInvitation,
     toDraft,
 } from '@/admin/composer/draft';
-import { ContentPanel, DesignPanel, EventsPanel, ExtrasPanel } from '@/admin/composer/panels';
-import { SectionsPanel } from '@/admin/composer/SectionsPanel';
-import { CopyField } from '@/admin/kit/form';
-import { PageSkeleton } from '@/admin/kit/page';
-import { InvitationStatusBadge } from '@/admin/kit/status';
-import { useMe } from '@/admin/useMe';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
-    InputGroup,
-    InputGroupAddon,
-    InputGroupButton,
-    InputGroupInput,
-    InputGroupText,
-} from '@/components/ui/input-group';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+    ContentPanel,
+    DesignPanel,
+    EventsPanel,
+    ExtrasPanel,
+    OpeningPicker,
+    sectionNames,
+} from '@/admin/composer/panels';
+import { BlockEditor } from '@/admin/composer/SectionsPanel';
+import { applyText } from '@/admin/editor/apply-text';
+import { useDraftHistory } from '@/admin/editor/history';
+import { LayersPanel } from '@/admin/editor/LayersPanel';
+import { PublishPanel } from '@/admin/editor/PublishPanel';
+import { DesktopOnly } from '@/admin/kit/desktop-only';
+import { InvitationStatusBadge } from '@/admin/kit/status';
+import { applyAdminTheme, readAdminTheme } from '@/admin/shell/theme';
+import { Button } from '@/components/ui/button';
+import { Kbd } from '@/components/ui/kbd';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { EditContext, type EditSettings } from '@/invitation/editing';
 import { InvitationView } from '@/invitation/InvitationView';
-import { api, ApiError, patch } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
-export const Route = createFileRoute('/admin/invitations/$id/')({ component: ComposerPage });
+export const Route = createFileRoute('/admin/invitations/$id/')({ component: EditorGate });
 
-interface TabDef {
-    value: string;
+type Device = 'phone' | 'tablet' | 'desktop';
+const deviceWidth: Record<Device, number | null> = {
+    phone: 390,
+    tablet: 820,
+    desktop: null,
+};
+
+type LeftTab = 'sections' | 'opening' | 'design' | 'details' | 'ceremonies' | 'extras';
+const leftTabs: {
+    id: LeftTab;
     label: string;
     icon: ReactNode;
-}
-
-const tabs: TabDef[] = [
+}[] = [
     {
-        value: 'design',
-        label: 'Design',
-        icon: <Palette />,
-    },
-    {
-        value: 'words',
-        label: 'Words',
-        icon: <Type />,
-    },
-    {
-        value: 'ceremonies',
-        label: 'Ceremonies',
-        icon: <CalendarHeart />,
-    },
-    {
-        value: 'sections',
+        id: 'sections',
         label: 'Sections',
-        icon: <LayoutList />,
+        icon: <Layers className="size-4" />,
     },
     {
-        value: 'extras',
+        id: 'opening',
+        label: 'Opening',
+        icon: <DoorOpen className="size-4" />,
+    },
+    {
+        id: 'design',
+        label: 'Design',
+        icon: <Palette className="size-4" />,
+    },
+    {
+        id: 'details',
+        label: 'Details',
+        icon: <Type className="size-4" />,
+    },
+    {
+        id: 'ceremonies',
+        label: 'Events',
+        icon: <CalendarHeart className="size-4" />,
+    },
+    {
+        id: 'extras',
         label: 'Extras',
-        icon: <Gift />,
-    },
-    {
-        value: 'publish',
-        label: 'Publish',
-        icon: <Rocket />,
+        icon: <Gift className="size-4" />,
     },
 ];
 
-interface StatusChange {
-    status: string;
-    override?: boolean;
+const shortName = (type: SectionType) => sectionNames[type].replace(/\s*\(.*\)$/, '');
+// Shown on the canvas where a section is hidden because it has nothing to show yet.
+const emptyHints: Partial<Record<SectionType, string>> = {
+    shagun: 'Shagun / gifts is hidden until a UPI ID is added (Extras tab).',
+    gallery: 'Gallery is hidden until photos are added.',
+    travel: 'Travel & stay is hidden until travel details are added.',
+    live: 'Live stream is hidden until a YouTube live link is added (Extras tab).',
+    countdown: 'Countdown is hidden: it needs an upcoming ceremony date (Events tab).',
+    wishes: 'Wishes wall is turned off (Extras tab).',
+    rsvp: 'RSVP is turned off (Extras tab).',
+    events: 'No ceremonies yet: add one in the Events tab.',
+};
+// Clicking a section on the canvas opens the panel that holds its information.
+const detailsTab: Partial<Record<SectionType, LeftTab>> = {
+    cover: 'details',
+    card: 'details',
+    welcome: 'details',
+    story: 'details',
+    family: 'details',
+    closing: 'details',
+    events: 'ceremonies',
+    countdown: 'ceremonies',
+    shagun: 'extras',
+    rsvp: 'extras',
+    wishes: 'extras',
+    live: 'extras',
+    travel: 'extras',
+};
+
+const emptyHint = (type: SectionType) =>
+    emptyHints[type] ?? `${shortName(type)} has nothing to show yet.`;
+
+const ZOOMS = [0.5, 0.67, 0.75, 0.9, 1, 1.1, 1.25];
+
+// Typing in a field must never trigger editor shortcuts.
+const typing = () => {
+    const el = document.activeElement;
+    return (
+        el instanceof HTMLInputElement ||
+        el instanceof HTMLTextAreaElement ||
+        (el instanceof HTMLElement && el.isContentEditable)
+    );
+};
+
+interface IconButtonProps {
+    label: string;
+    shortcut?: string;
+    disabled?: boolean;
+    onClick: () => void;
+    children: ReactNode;
 }
 
-const failure = (error: unknown) =>
-    error instanceof ApiError ? error.message : 'Something went wrong';
+function IconButton({ label, shortcut, disabled, onClick, children }: IconButtonProps) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={label}
+                    disabled={disabled}
+                    onClick={onClick}
+                >
+                    {children}
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+                {label} {shortcut && <Kbd className="ms-1">{shortcut}</Kbd>}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
 
-function ComposerPage() {
+// Full-screen visual editor: the invitation is the canvas. Click a section to select it,
+// click text to type on it; everything you can add sits on the left, settings on the right.
+// Desktop-only: phones and tablets get an explanation (and a link to view the invitation) instead.
+function EditorGate() {
     const { id } = Route.useParams();
-    const client = useQueryClient();
-    const me = useMe().data;
     const { data } = useQuery({
         queryKey: ['invitation', id],
         queryFn: () => api<EditableInvitation>(`/admin/invitations/${id}`),
     });
-    // Unsaved edits live here; without edits the draft is derived straight from the server copy.
-    const [edits, setEdits] = useState<Draft | null>(null);
-    const draft = edits ?? (data ? toDraft(data) : null);
-    const dirty = edits !== null;
-    const [tab, setTab] = useState('design');
-    const [replay, setReplay] = useState(0);
-    const [showOpening, setShowOpening] = useState(false);
+    const previewUrl = data
+        ? `${window.location.origin}/p/${data.invitation.previewToken}`
+        : undefined;
+    return (
+        <DesktopOnly tool="The visual editor" previewUrl={previewUrl}>
+            <EditorPage />
+        </DesktopOnly>
+    );
+}
 
-    // Choosing a different entry screen replays it in the phone straight away.
-    const opening = draft?.design.opening;
-    const [shownOpening, setShownOpening] = useState(opening);
-    if (opening !== shownOpening) {
-        setShownOpening(opening);
+function EditorPage() {
+    const { id } = Route.useParams();
+    const client = useQueryClient();
+    const { data } = useQuery({
+        queryKey: ['invitation', id],
+        queryFn: () => api<EditableInvitation>(`/admin/invitations/${id}`),
+    });
+    const base = useMemo(() => (data ? toDraft(data) : null), [data]);
+    const history = useDraftHistory(base);
+    const { draft, set, undo, redo } = history;
+    const [selected, setSelected] = useState<SectionType | null>(null);
+    const [device, setDevice] = useState<Device>('phone');
+    const [zoom, setZoom] = useState(1);
+    const [tab, setTab] = useState<LeftTab>('sections');
+    const [focusEvent, setFocusEvent] = useState<number | undefined>(undefined);
+    const [picked, setLocale] = useState<string | null>(null);
+    const [opening, setOpening] = useState(false);
+    const [replay, setReplay] = useState(0);
+    // Changing the entry screen (from any panel) plays it on the canvas straight away.
+    const chosenOpening = draft?.design.opening;
+    const [shownOpening, setShownOpening] = useState(chosenOpening);
+    if (chosenOpening !== shownOpening) {
+        setShownOpening(chosenOpening);
         if (shownOpening !== undefined) {
-            setShowOpening(true);
+            setOpening(true);
             setReplay((r) => r + 1);
         }
     }
+    const frame = useRef<HTMLDivElement>(null);
+    const locale =
+        draft && picked && draft.locales.includes(picked) ? picked : (draft?.locales[0] ?? 'en');
+
+    // The editor wears the admin's dark theme (portals included) so the invitation is the brightest thing.
+    useEffect(() => {
+        const root = document.documentElement;
+        root.classList.add('dark');
+        return () => {
+            // Hand back to the admin's own light/dark preference.
+            applyAdminTheme(readAdminTheme());
+        };
+    }, []);
 
     const save = useMutation({
         mutationFn: (body: Draft) =>
@@ -134,313 +266,484 @@ function ComposerPage() {
             }),
         onSuccess: async () => {
             await client.invalidateQueries({ queryKey: ['invitation', id] });
-            setEdits(null);
-            toast.success('Changes saved');
+            history.markSaved();
+            toast.success('Saved');
         },
-        onError: (e) => toast.error(failure(e)),
+        onError: (e) => toast.error(e instanceof ApiError ? e.message : 'Could not save'),
     });
-    const status = useMutation({
-        mutationFn: (body: StatusChange) => patch(`/admin/invitations/${id}/status`, body),
-        onSuccess: (_r, body) => {
-            toast.success(
-                body.status === 'published' ? 'Invitation is live ✦' : 'Invitation unpublished',
-            );
-            return client.invalidateQueries({ queryKey: ['invitation', id] });
-        },
-        onError: (e) => toast.error(failure(e)),
-    });
-    const slug = useMutation({
-        mutationFn: (value: string) => patch(`/admin/invitations/${id}/slug`, { slug: value }),
-        onSuccess: () => {
-            toast.success('Link updated');
-            return client.invalidateQueries({ queryKey: ['invitation', id] });
-        },
-        onError: (e) => toast.error(failure(e)),
-    });
+
+    const { mutate: saveDraft } = save;
+    const { dirty } = history;
+
+    const select = (type: SectionType, scroll = false) => {
+        setSelected(type);
+        if (!scroll) return;
+        // Selected from the panel: bring it into view on the canvas.
+        requestAnimationFrame(() => {
+            frame.current?.querySelector(`[data-block^="${type}:"]`)?.scrollIntoView({
+                block: 'start',
+                behavior: 'smooth',
+            });
+        });
+    };
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => {
+            const mod = e.metaKey || e.ctrlKey;
+            if (mod && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                if (draft && dirty) saveDraft(draft);
+                return;
+            }
+            if (typing()) return;
+            if (mod && e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) redo();
+                else undo();
+            } else if (mod && e.key.toLowerCase() === 'y') {
+                e.preventDefault();
+                redo();
+            } else if (e.key === 'Escape') {
+                setSelected(null);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => {
+            window.removeEventListener('keydown', onKey);
+        };
+    }, [draft, dirty, saveDraft, undo, redo]);
+
+    const editing = useMemo<EditSettings>(
+        () => ({
+            selected,
+            select: (type, detail) => {
+                setSelected(type);
+                const target = detailsTab[type];
+                if (target) setTab(target);
+                setFocusEvent(detail?.event);
+            },
+            label: shortName,
+            hint: emptyHint,
+            editText: (path, value) => {
+                set((d) => applyText(d, path, value, locale));
+            },
+        }),
+        [selected, set, locale],
+    );
 
     const preview = useMemo(
         () => (draft && data ? draftToPreview(draft, data) : null),
         [draft, data],
     );
+
     if (!data || !draft || !preview)
         return (
-            <div className="p-8">
-                <PageSkeleton />
+            <div className="dark flex h-svh flex-col bg-background">
+                <div className="h-12 border-b" />
+                <div className="flex flex-1 gap-4 p-4">
+                    <Skeleton className="w-72" />
+                    <Skeleton className="flex-1" />
+                    <Skeleton className="w-80" />
+                </div>
             </div>
         );
 
-    const set = (update: (d: Draft) => Draft) => {
-        setEdits((current) => update(current ?? draft));
+    const index = selected ? draft.sections.findIndex((s) => s.type === selected) : -1;
+    const section = index >= 0 ? draft.sections[index] : undefined;
+    const occasion = occasionOf(draft.occasion);
+    const calm = cappedMotion(draft.design.motion, occasion) === 'calm';
+    const width = deviceWidth[device];
+    const title = titleOf(draft.content, locale) || 'Untitled invitation';
+    const previewUrl = `${window.location.origin}/p/${data.invitation.previewToken}`;
+
+    const patchSection = (patch: Partial<NonNullable<typeof section>>) => {
+        set((d) => ({
+            ...d,
+            sections: d.sections.map((s, k) =>
+                k === index
+                    ? {
+                          ...s,
+                          ...patch,
+                      }
+                    : s,
+            ),
+        }));
     };
-    const origin = window.location.origin;
-    const liveUrl = `${origin}/${data.invitation.slug}`;
-    const previewUrl = `${origin}/p/${data.invitation.previewToken}`;
-    const error = status.error ?? slug.error;
-    const published = data.invitation.status === 'published';
+    const moveSection = (dir: -1 | 1) => {
+        set((d) => {
+            const sections = [...d.sections];
+            const to = index + dir;
+            if (to < 0 || to >= sections.length) return d;
+            const [item] = sections.splice(index, 1);
+            if (item) sections.splice(to, 0, item);
+            return {
+                ...d,
+                sections,
+            };
+        });
+    };
 
     return (
-        <Tabs value={tab} onValueChange={setTab} className="gap-0">
-            <div className="sticky top-14 z-20 border-b bg-background/85 backdrop-blur-md">
-                <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
-                    <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                            <h1 className="truncate text-lg font-semibold tracking-tight">
-                                Composer
-                            </h1>
-                            <InvitationStatusBadge status={data.invitation.status} />
-                            {dirty && (
-                                <Badge variant="warning" className="font-normal">
-                                    Unsaved
-                                </Badge>
-                            )}
-                        </div>
-                        <p className="truncate text-xs text-muted-foreground">
-                            <span className="font-mono" dir="ltr">
-                                /{data.invitation.slug}
-                            </span>
-                            {data.order
-                                ? ` · ${data.order.number} · ${data.order.packageCode} · up to ${String(data.order.limits.events)} ceremonies, ${String(data.order.limits.languages)} language(s)`
-                                : ' · Demo invitation'}
-                        </p>
-                    </div>
-                    <Button size="sm" variant="outline" asChild>
-                        <Link to="/admin/invitations/$id/guests" params={{ id }}>
-                            <Users /> Guests & RSVPs
-                            <Badge variant="muted" className="h-5 rounded-md px-1.5 tabular-nums">
-                                {data.counts.rsvps}
-                            </Badge>
-                        </Link>
-                    </Button>
-                    {data.order && (
-                        <Button size="sm" variant="ghost" asChild>
-                            <Link to="/admin/orders/$id" params={{ id: data.order.id }}>
-                                Order
-                            </Link>
-                        </Button>
-                    )}
-                    <Button
-                        size="sm"
-                        onClick={() => {
-                            save.mutate(draft);
-                        }}
-                        disabled={!dirty || save.isPending}
-                    >
-                        {save.isPending ? (
-                            <Loader2 className="animate-spin" />
-                        ) : dirty ? (
-                            <Save />
-                        ) : (
-                            <Check />
-                        )}
-                        {save.isPending ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
-                    </Button>
+        <div className="flex h-svh flex-col overflow-hidden bg-background text-foreground">
+            {/* Top bar */}
+            <header className="flex h-12 shrink-0 items-center gap-2 border-b px-2">
+                <Button variant="ghost" size="icon-sm" aria-label="Back to invitations" asChild>
+                    <Link to="/admin/invitations">
+                        <ArrowLeft />
+                    </Link>
+                </Button>
+                <div className="flex min-w-0 items-center gap-2 rounded-md border px-3 py-1">
+                    <span className="truncate text-sm font-medium">{title}</span>
+                    <InvitationStatusBadge status={data.invitation.status} />
                 </div>
-                <div className="overflow-x-auto px-4 sm:px-6 lg:px-8">
-                    <TabsList variant="line" className="h-10 gap-1 bg-transparent p-0">
-                        {tabs.map((t) => (
-                            <TabsTrigger key={t.value} value={t.value} className="px-3 text-[13px]">
+                {history.dirty ? (
+                    <span className="text-xs text-amber-400">Unsaved changes</span>
+                ) : (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Check className="size-3.5" /> Saved
+                    </span>
+                )}
+
+                <div className="mx-auto flex items-center gap-2">
+                    <ToggleGroup
+                        type="single"
+                        size="sm"
+                        variant="outline"
+                        aria-label="Device"
+                        value={device}
+                        onValueChange={(v) => {
+                            if (v === 'phone' || v === 'tablet' || v === 'desktop') setDevice(v);
+                        }}
+                    >
+                        <ToggleGroupItem value="phone" aria-label="Phone">
+                            <Smartphone />
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="tablet" aria-label="Tablet">
+                            <Tablet />
+                        </ToggleGroupItem>
+                        <ToggleGroupItem value="desktop" aria-label="Desktop">
+                            <Monitor />
+                        </ToggleGroupItem>
+                    </ToggleGroup>
+                    {draft.locales.length > 1 && (
+                        <Select value={locale} onValueChange={setLocale}>
+                            <SelectTrigger
+                                size="sm"
+                                className="h-8 w-32"
+                                aria-label="Editing language"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {draft.locales.map((l) => (
+                                    <SelectItem key={l} value={l}>
+                                        {localeNames[l as keyof typeof localeNames]}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    )}
+                </div>
+
+                <IconButton label="Undo" shortcut="⌘Z" disabled={!history.canUndo} onClick={undo}>
+                    <Undo2 />
+                </IconButton>
+                <IconButton label="Redo" shortcut="⇧⌘Z" disabled={!history.canRedo} onClick={redo}>
+                    <Redo2 />
+                </IconButton>
+                <div className="flex items-center">
+                    <IconButton
+                        label="Zoom out"
+                        disabled={zoom <= (ZOOMS[0] ?? 0.5)}
+                        onClick={() => {
+                            setZoom(ZOOMS.findLast((z) => z < zoom) ?? zoom);
+                        }}
+                    >
+                        <Minus />
+                    </IconButton>
+                    <span className="w-11 text-center text-xs tabular-nums">
+                        {String(Math.round(zoom * 100))}%
+                    </span>
+                    <IconButton
+                        label="Zoom in"
+                        disabled={zoom >= (ZOOMS.at(-1) ?? 1.25)}
+                        onClick={() => {
+                            setZoom(ZOOMS.find((z) => z > zoom) ?? zoom);
+                        }}
+                    >
+                        <Plus />
+                    </IconButton>
+                </div>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        setOpening(true);
+                        setReplay((r) => r + 1);
+                    }}
+                >
+                    <Play /> Play opening
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                    <Link to="/admin/invitations/$id/guests" params={{ id }}>
+                        <Users /> Guests
+                    </Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                    <a href={previewUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink /> Preview
+                    </a>
+                </Button>
+                <Button
+                    size="sm"
+                    disabled={!history.dirty || save.isPending}
+                    onClick={() => {
+                        save.mutate(draft);
+                    }}
+                >
+                    {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+                    Save
+                </Button>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button size="sm" variant="gold">
+                            <Rocket /> Publish
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-96">
+                        <PublishPanel id={id} data={data} dirty={history.dirty} />
+                    </PopoverContent>
+                </Popover>
+            </header>
+
+            <div className="flex min-h-0 flex-1">
+                {/* Left: everything you can add or change */}
+                <aside className="flex w-[340px] shrink-0 flex-col border-e">
+                    <nav className="grid grid-cols-6 border-b p-1" aria-label="Editor panels">
+                        {leftTabs.map((t) => (
+                            <button
+                                key={t.id}
+                                type="button"
+                                aria-pressed={tab === t.id}
+                                onClick={() => {
+                                    setTab(t.id);
+                                }}
+                                className={cn(
+                                    'flex flex-col items-center gap-1 rounded-md py-1.5 text-[10px] font-medium whitespace-nowrap transition',
+                                    tab === t.id
+                                        ? 'bg-primary/15 text-foreground'
+                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                )}
+                            >
                                 {t.icon}
                                 {t.label}
-                            </TabsTrigger>
+                            </button>
                         ))}
-                    </TabsList>
-                </div>
-            </div>
-            <div className="grid gap-8 p-4 sm:p-6 lg:p-8 xl:grid-cols-[minmax(0,1fr)_420px]">
-                <div className="min-w-0">
-                    <Card className="gap-0 py-0">
-                        <CardContent className="p-5 sm:p-6">
-                            <TabsContent value="design">
-                                <DesignPanel draft={draft} set={set} />
-                            </TabsContent>
-                            <TabsContent value="words">
-                                <ContentPanel draft={draft} set={set} />
-                            </TabsContent>
-                            <TabsContent value="ceremonies">
-                                <EventsPanel draft={draft} set={set} />
-                            </TabsContent>
-                            <TabsContent value="sections">
-                                <SectionsPanel draft={draft} set={set} />
-                            </TabsContent>
-                            <TabsContent value="extras">
-                                <ExtrasPanel draft={draft} set={set} />
-                            </TabsContent>
-                            <TabsContent value="publish" className="space-y-6">
-                                <form
-                                    className="space-y-2"
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        const value = new FormData(e.currentTarget).get('slug');
-                                        if (typeof value === 'string')
-                                            slug.mutate(value.trim().toLowerCase());
+                    </nav>
+                    <ScrollArea className="min-h-0 flex-1">
+                        {/* Panels size their grids to this column, not to the (wide) screen. */}
+                        <div className="@container p-3">
+                            {tab === 'sections' && (
+                                <LayersPanel
+                                    draft={draft}
+                                    set={set}
+                                    selected={selected}
+                                    onSelect={(type) => {
+                                        select(type, true);
                                     }}
-                                >
-                                    <Label
-                                        htmlFor="slug"
-                                        className="text-[13px] text-foreground/80"
-                                    >
-                                        Invitation link
-                                    </Label>
-                                    <InputGroup dir="ltr">
-                                        <InputGroupAddon>
-                                            <Globe />
-                                            <InputGroupText>
-                                                {origin.replace(/^https?:\/\//, '')}/
-                                            </InputGroupText>
-                                        </InputGroupAddon>
-                                        <InputGroupInput
-                                            id="slug"
-                                            name="slug"
-                                            defaultValue={data.invitation.slug}
-                                            key={data.invitation.slug}
-                                            className="ps-0.5 font-mono"
-                                        />
-                                        <InputGroupAddon align="inline-end">
-                                            <InputGroupButton
-                                                type="submit"
-                                                variant="secondary"
-                                                size="xs"
-                                            >
-                                                Change
-                                            </InputGroupButton>
-                                        </InputGroupAddon>
-                                    </InputGroup>
-                                </form>
-                                <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
-                                    <p className="flex items-center gap-2 text-sm font-medium">
-                                        <Lock className="size-3.5 text-muted-foreground" /> Private
-                                        preview for the family
+                                />
+                            )}
+                            {tab === 'opening' && (
+                                <div className="space-y-3">
+                                    <p className="text-sm text-muted-foreground">
+                                        The entry screen guests see first. Pick one and it plays on
+                                        the canvas.
                                     </p>
-                                    <div className="flex items-center gap-2">
-                                        <CopyField
-                                            value={previewUrl}
-                                            label="Preview link"
-                                            className="bg-card"
-                                        />
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button variant="outline" size="icon" asChild>
-                                                    <a
-                                                        href={previewUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        aria-label="Open preview"
-                                                    >
-                                                        <ExternalLink />
-                                                    </a>
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>Open preview</TooltipContent>
-                                        </Tooltip>
+                                    <OpeningPicker
+                                        value={draft.design.opening}
+                                        gentleOnly={isSolemn(occasionOf(draft.occasion))}
+                                        onChange={(next) => {
+                                            set((d) => ({
+                                                ...d,
+                                                design: {
+                                                    ...d.design,
+                                                    opening: next,
+                                                },
+                                            }));
+                                        }}
+                                    />
+                                </div>
+                            )}
+                            {tab === 'design' && <DesignPanel draft={draft} set={set} />}
+                            {tab === 'details' && <ContentPanel draft={draft} set={set} />}
+                            {tab === 'ceremonies' && (
+                                <EventsPanel
+                                    // Remount on a new focus so the clicked ceremony opens and scrolls into view.
+                                    key={`events-${String(focusEvent ?? 'none')}`}
+                                    draft={draft}
+                                    set={set}
+                                    focus={focusEvent}
+                                />
+                            )}
+                            {tab === 'extras' && <ExtrasPanel draft={draft} set={set} />}
+                        </div>
+                    </ScrollArea>
+                </aside>
+
+                {/* Canvas: the real invitation, edited in place */}
+                <main
+                    className="relative min-w-0 flex-1 overflow-hidden bg-[radial-gradient(circle,rgb(255_255_255/0.06)_1px,transparent_1px)] [background-size:18px_18px]"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setSelected(null);
+                    }}
+                    onKeyDown={undefined}
+                    role="presentation"
+                >
+                    <div
+                        className={cn(
+                            'mx-auto h-full overflow-hidden bg-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] ring-1 ring-white/10 transition-[width]',
+                            width ? 'my-0 rounded-none' : '',
+                        )}
+                        style={{
+                            width: width ? `${String(width)}px` : '100%',
+                            maxWidth: `${String(100 / zoom)}%`,
+                            height: `${String(100 / zoom)}%`,
+                            zoom,
+                        }}
+                    >
+                        <EditContext value={editing}>
+                            <div
+                                ref={frame}
+                                className="inv-editing relative h-full [transform:translateZ(0)] overflow-y-auto overscroll-contain"
+                                // Links (maps, calendar) must not navigate away while editing.
+                                onClickCapture={(e) => {
+                                    if ((e.target as HTMLElement).closest('a')) e.preventDefault();
+                                }}
+                            >
+                                <InvitationView
+                                    key={`${locale}-${String(replay)}`}
+                                    data={preview}
+                                    initialLocale={locale}
+                                    embedded
+                                    skipOpening={!opening}
+                                />
+                            </div>
+                        </EditContext>
+                    </div>
+                </main>
+
+                {/* Right: settings for whatever is selected */}
+                <aside className="w-[320px] shrink-0 border-s">
+                    <ScrollArea className="h-full">
+                        <div className="space-y-5 p-4">
+                            {section ? (
+                                <>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
+                                                Section
+                                            </p>
+                                            <h2 className="text-base font-semibold">
+                                                {shortName(section.type)}
+                                            </h2>
+                                        </div>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon-sm"
+                                            aria-label="Deselect"
+                                            onClick={() => {
+                                                setSelected(null);
+                                            }}
+                                        >
+                                            <X />
+                                        </Button>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-1.5">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={index <= 0}
+                                            onClick={() => {
+                                                moveSection(-1);
+                                            }}
+                                        >
+                                            <ArrowUp /> Up
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={index >= draft.sections.length - 1}
+                                            onClick={() => {
+                                                moveSection(1);
+                                            }}
+                                        >
+                                            <ArrowDown /> Down
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                patchSection({ enabled: !section.enabled });
+                                            }}
+                                        >
+                                            {section.enabled ? <EyeOff /> : <Eye />}
+                                            {section.enabled ? 'Hide' : 'Show'}
+                                        </Button>
+                                    </div>
+                                    <BlockEditor
+                                        section={section}
+                                        previousScene={undefined}
+                                        calm={calm}
+                                        update={patchSection}
+                                    />
+                                </>
+                            ) : (
+                                <div className="space-y-4 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-2 text-foreground">
+                                        <MousePointerClick className="size-4" />
+                                        <span className="font-medium">
+                                            Click anything to edit it
+                                        </span>
+                                    </div>
+                                    <ul className="list-disc space-y-1.5 ps-5 leading-relaxed">
+                                        <li>
+                                            Click a section on the page to choose its layout,
+                                            entrance, backdrop and edge here.
+                                        </li>
+                                        <li>
+                                            Click any text (names, messages, ceremony names, venues)
+                                            and type straight on it. Press Enter or click away to
+                                            keep it.
+                                        </li>
+                                        <li>
+                                            Drag sections in the left panel to reorder them; the eye
+                                            hides one.
+                                        </li>
+                                        <li>
+                                            Opening, Design, Details, Events and Extras are on the
+                                            left.
+                                        </li>
+                                    </ul>
+                                    <div className="space-y-1.5 rounded-lg border p-3 text-xs">
+                                        <p className="flex justify-between">
+                                            Save <Kbd>⌘S</Kbd>
+                                        </p>
+                                        <p className="flex justify-between">
+                                            Undo / Redo{' '}
+                                            <span>
+                                                <Kbd>⌘Z</Kbd> <Kbd>⇧⌘Z</Kbd>
+                                            </span>
+                                        </p>
+                                        <p className="flex justify-between">
+                                            Deselect <Kbd>Esc</Kbd>
+                                        </p>
                                     </div>
                                 </div>
-                                <Separator />
-                                {dirty && (
-                                    <Alert className="border-gold/40 bg-gold/5">
-                                        <Save />
-                                        <AlertTitle>Unsaved changes</AlertTitle>
-                                        <AlertDescription>
-                                            Save your changes before publishing.
-                                        </AlertDescription>
-                                    </Alert>
-                                )}
-                                {error && (
-                                    <Alert
-                                        variant="destructive"
-                                        className="border-destructive/30 bg-destructive/5"
-                                    >
-                                        <AlertTitle>Couldn’t update</AlertTitle>
-                                        <AlertDescription>{failure(error)}</AlertDescription>
-                                    </Alert>
-                                )}
-                                <div className="flex flex-wrap items-center gap-2">
-                                    {!published ? (
-                                        <Button
-                                            size="lg"
-                                            disabled={dirty || status.isPending}
-                                            onClick={() => {
-                                                status.mutate({ status: 'published' });
-                                            }}
-                                        >
-                                            <Rocket /> Publish invitation
-                                        </Button>
-                                    ) : (
-                                        <>
-                                            <Button size="lg" variant="gold" asChild>
-                                                <a
-                                                    href={liveUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                >
-                                                    <ExternalLink /> Open live invitation
-                                                </a>
-                                            </Button>
-                                            <Button
-                                                size="lg"
-                                                variant="outline"
-                                                onClick={() => {
-                                                    status.mutate({ status: 'draft' });
-                                                }}
-                                            >
-                                                Unpublish
-                                            </Button>
-                                        </>
-                                    )}
-                                    {!published && me?.role !== 'designer' && (
-                                        <Button
-                                            size="lg"
-                                            variant="ghost"
-                                            disabled={dirty}
-                                            onClick={() => {
-                                                status.mutate({
-                                                    status: 'published',
-                                                    override: true,
-                                                });
-                                            }}
-                                        >
-                                            Publish with balance due (owner)
-                                        </Button>
-                                    )}
-                                </div>
-                                {data.invitation.expiresAt && (
-                                    <p className="text-xs text-muted-foreground">
-                                        Hosting until{' '}
-                                        {new Date(data.invitation.expiresAt).toLocaleDateString()}.
-                                    </p>
-                                )}
-                            </TabsContent>
-                        </CardContent>
-                    </Card>
-                </div>
-                <aside className="xl:sticky xl:top-[9.5rem] xl:self-start">
-                    <div className="mb-3 flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2 font-medium text-muted-foreground">
-                            <Smartphone className="size-4" /> Live preview
-                        </span>
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                                setShowOpening(true);
-                                setReplay((r) => r + 1);
-                            }}
-                        >
-                            <Play /> Replay opening
-                        </Button>
-                    </div>
-                    {/* transform makes the invitation's fixed-position layers stay inside the phone frame */}
-                    <div className="mx-auto w-[min(100%,390px)] rounded-[2.75rem] bg-night p-2.5 shadow-[0_30px_80px_-30px_rgba(29,20,22,0.55)] ring-1 ring-black/10">
-                        <div className="relative h-[min(760px,calc(100svh-13rem))] [transform:translateZ(0)] overflow-y-auto overscroll-contain rounded-[2.2rem]">
-                            <InvitationView
-                                key={`${String(replay)}-${draft.locales.join()}`}
-                                data={preview}
-                                embedded
-                                skipOpening={!showOpening}
-                            />
+                            )}
                         </div>
-                    </div>
+                    </ScrollArea>
                 </aside>
             </div>
-        </Tabs>
+        </div>
     );
 }

@@ -1,4 +1,4 @@
-import type { CultureId } from '@shared/cultures';
+import { archPath } from '@shared/arches';
 import { greetingFits } from '@shared/occasions';
 import { formatEventDate, zonedToUtc } from '@shared/time';
 import { m } from 'motion/react';
@@ -7,6 +7,9 @@ import { use } from 'react';
 import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
 import { EnterContext, Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
+import { Editable } from '../editing';
+
+export { archPath };
 
 export function useCoverFacts() {
     const { data, t, locale, culture, guest, copy, names, occasion } = useInvite();
@@ -45,39 +48,6 @@ export function fitDisplay(names: string[], maxCqw: number, budget: number, maxR
 }
 
 const initial = (name: string) => Array.from(name.trim())[0] ?? '';
-
-// Doorway silhouettes per tradition: jharokha, mihrab, lancet, gurdwara dome, chuppah canopy.
-export function archPath(culture: CultureId): string {
-    switch (culture) {
-        case 'hindu':
-        case 'jain': {
-            // Cusped (multifoil) jharokha: seven lobes along a semicircle.
-            const cx = 150;
-            const cy = 200;
-            const r = 130;
-            const lobes = 7;
-            const points = Array.from({ length: lobes + 1 }, (_, i) => {
-                const a = Math.PI - (Math.PI / lobes) * i;
-                return [cx + r * Math.cos(a), cy - r * Math.sin(a)] as const;
-            });
-            const arcs = points
-                .slice(1)
-                .map(([x, y]) => `A30 30 0 0 1 ${x.toFixed(1)} ${y.toFixed(1)}`)
-                .join(' ');
-            return `M20 470 V200 ${arcs} V470`;
-        }
-        case 'islamic':
-            return 'M20 470 V220 C20 130 85 98 118 66 C138 46 148 24 150 8 C152 24 162 46 182 66 C215 98 280 130 280 220 V470';
-        case 'christian':
-            return 'M20 470 V210 Q20 70 150 8 Q280 70 280 210 V470';
-        case 'sikh':
-            return 'M20 470 V230 C20 165 58 140 96 122 C128 106 132 70 150 30 C168 70 172 106 204 122 C242 140 280 165 280 230 V470';
-        case 'jewish':
-            return 'M20 470 V70 Q85 92 150 70 Q215 92 280 70 V470';
-        case 'universal':
-            return 'M20 470 V180 A130 130 0 0 1 280 180 V470';
-    }
-}
 
 interface DrawnPathProps {
     d: string;
@@ -212,13 +182,17 @@ export function ArchCover() {
                             className="inv-display leading-[0.95] break-normal hyphens-none"
                             style={{ fontSize: fitDisplay([facts.one, facts.two], 11, 84) }}
                         >
-                            <span className="foil-text block">{facts.one}</span>
+                            <span className="foil-text block">
+                                <Editable path="people.one.name">{facts.one}</Editable>
+                            </span>
                             {facts.two && (
                                 <>
                                     <span className="inv-script my-2 block text-[0.6em] text-(--inv-primary)">
                                         {facts.and}
                                     </span>
-                                    <span className="foil-text block">{facts.two}</span>
+                                    <span className="foil-text block">
+                                        <Editable path="people.two.name">{facts.two}</Editable>
+                                    </span>
                                 </>
                             )}
                         </h2>
@@ -228,7 +202,9 @@ export function ArchCover() {
                         delay={300}
                         className="mt-5 max-w-[30ch] text-sm leading-relaxed opacity-85"
                     >
-                        {facts.headline}
+                        <Editable path="headline" multiline>
+                            {facts.headline}
+                        </Editable>
                     </Reveal>
                     <Reveal delay={420} className="mt-auto pt-4">
                         <p className="inv-display text-lg tracking-wide">{facts.dateText}</p>
@@ -242,7 +218,7 @@ export function ArchCover() {
 export function MonogramCover() {
     const { tier, data } = useInvite();
     const facts = useCoverFacts();
-    const ring = `${facts.one} · ${facts.two} · ${facts.dateText} · `;
+    const ring = `$<Editable path="people.one.name">{facts.one}</Editable> · $<Editable path="people.two.name">{facts.two}</Editable> · ${facts.dateText} · `;
     const id = `ring-${data.invitation.seed}`;
     return (
         <section className="relative flex min-h-svh flex-col items-center justify-center px-6 py-20 text-center">
@@ -306,21 +282,23 @@ export function MonogramCover() {
             <Reveal delay={260} className="mt-10">
                 <Honorific />
                 <h2 className="inv-display text-[clamp(2rem,8cqw,3.6rem)] leading-tight">
-                    {facts.one}
+                    <Editable path="people.one.name">{facts.one}</Editable>
                     {facts.two && (
                         <>
                             {' '}
                             <span className="inv-script text-(--inv-primary)">
                                 {facts.and}
                             </span>{' '}
-                            {facts.two}
+                            <Editable path="people.two.name">{facts.two}</Editable>
                         </>
                     )}
                 </h2>
                 <LifeSpan />
             </Reveal>
             <Reveal delay={380} className="mt-4 max-w-xl text-base opacity-85">
-                {facts.headline}
+                <Editable path="headline" multiline>
+                    {facts.headline}
+                </Editable>
             </Reveal>
         </section>
     );
@@ -342,13 +320,17 @@ export function EditorialCover() {
                         className="inv-display mt-6 leading-[0.82] font-light tracking-tight break-normal hyphens-none"
                         style={{ fontSize: fitDisplay([facts.one, facts.two], 21, 150) }}
                     >
-                        <span className="block">{facts.one}</span>
+                        <span className="block">
+                            <Editable path="people.one.name">{facts.one}</Editable>
+                        </span>
                         {facts.two && (
                             <>
                                 <span className="inv-script block ps-[18cqw] text-[0.5em] leading-[1.3] text-(--inv-primary)">
                                     {facts.and}
                                 </span>
-                                <span className="block text-end">{facts.two}</span>
+                                <span className="block text-end">
+                                    <Editable path="people.two.name">{facts.two}</Editable>
+                                </span>
                             </>
                         )}
                     </h2>
@@ -359,7 +341,11 @@ export function EditorialCover() {
                 delay={260}
                 className="grid grid-cols-[1fr_auto] items-end gap-6 border-t border-(--inv-gold) pt-5"
             >
-                <p className="max-w-[34ch] text-sm leading-relaxed opacity-85">{facts.headline}</p>
+                <p className="max-w-[34ch] text-sm leading-relaxed opacity-85">
+                    <Editable path="headline" multiline>
+                        {facts.headline}
+                    </Editable>
+                </p>
                 <p className="inv-display text-end text-xl leading-tight">{facts.dateText}</p>
             </Reveal>
         </section>

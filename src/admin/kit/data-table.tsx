@@ -17,27 +17,18 @@ import {
 import {
     ArrowDown,
     ArrowUp,
-    Check,
     ChevronLeft,
     ChevronRight,
     ChevronsUpDown,
-    PlusCircle,
+    Filter,
     Search,
     X,
 } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 
-import { Badge } from '@/components/ui/badge';
+import { PanelCard } from '@/admin/kit/card';
 import { Button } from '@/components/ui/button';
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-    CommandSeparator,
-} from '@/components/ui/command';
+import { Checkbox } from '@/components/ui/checkbox';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
@@ -47,7 +38,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import {
     Table,
     TableBody,
@@ -72,11 +62,21 @@ export interface Facet {
 interface DataTableProps<TData> {
     columns: ColumnDef<TData>[];
     data: TData[];
+    /** Card heading. Without one the toolbar alone heads the card. */
+    title?: ReactNode;
+    /** A muted prefix before the title: "Billing | Invoices". */
+    section?: string;
+    subtitle?: ReactNode;
+    /** After search and Filter: a view switcher, then the primary button. */
+    actions?: ReactNode;
+    /** Plural, lower case, for the footer: "customers". */
+    noun?: string;
     searchPlaceholder?: string;
     facets?: Facet[];
-    toolbar?: ReactNode;
     initialSorting?: SortingState;
     pageSize?: number;
+    /** Fill the page's remaining height (desktop): rows scroll inside, header and pagination stay. */
+    fill?: boolean;
     onRowClick?: (row: TData) => void;
     isRowActive?: (row: TData) => boolean;
     rowLabel?: (row: TData) => string;
@@ -88,14 +88,23 @@ interface DataTableProps<TData> {
 export const inFilter = <TData,>(row: Row<TData>, id: string, value: string[]) =>
     value.length === 0 || value.includes(String(row.getValue(id)));
 
+const LIMITS = [25, 50, 75, 100] as const;
+
+// PayD's table pattern: ONE card — heading + toolbar in its header, the table flush in its body,
+// pagination in the tinted footer.
 export function DataTable<TData>({
     columns,
     data,
+    title,
+    section,
+    subtitle,
+    actions,
+    noun = 'rows',
     searchPlaceholder = 'Search…',
     facets = [],
-    toolbar,
     initialSorting = [],
-    pageSize = 10,
+    pageSize = LIMITS[0],
+    fill = true,
     onRowClick,
     isRowActive,
     rowLabel,
@@ -128,123 +137,123 @@ export function DataTable<TData>({
     });
     const filtered = globalFilter !== '' || columnFilters.length > 0;
 
+    // Title row, left to right: search, Filter, Reset, then the page's own switcher and button.
+    const controls = (
+        <>
+            <InputGroup className="w-full min-w-0 sm:w-64 md:w-52 lg:w-64">
+                <InputGroupAddon>
+                    <Search />
+                </InputGroupAddon>
+                <InputGroupInput
+                    aria-label={searchPlaceholder}
+                    placeholder={searchPlaceholder}
+                    value={globalFilter}
+                    onChange={(e) => {
+                        setGlobalFilter(e.target.value);
+                    }}
+                />
+            </InputGroup>
+            {facets.length > 0 && <FilterButton table={table} facets={facets} />}
+            {filtered && (
+                <Button
+                    variant="ghost"
+                    className="text-muted-foreground"
+                    onClick={() => {
+                        setGlobalFilter('');
+                        table.resetColumnFilters();
+                    }}
+                >
+                    Reset
+                    <X />
+                </Button>
+            )}
+            {actions}
+        </>
+    );
+
     return (
-        <div className={cn('space-y-3', className)}>
-            <div className="flex flex-wrap items-center gap-2">
-                <InputGroup className="h-8 w-full bg-card sm:w-64">
-                    <InputGroupAddon>
-                        <Search />
-                    </InputGroupAddon>
-                    <InputGroupInput
-                        aria-label={searchPlaceholder}
-                        placeholder={searchPlaceholder}
-                        value={globalFilter}
-                        onChange={(e) => {
-                            setGlobalFilter(e.target.value);
-                        }}
-                    />
-                </InputGroup>
-                {facets.map((facet) => {
-                    const column = table.getColumn(facet.columnId);
-                    return column ? (
-                        <FacetedFilter key={facet.columnId} column={column} facet={facet} />
-                    ) : null;
-                })}
-                {filtered && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-muted-foreground"
-                        onClick={() => {
-                            setGlobalFilter('');
-                            table.resetColumnFilters();
-                        }}
-                    >
-                        Reset
-                        <X />
-                    </Button>
-                )}
-                {toolbar && <div className="ms-auto flex items-center gap-2">{toolbar}</div>}
-            </div>
-            <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
-                <Table>
-                    <TableHeader className="bg-muted/50">
-                        {table.getHeaderGroups().map((group) => (
-                            <TableRow key={group.id} className="hover:bg-transparent">
-                                {group.headers.map((header) => (
-                                    <TableHead
-                                        key={header.id}
-                                        className="h-10 px-4 text-xs font-medium text-muted-foreground first:ps-5 last:pe-5"
-                                    >
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                  header.column.columnDef.header,
-                                                  header.getContext(),
-                                              )}
-                                    </TableHead>
+        <PanelCard
+            {...(title === undefined
+                ? {
+                      header: (
+                          <div className="flex w-full flex-wrap items-center gap-2">{controls}</div>
+                      ),
+                  }
+                : {
+                      title,
+                      section,
+                      subtitle,
+                      actions: controls,
+                  })}
+            padded={false}
+            fill={fill}
+            className={cn('data-table', className)}
+            footer={<Pagination table={table} noun={noun} />}
+        >
+            <Table containerClassName={fill ? 'lg:min-h-0 lg:flex-1 lg:overflow-auto' : undefined}>
+                <TableHeader>
+                    {table.getHeaderGroups().map((group) => (
+                        <TableRow key={group.id} className="hover:bg-transparent">
+                            {group.headers.map((header) => (
+                                <TableHead key={header.id}>
+                                    {header.isPlaceholder
+                                        ? null
+                                        : flexRender(
+                                              header.column.columnDef.header,
+                                              header.getContext(),
+                                          )}
+                                </TableHead>
+                            ))}
+                        </TableRow>
+                    ))}
+                </TableHeader>
+                <TableBody>
+                    {table.getRowModel().rows.length ? (
+                        table.getRowModel().rows.map((row) => (
+                            <TableRow
+                                key={row.id}
+                                data-state={isRowActive?.(row.original) ? 'selected' : undefined}
+                                aria-label={rowLabel?.(row.original)}
+                                tabIndex={onRowClick ? 0 : undefined}
+                                className={cn(
+                                    onRowClick &&
+                                        'cursor-pointer focus-visible:bg-muted/60 focus-visible:outline-none',
+                                )}
+                                onClick={
+                                    onRowClick
+                                        ? () => {
+                                              onRowClick(row.original);
+                                          }
+                                        : undefined
+                                }
+                                onKeyDown={
+                                    onRowClick
+                                        ? (e) => {
+                                              if (e.key === 'Enter') onRowClick(row.original);
+                                          }
+                                        : undefined
+                                }
+                            >
+                                {row.getVisibleCells().map((cell) => (
+                                    <TableCell key={cell.id}>
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </TableCell>
                                 ))}
                             </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {table.getRowModel().rows.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow
-                                    key={row.id}
-                                    data-state={
-                                        isRowActive?.(row.original) ? 'selected' : undefined
-                                    }
-                                    aria-label={rowLabel?.(row.original)}
-                                    tabIndex={onRowClick ? 0 : undefined}
-                                    className={cn(
-                                        onRowClick &&
-                                            'cursor-pointer focus-visible:bg-muted/60 focus-visible:outline-none',
-                                        'data-[state=selected]:bg-gold/8',
-                                    )}
-                                    onClick={
-                                        onRowClick
-                                            ? () => {
-                                                  onRowClick(row.original);
-                                              }
-                                            : undefined
-                                    }
-                                    onKeyDown={
-                                        onRowClick
-                                            ? (e) => {
-                                                  if (e.key === 'Enter') onRowClick(row.original);
-                                              }
-                                            : undefined
-                                    }
-                                >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell
-                                            key={cell.id}
-                                            className="px-4 py-3 first:ps-5 last:pe-5"
-                                        >
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext(),
-                                            )}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow className="hover:bg-transparent">
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className="h-40 text-center text-sm text-muted-foreground"
-                                >
-                                    {filtered ? 'No results match these filters.' : empty}
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-            <Pagination table={table} />
-        </div>
+                        ))
+                    ) : (
+                        <TableRow className="hover:bg-transparent">
+                            <TableCell
+                                colSpan={columns.length}
+                                className="h-40 text-center text-sm text-muted-foreground"
+                            >
+                                {filtered ? 'No records found.' : empty}
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
+        </PanelCard>
     );
 }
 
@@ -262,7 +271,7 @@ export function SortHeader<TData>({ column, title, className }: SortHeaderProps<
             variant="ghost"
             size="sm"
             className={cn(
-                '-ms-2.5 h-7 gap-1 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground',
+                '-ms-2 h-7 gap-1 px-2 text-xs font-medium tracking-wider text-inherit uppercase hover:bg-transparent hover:text-foreground',
                 className,
             )}
             onClick={() => {
@@ -281,12 +290,71 @@ export function SortHeader<TData>({ column, title, className }: SortHeaderProps<
     );
 }
 
-interface FacetedFilterProps<TData> {
+interface FilterButtonProps<TData> {
+    table: TableInstance<TData>;
+    facets: Facet[];
+}
+
+const BADGE =
+    'absolute -top-1.5 -end-1.5 flex size-4.5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground';
+
+// PayD's PDAFilterButton: ONE Filter button, badged with how many filters are set — no chip row.
+function FilterButton<TData>({ table, facets }: FilterButtonProps<TData>) {
+    const active = facets.reduce((n, f) => {
+        const value = table.getColumn(f.columnId)?.getFilterValue() as string[] | undefined;
+        return n + (value?.length ?? 0);
+    }, 0);
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    className="relative"
+                    aria-label={active > 0 ? `Filter, ${String(active)} active` : undefined}
+                >
+                    <Filter aria-hidden />
+                    Filter
+                    {active > 0 && (
+                        <span aria-hidden className={BADGE}>
+                            {active}
+                        </span>
+                    )}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+                <div className="flex items-center justify-between border-b px-4 py-3">
+                    <p className="text-sm font-medium">Filter</p>
+                    {active > 0 && (
+                        <Button
+                            variant="link"
+                            className="text-xs"
+                            onClick={() => {
+                                table.resetColumnFilters();
+                            }}
+                        >
+                            Clear all
+                        </Button>
+                    )}
+                </div>
+                <div className="grid max-h-[60vh] gap-4 overflow-y-auto p-4">
+                    {facets.map((facet) => {
+                        const column = table.getColumn(facet.columnId);
+                        return column ? (
+                            <FacetGroup key={facet.columnId} column={column} facet={facet} />
+                        ) : null;
+                    })}
+                </div>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+interface FacetGroupProps<TData> {
     column: Column<TData>;
     facet: Facet;
 }
 
-function FacetedFilter<TData>({ column, facet }: FacetedFilterProps<TData>) {
+function FacetGroup<TData>({ column, facet }: FacetGroupProps<TData>) {
     const counts = column.getFacetedUniqueValues();
     const selected = new Set((column.getFilterValue() as string[] | undefined) ?? []);
     const options = facet.options.filter((o) => counts.has(o.value) || selected.has(o.value));
@@ -297,142 +365,152 @@ function FacetedFilter<TData>({ column, facet }: FacetedFilterProps<TData>) {
         column.setFilterValue(next.size ? [...next] : undefined);
     };
     return (
-        <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 border-dashed bg-card">
-                    <PlusCircle />
-                    {facet.title}
-                    {selected.size > 0 && (
-                        <>
-                            <Separator orientation="vertical" className="mx-0.5 h-4" />
-                            <Badge variant="secondary" className="rounded-sm px-1 font-normal">
-                                {selected.size}
-                            </Badge>
-                        </>
-                    )}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-60 p-0" align="start">
-                <Command>
-                    <CommandInput placeholder={facet.title} />
-                    <CommandList>
-                        <CommandEmpty>No options.</CommandEmpty>
-                        <CommandGroup>
-                            {options.map((option) => {
-                                const on = selected.has(option.value);
-                                return (
-                                    <CommandItem
-                                        key={option.value}
-                                        onSelect={() => {
-                                            toggle(option.value);
-                                        }}
-                                    >
-                                        <span
-                                            className={cn(
-                                                'flex size-4 items-center justify-center rounded-[4px] border',
-                                                on
-                                                    ? 'border-primary bg-primary text-primary-foreground'
-                                                    : 'border-input',
-                                            )}
-                                        >
-                                            {on && <Check className="size-3 text-current" />}
-                                        </span>
-                                        <span className="flex-1">{option.label}</span>
-                                        <span className="font-mono text-xs text-muted-foreground">
-                                            {counts.get(option.value) ?? 0}
-                                        </span>
-                                    </CommandItem>
-                                );
-                            })}
-                        </CommandGroup>
-                        {selected.size > 0 && (
-                            <>
-                                <CommandSeparator />
-                                <CommandGroup>
-                                    <CommandItem
-                                        className="justify-center text-center"
-                                        onSelect={() => {
-                                            column.setFilterValue(undefined);
-                                        }}
-                                    >
-                                        Clear filters
-                                    </CommandItem>
-                                </CommandGroup>
-                            </>
-                        )}
-                    </CommandList>
-                </Command>
-            </PopoverContent>
-        </Popover>
+        <fieldset className="grid gap-1.5">
+            <legend className="mb-1.5 text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+                {facet.title}
+            </legend>
+            {options.map((option) => {
+                const id = `facet-${facet.columnId}-${option.value}`;
+                return (
+                    <label
+                        key={option.value}
+                        htmlFor={id}
+                        className="flex h-8 items-center gap-2.5 rounded-control px-2 text-sm hover:bg-muted"
+                    >
+                        <Checkbox
+                            id={id}
+                            checked={selected.has(option.value)}
+                            onCheckedChange={() => {
+                                toggle(option.value);
+                            }}
+                        />
+                        <span className="flex-1 truncate">{option.label}</span>
+                        <span className="font-mono text-xs text-muted-foreground tabular-nums">
+                            {counts.get(option.value) ?? 0}
+                        </span>
+                    </label>
+                );
+            })}
+        </fieldset>
     );
 }
 
 interface PaginationProps<TData> {
     table: TableInstance<TData>;
+    noun: string;
 }
 
-function Pagination<TData>({ table }: PaginationProps<TData>) {
+// "1 2 … 9 10": the first, last and two around the current page.
+function pageTokens(page: number, total: number): (number | 'gap-left' | 'gap-right')[] {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const tokens: (number | 'gap-left' | 'gap-right')[] = [1];
+    const from = Math.max(2, page - 1);
+    const to = Math.min(total - 1, page + 1);
+    if (from > 2) tokens.push('gap-left');
+    for (let p = from; p <= to; p++) tokens.push(p);
+    if (to < total - 1) tokens.push('gap-right');
+    tokens.push(total);
+    return tokens;
+}
+
+// PayD's PDAPagination: Limit | "Page 1 of 3 · 64 customers" | ‹ Previous 1 2 3 Next ›.
+function Pagination<TData>({ table, noun }: PaginationProps<TData>) {
     const total = table.getFilteredRowModel().rows.length;
     const { pageIndex, pageSize } = table.getState().pagination;
-    const from = total === 0 ? 0 : pageIndex * pageSize + 1;
-    const to = Math.min(total, (pageIndex + 1) * pageSize);
+    const page = pageIndex + 1;
+    const pages = Math.max(1, table.getPageCount());
+    // A Limit control only when more rows exist than the smallest page shows.
+    const offerLimit = total > LIMITS[0];
+    const summary = (
+        <>
+            Page {page} of {pages} · {total.toLocaleString()} {noun}
+        </>
+    );
     return (
-        <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-muted-foreground">
-            <span>
-                {from}–{to} of {total}
-            </span>
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                    <span>Rows</span>
-                    <Select
-                        value={String(pageSize)}
-                        onValueChange={(v) => {
-                            table.setPageSize(Number(v));
-                        }}
-                    >
-                        <SelectTrigger
-                            size="sm"
-                            className="h-7 w-[68px] bg-card text-xs"
-                            aria-label="Rows per page"
+        <div className="grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3 text-sm md:grid-cols-[auto_1fr_auto] lg:grid-cols-[minmax(max-content,1fr)_auto_minmax(max-content,1fr)]">
+            <div className="col-start-1 row-start-1 flex min-h-8 shrink-0 items-center gap-2">
+                {offerLimit && (
+                    <>
+                        <span className="text-muted-foreground">Limit:</span>
+                        <Select
+                            value={String(pageSize)}
+                            onValueChange={(v) => {
+                                table.setPageSize(Number(v));
+                            }}
                         >
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                            {[10, 20, 50].map((n) => (
-                                <SelectItem key={n} value={String(n)}>
-                                    {n}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="flex items-center gap-1">
+                            <SelectTrigger
+                                className="w-fit shrink-0"
+                                aria-label={`${noun} per page`}
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent align="start">
+                                {LIMITS.map((n) => (
+                                    <SelectItem key={n} value={String(n)}>
+                                        {n}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </>
+                )}
+            </div>
+            <p className="col-start-2 row-start-1 min-w-0 text-end text-muted-foreground md:col-start-2 md:text-center">
+                {summary}
+            </p>
+            {pages > 1 && (
+                <nav
+                    aria-label={`${noun} pages`}
+                    className="col-span-2 row-start-2 flex items-center justify-end gap-0.5 md:col-span-1 md:col-start-3 md:row-start-1"
+                >
                     <Button
-                        variant="outline"
-                        size="icon-sm"
-                        className="size-7 bg-card"
-                        aria-label="Previous page"
+                        variant="ghost"
+                        className="ps-1.5!"
                         disabled={!table.getCanPreviousPage()}
                         onClick={() => {
                             table.previousPage();
                         }}
                     >
                         <ChevronLeft className="rtl:rotate-180" />
+                        <span className="hidden sm:block">Previous</span>
                     </Button>
+                    {pageTokens(page, pages).map((token) =>
+                        typeof token === 'number' ? (
+                            <Button
+                                key={token}
+                                variant={token === page ? 'outline' : 'ghost'}
+                                size="icon"
+                                aria-current={token === page ? 'page' : undefined}
+                                className={cn('tabular-nums', token === page && 'text-primary')}
+                                onClick={() => {
+                                    table.setPageIndex(token - 1);
+                                }}
+                            >
+                                {token}
+                            </Button>
+                        ) : (
+                            <span
+                                key={token}
+                                aria-hidden
+                                className="flex size-8 items-center justify-center text-muted-foreground"
+                            >
+                                …
+                            </span>
+                        ),
+                    )}
                     <Button
-                        variant="outline"
-                        size="icon-sm"
-                        className="size-7 bg-card"
-                        aria-label="Next page"
+                        variant="ghost"
+                        className="pe-1.5!"
                         disabled={!table.getCanNextPage()}
                         onClick={() => {
                             table.nextPage();
                         }}
                     >
+                        <span className="hidden sm:block">Next</span>
                         <ChevronRight className="rtl:rotate-180" />
                     </Button>
-                </div>
-            </div>
+                </nav>
+            )}
         </div>
     );
 }

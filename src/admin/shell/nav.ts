@@ -12,10 +12,17 @@ import {
 export type NavPath =
     | '/admin'
     | '/admin/orders'
+    | '/admin/orders/new'
     | '/admin/invitations'
     | '/admin/library'
     | '/admin/customers'
     | '/admin/billing';
+
+export interface NavChild {
+    to: NavPath;
+    label: string;
+    permission: Permission;
+}
 
 export interface NavItem {
     to: NavPath;
@@ -23,6 +30,8 @@ export interface NavItem {
     icon: LucideIcon;
     permission: Permission;
     keywords?: string[];
+    // Sub-pages shown nested under the item (with a guide line), like Payments → Transactions.
+    children?: NavChild[];
 }
 
 export interface NavGroup {
@@ -47,20 +56,25 @@ export const navGroups: NavGroup[] = [
                 icon: ShoppingBag,
                 permission: 'orders.view',
                 keywords: ['projects', 'pipeline'],
+                children: [
+                    {
+                        to: '/admin/orders',
+                        label: 'All orders',
+                        permission: 'orders.view',
+                    },
+                    {
+                        to: '/admin/orders/new',
+                        label: 'New order',
+                        permission: 'orders.create',
+                    },
+                ],
             },
             {
                 to: '/admin/invitations',
                 label: 'Invitations',
                 icon: Sparkles,
                 permission: 'orders.view',
-                keywords: ['composer', 'design'],
-            },
-            {
-                to: '/admin/library',
-                label: 'Library',
-                icon: Library,
-                permission: 'orders.view',
-                keywords: ['components', 'openings', 'templates', 'layouts', 'themes', 'demo'],
+                keywords: ['composer', 'design', 'editor'],
             },
         ],
     },
@@ -80,6 +94,13 @@ export const navGroups: NavGroup[] = [
                 icon: Receipt,
                 permission: 'billing.view',
                 keywords: ['invoices', 'payments', 'money'],
+            },
+            {
+                to: '/admin/library',
+                label: 'Library',
+                icon: Library,
+                permission: 'orders.view',
+                keywords: ['components', 'openings', 'blocks', 'templates'],
             },
         ],
     },
@@ -103,3 +124,14 @@ export const initials = (name: string) =>
         .slice(0, 2)
         .map((w) => w.charAt(0).toUpperCase())
         .join('');
+
+// Among sibling sub-pages, the most specific match wins (/admin/orders/new is not "All orders").
+export function activeChild(children: NavChild[], pathname: string): NavPath | undefined {
+    return children
+        .filter((c) => pathname === c.to || pathname.startsWith(`${c.to}/`))
+        .sort((a, b) => b.to.length - a.to.length)[0]?.to;
+}
+
+// A parent is "open" when you are on it or on any of its sub-pages.
+export const inSection = (item: NavItem, pathname: string) =>
+    isActive(item.to, pathname) || (item.children ?? []).some((c) => isActive(c.to, pathname));

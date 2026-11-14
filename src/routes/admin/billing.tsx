@@ -88,8 +88,10 @@ const filters = [
 
 type FilterKey = (typeof filters)[number]['key'];
 
+const statusParam = z.enum(['unpaid', 'overdue', 'partially_paid', 'paid', 'all']).optional();
+
 export const Route = createFileRoute('/admin/billing')({
-    validateSearch: z.object({status: z.enum(['unpaid', 'overdue', 'partially_paid', 'paid', 'all']).optional(),}),
+    validateSearch: z.object({ status: statusParam }),
     component: BillingPage,
 });
 
@@ -120,7 +122,7 @@ function BillingPage() {
             {isPending || !data ? (
                 <PageSkeleton />
             ) : (
-                <div className="space-y-6">
+                <div className="flex min-h-0 flex-1 flex-col gap-6">
                     {data.totals.map((t) => (
                         <div key={t.currency} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                             <StatCard
@@ -155,59 +157,64 @@ function BillingPage() {
                         </div>
                     ))}
                     <Tabs
+                        className="min-h-0 flex-1"
                         value={status}
                         onValueChange={(v) => {
                             const next = filters.find((f) => f.key === v)?.key;
-                            void navigate({search: { status: next === 'unpaid' ? undefined : next },});
+                            const search = { status: next === 'unpaid' ? undefined : next };
+                            void navigate({ search });
                         }}
                     >
-                        <ScrollArea className="w-full">
-                            <TabsList>
-                                {filters.map((f) => (
-                                    <TabsTrigger key={f.key} value={f.key} className="px-3">
-                                        {f.label}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                        </ScrollArea>
+                        <DataTable
+                            title="Invoices"
+                            subtitle="Every invoice, newest first."
+                            noun="invoices"
+                            actions={
+                                <TabsList>
+                                    {filters.map((f) => (
+                                        <TabsTrigger key={f.key} value={f.key} className="px-3">
+                                            {f.label}
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                            }
+                            columns={columns}
+                            data={data.rows}
+                            searchPlaceholder="Search invoices, customers…"
+                            initialSorting={[
+                                {
+                                    id: 'issueDate',
+                                    desc: true,
+                                },
+                            ]}
+                            facets={[
+                                {
+                                    columnId: 'status',
+                                    title: 'Status',
+                                    options: Object.entries(invoiceLabel).map(([value, label]) => ({
+                                        value,
+                                        label,
+                                    })),
+                                },
+                                ...(currencies.length > 1
+                                    ? [
+                                          {
+                                              columnId: 'currency',
+                                              title: 'Currency',
+                                              options: currencies.map((c) => ({
+                                                  value: c,
+                                                  label: c,
+                                              })),
+                                          },
+                                      ]
+                                    : []),
+                            ]}
+                            empty="Nothing here — all settled ✦"
+                            rowLabel={(r) => `Invoice ${r.number} for ${r.customerName}`}
+                            isRowActive={(r) => r.id === open?.id}
+                            onRowClick={setOpen}
+                        />
                     </Tabs>
-                    <DataTable
-                        columns={columns}
-                        data={data.rows}
-                        searchPlaceholder="Search invoices, customers…"
-                        initialSorting={[
-                            {
-                                id: 'issueDate',
-                                desc: true,
-                            },
-                        ]}
-                        facets={[
-                            {
-                                columnId: 'status',
-                                title: 'Status',
-                                options: Object.entries(invoiceLabel).map(([value, label]) => ({
-                                    value,
-                                    label,
-                                })),
-                            },
-                            ...(currencies.length > 1
-                                ? [
-                                      {
-                                          columnId: 'currency',
-                                          title: 'Currency',
-                                          options: currencies.map((c) => ({
-                                              value: c,
-                                              label: c,
-                                          })),
-                                      },
-                                  ]
-                                : []),
-                        ]}
-                        empty="Nothing here — all settled ✦"
-                        rowLabel={(r) => `Invoice ${r.number} for ${r.customerName}`}
-                        isRowActive={(r) => r.id === open?.id}
-                        onRowClick={setOpen}
-                    />
                 </div>
             )}
             <Sheet

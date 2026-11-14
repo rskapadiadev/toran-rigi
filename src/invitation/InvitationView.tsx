@@ -1,6 +1,11 @@
-import { blockKey, resolveBlock, type ResolvedBlock } from '@shared/blocks';
+import {
+    blockKey,
+    isRendered,
+    type RenderedSection,
+    resolveBlock,
+    type ResolvedBlock,
+} from '@shared/blocks';
 import { localeNames } from '@shared/locales';
-import type { SectionType } from '@shared/types';
 import { domAnimation, LazyMotion } from 'motion/react';
 import { type ComponentType, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -31,7 +36,8 @@ interface BlockProps {
 }
 
 // Section type → component; each component renders the variant it is handed.
-const sectionRegistry: Partial<Record<SectionType, ComponentType<BlockProps>>> = {
+// Exhaustive over renderedSections: adding one to that list without a component fails to compile.
+const sectionRegistry: Record<RenderedSection, ComponentType<BlockProps>> = {
     cover: Hero,
     card: InvitationCard,
     countdown: Countdown,
@@ -148,7 +154,7 @@ function Experience({ embedded, skipOpening }: ExperienceProps) {
     const blocks = useMemo(() => {
         const list: ResolvedBlock[] = [];
         for (const section of invitation.sections) {
-            if (!section.enabled || !sectionRegistry[section.type]) continue;
+            if (!section.enabled || !isRendered(section.type)) continue;
             list.push(resolveBlock(section, list.at(-1)?.scene));
         }
         return list;
@@ -202,8 +208,8 @@ function Experience({ embedded, skipOpening }: ExperienceProps) {
             >
                 <LazyMotion features={domAnimation} strict>
                     {blocks.map((block, i) => {
+                        if (!isRendered(block.type)) return null;
                         const Section = sectionRegistry[block.type];
-                        if (!Section) return null;
                         return (
                             <Scene key={blockKey(block)} block={block} index={i}>
                                 <Section variant={block.variant} />

@@ -385,85 +385,107 @@ path.ornament-draw[fill]:not([fill='none']) {
 }
 
 /*
- * Studio admin theme (shadcn/ui tokens). Invitations never read these names: they render inside
- * `.inv-root`, which paints only from --inv-* variables, so the admin palette cannot leak into them.
+ * Studio admin theme (shadcn/ui tokens), on the PayD system: graphite surfaces in three steps
+ * (grey page < white card, a sidebar lighter than the page), Hanken Grotesk at 14px, 32px controls
+ * with a 10px corner. Brand slots (--primary, --ring, --sidebar-primary) carry Toran's wine, exactly
+ * where PayD's brand theme puts a company colour. Invitations never read these names: they render
+ * inside `.inv-root`, which paints only from --inv-* variables, so the admin palette cannot leak in.
  */
 :root {
-    --radius: 0.625rem;
-    --background: #fbf8f3;
-    --foreground: #1d1416;
-    --card: #fffdf9;
-    --card-foreground: #1d1416;
-    --popover: #fffdf9;
-    --popover-foreground: #1d1416;
+    --radius: 10px;
+    --control-radius: 10px;
+
+    --background: #efefec;
+    --foreground: #18181b;
+    --card: #ffffff;
+    --card-foreground: #18181b;
+    --popover: #ffffff;
+    --popover-foreground: #18181b;
+    /* Brand fill; also reads as text on white. */
     --primary: #6e1a2e;
-    --primary-foreground: #fbf7f0;
-    --secondary: #f3ede3;
-    --secondary-foreground: #2a1e1f;
-    --muted: #f3ede3;
-    --muted-foreground: #6f625f;
-    --accent: #f1e9dc;
-    --accent-foreground: #1d1416;
-    --destructive: #b42335;
-    --success: #2f7a4f;
-    --warning: #9c7633;
-    --info: #3a5f8a;
-    --border: #ebe2d4;
-    --input: #e3d8c6;
-    --ring: #c39a4e;
-    --chart-1: #93304a;
-    --chart-2: #a9802f;
-    --chart-3: #7d8c6e;
-    --chart-4: #b5566c;
-    --chart-5: #d8c3a0;
-    --sidebar: #f5efe5;
-    --sidebar-foreground: #3b2f2e;
+    --primary-foreground: #fafafa;
+    --secondary: #f1f1ee;
+    --secondary-foreground: #18181b;
+    --muted: #f4f4f1;
+    --muted-foreground: #71717a;
+    /* shadcn's hover surface (menus, ghost buttons) — neutral, never the brand. */
+    --accent: #ecece8;
+    --accent-foreground: #18181b;
+    --destructive: #b91c1c;
+    --success: #15803d;
+    --warning: #a16207;
+    --info: #1d5fae;
+    --border: #e2e2dd;
+    --input: #d9d9d3;
+    --ring: #6e1a2e;
+
+    /* Eight series hues in this order (dataviz-validated on --card); a 9th folds into Other. */
+    --chart-1: #2a78d6;
+    --chart-2: #eb6834;
+    --chart-3: #1baf7a;
+    --chart-4: #eda100;
+    --chart-5: #e87ba4;
+    --chart-6: #008300;
+    --chart-7: #6250d6;
+    --chart-8: #e34948;
+
+    --sidebar: #fafaf9;
+    --sidebar-foreground: #18181b;
     --sidebar-primary: #6e1a2e;
-    --sidebar-primary-foreground: #fbf7f0;
-    --sidebar-accent: #ebe1d1;
-    --sidebar-accent-foreground: #1d1416;
-    --sidebar-border: #e6dccb;
-    --sidebar-ring: #c39a4e;
+    --sidebar-primary-foreground: #fafafa;
+    --sidebar-accent: #ecece8;
+    --sidebar-accent-foreground: #18181b;
+    --sidebar-border: #e2e2dd;
+    --sidebar-ring: #6e1a2e;
+    /* The brand and account cards rest on --sidebar-accent; hover is one step further. */
+    --sidebar-card-hover: #dcdcd6;
 }
 
+/* Dark — charcoal, never tinted; the brand lifts to a rose that reads on it. */
 .dark {
-    --background: #141011;
-    --foreground: #f3ebdd;
-    --card: #1b1517;
-    --card-foreground: #f3ebdd;
-    --popover: #1d1719;
-    --popover-foreground: #f3ebdd;
-    --primary: #d98ea0;
-    --primary-foreground: #1d1416;
-    --secondary: #2a2123;
-    --secondary-foreground: #f3ebdd;
-    --muted: #251d1f;
-    --muted-foreground: #b3a59f;
-    --accent: #2c2325;
-    --accent-foreground: #f3ebdd;
-    --destructive: #e26d7d;
-    --success: #6cc08f;
-    --warning: #e8c477;
-    --info: #8db3df;
-    --border: rgb(243 235 221 / 0.1);
-    --input: rgb(243 235 221 / 0.15);
-    --ring: #e8c477;
-    --chart-1: #cf5f79;
-    --chart-2: #b38a35;
-    --chart-3: #a7b896;
-    --chart-4: #b5566c;
-    --chart-5: #8a7a62;
-    --sidebar: #181314;
-    --sidebar-foreground: #e6dccb;
-    --sidebar-primary: #e8c477;
-    --sidebar-primary-foreground: #1d1416;
-    --sidebar-accent: #2a2123;
-    --sidebar-accent-foreground: #f3ebdd;
-    --sidebar-border: rgb(243 235 221 / 0.08);
-    --sidebar-ring: #e8c477;
+    --background: #09090b;
+    --foreground: #fafafa;
+    --card: #161618;
+    --card-foreground: #fafafa;
+    --popover: #161618;
+    --popover-foreground: #fafafa;
+    --primary: #e7a3b4;
+    --primary-foreground: #18181b;
+    --secondary: #232326;
+    --secondary-foreground: #fafafa;
+    --muted: #1c1c1f;
+    --muted-foreground: #a1a1aa;
+    --accent: #232326;
+    --accent-foreground: #fafafa;
+    --destructive: #f87171;
+    --success: #4ade80;
+    --warning: #e5b65a;
+    --info: #7cb1f0;
+    --border: #27272a;
+    --input: #2e2e33;
+    --ring: #e7a3b4;
+
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+    --chart-5: #d55181;
+    --chart-6: #008300;
+    --chart-7: #9085e9;
+    --chart-8: #e66767;
+
+    --sidebar: #111113;
+    --sidebar-foreground: #fafafa;
+    --sidebar-primary: #e7a3b4;
+    --sidebar-primary-foreground: #18181b;
+    --sidebar-accent: #232326;
+    --sidebar-accent-foreground: #fafafa;
+    --sidebar-border: #27272a;
+    --sidebar-ring: #e7a3b4;
+    --sidebar-card-hover: #303035;
 }
 
-/* Radius tokens are left at Tailwind defaults on purpose: invitations use rounded-* too. */
+/* Tailwind's rounded-* scale stays at its defaults on purpose: invitations use it too. */
 @theme inline {
     --color-background: var(--background);
     --color-foreground: var(--foreground);
@@ -491,6 +513,13 @@ path.ornament-draw[fill]:not([fill='none']) {
     --color-chart-3: var(--chart-3);
     --color-chart-4: var(--chart-4);
     --color-chart-5: var(--chart-5);
+    --color-chart-6: var(--chart-6);
+    --color-chart-7: var(--chart-7);
+    --color-chart-8: var(--chart-8);
+    /* rounded-control: every admin input and button (PayD's one 10px corner). New name, so
+       invitations' rounded-* scale is untouched. */
+    --radius-control: var(--control-radius);
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar-primary: var(--sidebar-primary);
@@ -499,6 +528,7 @@ path.ornament-draw[fill]:not([fill='none']) {
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-card-hover: var(--sidebar-card-hover);
 }
 
 /* shadcn's global border/outline defaults, applied only while the admin is mounted and never inside an invitation. */
@@ -508,10 +538,216 @@ path.ornament-draw[fill]:not([fill='none']) {
         outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
     }
 
+    /* The admin speaks Hanken Grotesk everywhere; invitations keep their own --inv-* type. */
+    html.admin-ui {
+        --font-sans:
+            'Hanken Grotesk Variable', 'Noto Serif Devanagari Variable',
+            'Noto Serif Gujarati Variable', system-ui, sans-serif;
+        --font-display: var(--font-sans);
+    }
+
+    /* No rubber-band bounce or pull-to-refresh in the studio (PayD); both, as engines differ. */
+    html.admin-ui,
+    html.admin-ui body {
+        overscroll-behavior: none;
+    }
+
     html.admin-ui body {
         background: var(--background);
         color: var(--foreground);
+        font-family: var(--font-sans);
+        font-size: 14px;
         font-variant-numeric: lining-nums tabular-nums;
+    }
+
+    /* PayD: icons wear the brand by default. Base layer, so any explicit text-* on an icon still wins;
+       on a filled or toned surface the icon keeps that surface's own colour. */
+    html.admin-ui svg.lucide:not(:where(.inv-root, .inv-root *)) {
+        color: var(--primary);
+    }
+    html.admin-ui
+        :is(
+            .bg-primary,
+            .text-destructive,
+            .text-primary-foreground,
+            .text-muted-foreground,
+            [data-slot='checkbox'],
+            [data-slot='badge'],
+            [data-variant='destructive']
+        )
+        svg.lucide {
+        color: inherit;
+    }
+
+    /* Tailwind v4 dropped the pointer on buttons; anything clickable gets it back. */
+    html.admin-ui
+        :where(
+            button,
+            a[href],
+            summary,
+            select,
+            label[for],
+            [role='button'],
+            [role='tab'],
+            [role='checkbox'],
+            [role='switch'],
+            [role='radio'],
+            [role='option'],
+            [role='menuitem'],
+            [role='menuitemcheckbox'],
+            [role='menuitemradio'],
+            input:is(
+                [type='checkbox'],
+                [type='radio'],
+                [type='file'],
+                [type='color'],
+                [type='range']
+            )
+        ):where(:not(:disabled, [aria-disabled='true'], [data-disabled])) {
+        cursor: pointer;
+    }
+
+    /* Scrollbars hidden in the studio; wheel, trackpad, touch and keyboard still scroll. */
+    html.admin-ui *:not(:where(.inv-root, .inv-root *)) {
+        scrollbar-width: none;
+    }
+    html.admin-ui *:not(:where(.inv-root, .inv-root *))::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Tabular figures wherever money is shown, so columns line up. */
+    .tnum {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+/*
+ * Table hover — PayD's "crosshair + cell": the hovered row and column take a light brand wash, the
+ * column's header turns brand, and the exact cell keeps its background under a brand outline.
+ * Pure CSS (:has), unlayered so it outranks utilities, and (hover: hover) only so a tap never sticks.
+ */
+@media (hover: hover) {
+    html.admin-ui [data-slot='table'] {
+        --crosshair: color-mix(in oklab, var(--primary) 8%, transparent);
+    }
+    html.admin-ui [data-slot='table'] tbody tr:hover > td {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(1):hover) tbody td:nth-child(1) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(1):hover) thead th:nth-child(1) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(2):hover) tbody td:nth-child(2) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(2):hover) thead th:nth-child(2) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(3):hover) tbody td:nth-child(3) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(3):hover) thead th:nth-child(3) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(4):hover) tbody td:nth-child(4) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(4):hover) thead th:nth-child(4) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(5):hover) tbody td:nth-child(5) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(5):hover) thead th:nth-child(5) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(6):hover) tbody td:nth-child(6) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(6):hover) thead th:nth-child(6) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(7):hover) tbody td:nth-child(7) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(7):hover) thead th:nth-child(7) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(8):hover) tbody td:nth-child(8) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(8):hover) thead th:nth-child(8) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(9):hover) tbody td:nth-child(9) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(9):hover) thead th:nth-child(9) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(10):hover) tbody td:nth-child(10) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(10):hover) thead th:nth-child(10) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(11):hover) tbody td:nth-child(11) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(11):hover) thead th:nth-child(11) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(12):hover) tbody td:nth-child(12) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(12):hover) thead th:nth-child(12) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(13):hover) tbody td:nth-child(13) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(13):hover) thead th:nth-child(13) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(14):hover) tbody td:nth-child(14) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(14):hover) thead th:nth-child(14) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(15):hover) tbody td:nth-child(15) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(15):hover) thead th:nth-child(15) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(16):hover) tbody td:nth-child(16) {
+        background-color: var(--crosshair);
+    }
+    html.admin-ui [data-slot='table']:has(tbody td:nth-child(16):hover) thead th:nth-child(16) {
+        color: var(--primary);
+        background-image: linear-gradient(var(--crosshair), var(--crosshair));
+    }
+    html.admin-ui [data-slot='table']:has(tbody tr:hover > td:hover) tbody tr:hover > td:hover {
+        background-color: revert-layer;
+        box-shadow: inset 0 0 0 1.5px var(--primary);
     }
 }
 
@@ -585,4 +821,300 @@ path.ornament-draw[fill]:not([fill='none']) {
         transform: translateY(110svh) translateX(40px) rotate(320deg);
         opacity: 0;
     }
+}
+
+/* Visual editor: sections are hoverable/selectable, text is typeable in place. */
+.inv-editing [data-block] {
+    cursor: pointer;
+}
+.inv-editing [data-block]:hover {
+    outline: 1px dashed rgb(99 102 241 / 0.75);
+    outline-offset: -1px;
+}
+.inv-editing [data-block][data-selected] {
+    outline: 2px solid #6366f1;
+    outline-offset: -2px;
+}
+.inv-editing [data-editable] {
+    cursor: text;
+    border-radius: 4px;
+    caret-color: var(--inv-gold);
+    transition: box-shadow 0.15s;
+}
+.inv-editing [data-editable]:hover {
+    box-shadow: 0 0 0 1px rgb(99 102 241 / 0.6);
+}
+.inv-editing [data-editable]:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #6366f1;
+}
+
+/* Login crown. A slide is strung, not dropped: the cord draws out from the centre, beads pop on
+   one by one, hanging pieces swing in and settle. Only flames, glints and drops keep moving. */
+@keyframes cord-draw {
+    from {
+        stroke-dashoffset: 1;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes bead-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0);
+    }
+    65% {
+        opacity: 1;
+        transform: scale(1.25);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes bead-fade {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes drop-settle {
+    0% {
+        opacity: 0;
+        transform: rotate(18deg) scaleY(0.6);
+    }
+    30% {
+        opacity: 1;
+        transform: rotate(-9deg) scaleY(1);
+    }
+    55% {
+        transform: rotate(5deg);
+    }
+    78% {
+        transform: rotate(-2deg);
+    }
+    100% {
+        opacity: 1;
+        transform: rotate(0);
+    }
+}
+
+@keyframes drop-breathe {
+    0%,
+    100% {
+        transform: rotate(-1.6deg);
+    }
+    50% {
+        transform: rotate(1.6deg);
+    }
+}
+
+@keyframes flame-flicker {
+    0%,
+    100% {
+        transform: scale(1, 1);
+        opacity: 1;
+    }
+    25% {
+        transform: scale(0.92, 1.12);
+        opacity: 0.9;
+    }
+    55% {
+        transform: scale(1.05, 0.94);
+        opacity: 1;
+    }
+    80% {
+        transform: scale(0.96, 1.06);
+        opacity: 0.85;
+    }
+}
+
+@keyframes glint {
+    0%,
+    100% {
+        opacity: 0;
+        transform: scale(0.2) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1) rotate(45deg);
+    }
+}
+
+@keyframes crown-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes blessing-in {
+    from {
+        opacity: 0;
+        filter: blur(6px);
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        filter: blur(0);
+        transform: translateY(0);
+    }
+}
+
+/* One gold sweep across a festive greeting as it arrives. */
+@keyframes gold-sweep {
+    from {
+        background-position: 120% 50%;
+    }
+    to {
+        background-position: -20% 50%;
+    }
+}
+
+/* Login scenes: one motif per occasion in the open space of the panel. */
+@keyframes scene-in {
+    from {
+        opacity: 0;
+        filter: blur(8px);
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        filter: blur(0);
+        transform: scale(1);
+    }
+}
+
+@keyframes glow-pulse {
+    0%,
+    100% {
+        filter: drop-shadow(0 0 6px rgb(232 196 119 / 0.35));
+    }
+    50% {
+        filter: drop-shadow(0 0 22px rgb(232 196 119 / 0.75));
+    }
+}
+
+/* Balloons, hearts, bubbles: rise the full height with a lazy side-to-side drift. */
+@keyframes float-up {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 0, 0) rotate(-3deg);
+    }
+    8% {
+        opacity: 1;
+    }
+    50% {
+        transform: translate3d(18px, -60svh, 0) rotate(3deg);
+    }
+    92% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translate3d(-10px, -125svh, 0) rotate(-2deg);
+    }
+}
+
+@keyframes spin-slow {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes smoke-rise {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scaleX(1);
+    }
+    30% {
+        opacity: 0.55;
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-46px) scaleX(1.6);
+    }
+}
+
+@keyframes sun-rise {
+    from {
+        transform: translateY(40px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Corporate: two hands meet from either side, clasp, and shake every few seconds. */
+@keyframes hand-left {
+    from {
+        opacity: 0;
+        transform: translateX(-70px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes hand-right {
+    from {
+        opacity: 0;
+        transform: translateX(70px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes shake {
+    0%,
+    36%,
+    100% {
+        transform: translateY(0) rotate(0);
+    }
+    6% {
+        transform: translateY(-7px) rotate(-2deg);
+    }
+    14% {
+        transform: translateY(6px) rotate(1.5deg);
+    }
+    22% {
+        transform: translateY(-5px) rotate(-1deg);
+    }
+    30% {
+        transform: translateY(3px) rotate(0.5deg);
+    }
+}
+
+/* In the editor an empty section stays visible as a dashed placeholder saying what it needs. */
+.inv-editing .inv-root [data-block]:has(> [data-block-body]:empty) {
+    display: block;
+    min-height: 7.5rem;
+}
+.inv-editing .inv-root [data-block]:has(> [data-block-body]:empty)::after {
+    content: attr(data-empty-hint);
+    position: absolute;
+    inset: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    border: 1.5px dashed rgb(99 102 241 / 0.65);
+    border-radius: 0.75rem;
+    background: rgb(99 102 241 / 0.06);
+    color: var(--inv-ink);
+    font:
+        500 0.8125rem/1.4 system-ui,
+        sans-serif;
+    text-align: center;
+    letter-spacing: 0;
 }

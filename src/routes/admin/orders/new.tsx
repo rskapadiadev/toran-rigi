@@ -8,9 +8,10 @@ import { CalendarHeart, Gift, Package, UserRound } from 'lucide-react';
 import { type SyntheticEvent, useState } from 'react';
 import { toast } from 'sonner';
 
+import { PagePanel } from '@/admin/kit/card';
 import { FormField } from '@/admin/kit/form';
 import { OccasionSelect } from '@/admin/kit/occasion';
-import { PageHeader, Panel } from '@/admin/kit/page';
+import { Panel } from '@/admin/kit/page';
 import { cultureLabel } from '@/admin/labels';
 import type { Catalog } from '@/admin/types';
 import { Button } from '@/components/ui/button';
@@ -96,13 +97,12 @@ function NewOrder() {
     };
 
     return (
-        <>
-            <PageHeader
-                title="New order"
-                description="Creates the customer (if new), the order and its invoice in one step."
-            />
-            <form onSubmit={submit} className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-                <div className="min-w-0 space-y-6">
+        <PagePanel
+            title="New order"
+            subtitle="Creates the customer (if new), the order and its invoice in one step."
+        >
+            <form onSubmit={submit} className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+                <div className="min-w-0 space-y-4">
                     <Panel
                         title="Customer"
                         icon={UserRound}
@@ -282,7 +282,7 @@ function NewOrder() {
                         </div>
                     </Panel>
                 </div>
-                <div className="lg:sticky lg:top-20 lg:self-start">
+                <div className="lg:sticky lg:top-0 lg:self-start">
                     <Card className="gap-4">
                         <CardHeader>
                             <CardTitle className="text-sm font-semibold">Summary</CardTitle>
@@ -346,6 +346,6 @@ function NewOrder() {
                     </Card>
                 </div>
             </form>
-        </>
+        </PagePanel>
     );
 }

@@ -220,7 +220,7 @@ export const openingChoices: OpeningInfo[] = [
     {
         id: 'envelope',
         label: 'Wax-seal envelope',
-        hint: 'The seal cracks, flaps fold and the card rises',
+        hint: 'The seal glows and lifts; the flap swings open into light',
         gesture: 'Tap the seal',
         gentle: true,
     },
@@ -471,6 +471,29 @@ export interface ResolvedBlock {
 export const calmEntrances: readonly EnterPreset[] = ['rise', 'ink', 'none'];
 export const settleEnter = (preset: EnterPreset, calm: boolean): EnterPreset =>
     calm && !calmEntrances.includes(preset) ? 'ink' : preset;
+
+// Sections with their own design. Others in the schema (names, venue, dressCode, photoWall) are
+// shown inside these: names on the cover, venue and dress code on each ceremony card.
+export const renderedSections = [
+    'cover',
+    'card',
+    'countdown',
+    'welcome',
+    'story',
+    'family',
+    'events',
+    'gallery',
+    'travel',
+    'live',
+    'rsvp',
+    'wishes',
+    'shagun',
+    'closing',
+] as const satisfies readonly SectionType[];
+export type RenderedSection = (typeof renderedSections)[number];
+
+export const isRendered = (type: SectionType): type is RenderedSection =>
+    (renderedSections as readonly SectionType[]).includes(type);
 
 // Identity of a block's look; the renderer remounts on change so the entrance replays.
 export const blockKey = (b: ResolvedBlock) =>

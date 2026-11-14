@@ -15,7 +15,10 @@ export default defineConfig({
     resolve: {
         tsconfigPaths: true,
         dedupe: ['react', 'react-dom'],
-        alias: { '@platform-entry': here(`./server/entries/${platform}.ts`) },
+        alias: {
+            '@platform-entry': here(`./server/entries/${platform}.ts`),
+            '@og-assets': here(`./server/og/assets.${platform}.ts`),
+        },
     },
     plugins: [
         ...(platform === 'cloudflare' ? [cloudflare({ viteEnvironment: { name: 'ssr' } })] : []),

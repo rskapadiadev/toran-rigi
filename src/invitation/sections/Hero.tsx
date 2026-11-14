@@ -4,6 +4,7 @@ import { formatEventDate, zonedToUtc } from '@shared/time';
 import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
+import { Editable } from '../editing';
 import {
     ArchCover,
     EditorialCover,
@@ -70,13 +71,17 @@ function SpotlightCover() {
                     className="inv-display leading-[0.9] font-light break-normal hyphens-none"
                     style={{ fontSize: fitDisplay([names.one, names.two], 13, 110, 8.5) }}
                 >
-                    <span className="foil-text block">{names.one}</span>
+                    <span className="foil-text block">
+                        <Editable path="people.one.name">{names.one}</Editable>
+                    </span>
                     {names.two && (
                         <>
                             <span className="inv-script my-3 block text-[0.7em] text-(--inv-primary)">
                                 {copy('and')}
                             </span>
-                            <span className="foil-text block">{names.two}</span>
+                            <span className="foil-text block">
+                                <Editable path="people.two.name">{names.two}</Editable>
+                            </span>
                         </>
                     )}
                 </h2>
@@ -95,7 +100,9 @@ function SpotlightCover() {
                 className="relative mt-10 max-w-xl text-lg leading-relaxed @2xl:text-xl"
                 delay={350}
             >
-                {t(content.headline)}
+                <Editable path="headline" multiline>
+                    {t(content.headline)}
+                </Editable>
             </Reveal>
             {firstDate && first && (
                 <Reveal className="relative mt-10 flex flex-col items-center gap-2" delay={450}>

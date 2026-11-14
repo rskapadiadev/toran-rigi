@@ -350,9 +350,7 @@ function useSample(slug: string) {
     });
 }
 
-function ItemCard({ item, on, onPick }: { item: Item;
-on: boolean;
-onPick: () => void }) {
+function ItemCard({ item, on, onPick }: { item: Item; on: boolean; onPick: () => void }) {
     return (
         <button
             type="button"

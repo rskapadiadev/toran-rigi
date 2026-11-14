@@ -62,9 +62,9 @@ function Pole({ x, top, width, back = false }: PoleProps) {
             data-pole
             opacity={back ? 0.55 : 1}
             style={{
- transformBox: 'fill-box',
-transformOrigin: '50% 100%' 
-}}
+                transformBox: 'fill-box',
+                transformOrigin: '50% 100%',
+            }}
         >
             <rect
                 x={x - width / 2}
@@ -286,9 +286,9 @@ export function ChuppahOpening({ onBegin, onOpened }: OpeningProps) {
                                             : ''
                                     }
                                     style={{
- transformBox: 'fill-box',
-transformOrigin: '50% 0%' 
-}}
+                                        transformBox: 'fill-box',
+                                        transformOrigin: '50% 0%',
+                                    }}
                                 >
                                     <path d={DRAPE.path} fill={`url(#${roofId})`} />
                                     <path

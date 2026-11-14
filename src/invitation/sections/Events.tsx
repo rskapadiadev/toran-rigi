@@ -9,6 +9,7 @@ import { useGuestTimeZone, useNow } from '../../motion/hooks';
 import { Reveal } from '../../motion/Reveal';
 import { useScrollProgress } from '../../motion/useScrollProgress';
 import { useInvite } from '../context';
+import { Editable, eventPath } from '../editing';
 import type { PublicInvitationEvent } from '../types';
 
 const DEFAULT_DURATION = 3 * 3600_000;
@@ -144,7 +145,11 @@ function EventCard({ event, index }: EventCardProps) {
     const facts = useEventFacts(event);
 
     return (
-        <div ref={ref} className="diorama relative mx-auto w-full max-w-sm">
+        <div
+            ref={ref}
+            data-event-index={index}
+            className="diorama relative mx-auto w-full max-w-sm"
+        >
             <div className="relative">
                 <div
                     data-plane
@@ -182,13 +187,19 @@ function EventCard({ event, index }: EventCardProps) {
                     {facts.live && <LiveBadge />}
                     {/* Sized to the card, and never split mid-word: long names shrink instead. */}
                     <h3 className="inv-display text-[clamp(1.5rem,8cqw,2.25rem)] leading-tight text-balance break-normal hyphens-none text-(--inv-primary)">
-                        {facts.title}
+                        <Editable path={eventPath(index, 'title')}>{facts.title}</Editable>
                     </h3>
                     <p className="mt-3 text-sm font-medium">{facts.date}</p>
                     <p className="text-sm opacity-80">{facts.time}</p>
                     {facts.guestTime && <p className="text-xs opacity-60">{facts.guestTime}</p>}
-                    <p className="mt-3 text-base font-semibold">{event.venue}</p>
-                    {event.address && <p className="text-xs opacity-70">{event.address}</p>}
+                    <p className="mt-3 text-base font-semibold">
+                        <Editable path={eventPath(index, 'venue')}>{event.venue}</Editable>
+                    </p>
+                    {event.address && (
+                        <p className="text-xs opacity-70">
+                            <Editable path={eventPath(index, 'address')}>{event.address}</Editable>
+                        </p>
+                    )}
                     <DressCode event={event} />
                     <EventActions event={event} />
                 </div>
@@ -229,7 +240,10 @@ function TimelineItem({ event, index }: EventCardProps) {
     const facts = useEventFacts(event);
     const flip = index % 2 === 1;
     return (
-        <li className="relative grid grid-cols-[3rem_1fr] @2xl:grid-cols-2 @2xl:gap-14">
+        <li
+            data-event-index={index}
+            className="relative grid grid-cols-[3rem_1fr] @2xl:grid-cols-2 @2xl:gap-14"
+        >
             <span className="absolute start-6 top-2 size-4 -translate-x-1/2 rotate-45 border-2 border-(--inv-gold) bg-(--inv-bg) @2xl:start-1/2 rtl:translate-x-1/2" />
             <Reveal
                 className={`col-start-2 ${flip ? '@2xl:col-start-2 @2xl:text-start' : '@2xl:col-start-1 @2xl:row-start-1 @2xl:text-end'}`}
@@ -238,13 +252,19 @@ function TimelineItem({ event, index }: EventCardProps) {
                     {facts.date}
                 </p>
                 <h3 className="inv-display mt-2 text-3xl leading-tight text-(--inv-primary)">
-                    {facts.title}
+                    <Editable path={eventPath(index, 'title')}>{facts.title}</Editable>
                 </h3>
                 {facts.live && <LiveBadge />}
                 <p className="mt-2 text-sm opacity-80">{facts.time}</p>
                 {facts.guestTime && <p className="text-xs opacity-60">{facts.guestTime}</p>}
-                <p className="mt-2 font-semibold">{event.venue}</p>
-                {event.address && <p className="text-xs opacity-70">{event.address}</p>}
+                <p className="mt-2 font-semibold">
+                    <Editable path={eventPath(index, 'venue')}>{event.venue}</Editable>
+                </p>
+                {event.address && (
+                    <p className="text-xs opacity-70">
+                        <Editable path={eventPath(index, 'address')}>{event.address}</Editable>
+                    </p>
+                )}
                 <div className={flip ? '@2xl:[&>div]:justify-start' : '@2xl:[&>div]:justify-end'}>
                     <EventActions event={event} />
                 </div>
@@ -274,36 +294,46 @@ function Ticket({ event, index }: EventCardProps) {
     );
     return (
         <Reveal delay={index * 120} className="w-[78cqw] max-w-sm shrink-0 snap-center">
-            <article className="relative overflow-hidden rounded-2xl bg-(--inv-surface) text-center shadow-[0_24px_50px_-24px_rgba(0,0,0,0.5)] ring-1 ring-(--inv-gold)/50">
-                <div className="px-6 pt-7 pb-6">
-                    <p className="text-[10px] tracking-[0.45em] text-(--inv-gold) uppercase">
-                        {copy('admitOne')}
-                    </p>
-                    {facts.live && <LiveBadge />}
-                    <h3 className="inv-display mt-3 text-[2.2rem] leading-none text-(--inv-primary)">
-                        {facts.title}
-                    </h3>
-                    <p className="mt-4 text-sm font-medium">{facts.date}</p>
-                    <p className="text-sm opacity-80">{facts.time}</p>
-                    <p className="mt-3 font-semibold">{event.venue}</p>
-                    {event.address && <p className="text-xs opacity-70">{event.address}</p>}
-                    <DressCode event={event} />
-                </div>
-                <div className="relative border-t-2 border-dashed border-(--inv-gold)/60 px-6 pt-4 pb-5">
-                    <span className="absolute -start-3 -top-3 size-6 rounded-full bg-(--inv-bg)" />
-                    <span className="absolute -end-3 -top-3 size-6 rounded-full bg-(--inv-bg)" />
-                    <div
-                        className="flex h-8 items-stretch justify-center gap-[2px] opacity-70"
-                        aria-hidden
-                        dir="ltr"
-                    >
-                        {bars.map((w, k) => (
-                            <span key={k} className="bg-current" style={{ width: `${w}px` }} />
-                        ))}
+            <div data-event-index={index}>
+                <article className="relative overflow-hidden rounded-2xl bg-(--inv-surface) text-center shadow-[0_24px_50px_-24px_rgba(0,0,0,0.5)] ring-1 ring-(--inv-gold)/50">
+                    <div className="px-6 pt-7 pb-6">
+                        <p className="text-[10px] tracking-[0.45em] text-(--inv-gold) uppercase">
+                            {copy('admitOne')}
+                        </p>
+                        {facts.live && <LiveBadge />}
+                        <h3 className="inv-display mt-3 text-[2.2rem] leading-none text-(--inv-primary)">
+                            <Editable path={eventPath(index, 'title')}>{facts.title}</Editable>
+                        </h3>
+                        <p className="mt-4 text-sm font-medium">{facts.date}</p>
+                        <p className="text-sm opacity-80">{facts.time}</p>
+                        <p className="mt-3 font-semibold">
+                            <Editable path={eventPath(index, 'venue')}>{event.venue}</Editable>
+                        </p>
+                        {event.address && (
+                            <p className="text-xs opacity-70">
+                                <Editable path={eventPath(index, 'address')}>
+                                    {event.address}
+                                </Editable>
+                            </p>
+                        )}
+                        <DressCode event={event} />
                     </div>
-                    <EventActions event={event} />
-                </div>
-            </article>
+                    <div className="relative border-t-2 border-dashed border-(--inv-gold)/60 px-6 pt-4 pb-5">
+                        <span className="absolute -start-3 -top-3 size-6 rounded-full bg-(--inv-bg)" />
+                        <span className="absolute -end-3 -top-3 size-6 rounded-full bg-(--inv-bg)" />
+                        <div
+                            className="flex h-8 items-stretch justify-center gap-[2px] opacity-70"
+                            aria-hidden
+                            dir="ltr"
+                        >
+                            {bars.map((w, k) => (
+                                <span key={k} className="bg-current" style={{ width: `${w}px` }} />
+                            ))}
+                        </div>
+                        <EventActions event={event} />
+                    </div>
+                </article>
+            </div>
         </Reveal>
     );
 }

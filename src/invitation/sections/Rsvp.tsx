@@ -1,6 +1,6 @@
 import { eventLabel } from '@shared/cultures';
 import type { RsvpInput } from '@shared/schemas/guest';
-import { type SyntheticEvent, useState } from 'react';
+import { type ComponentProps, type SyntheticEvent, useState } from 'react';
 
 import { formString } from '../../motion/hooks';
 import { Reveal } from '../../motion/Reveal';
@@ -17,6 +17,35 @@ interface RsvpResponse {
 
 const field =
     'w-full rounded-xl border border-(--inv-gold)/40 bg-(--inv-bg)/60 px-4 py-3 text-base outline-none transition focus:border-(--inv-gold) focus:ring-2 focus:ring-(--inv-gold)/30';
+
+// Native selects ignore padding for their OS chevron and open a light-themed list on dark invitations;
+// this one draws its own gold chevron and paints the options in the invitation's palette.
+function Select({ className = '', children, ...props }: ComponentProps<'select'>) {
+    return (
+        <span className="relative block">
+            <select
+                {...props}
+                className={`${field} cursor-pointer appearance-none pe-11 [&>option]:bg-(--inv-surface) [&>option]:text-(--inv-ink) ${className}`}
+            >
+                {children}
+            </select>
+            <svg
+                viewBox="0 0 20 20"
+                aria-hidden
+                className="pointer-events-none absolute end-4 top-1/2 size-4 -translate-y-1/2 text-(--inv-gold)"
+            >
+                <path
+                    d="M5 7.5 10 12.5 15 7.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+            </svg>
+        </span>
+    );
+}
 
 export function Rsvp() {
     const { data, t, locale, culture, guest, copy, occasion } = useInvite();
@@ -125,13 +154,13 @@ export function Rsvp() {
                             <>
                                 <label className="block space-y-1.5 text-sm">
                                     <span className="opacity-80">{copy('guests')}</span>
-                                    <select name="guestCount" defaultValue="2" className={field}>
+                                    <Select name="guestCount" defaultValue="2">
                                         {Array.from({ length: 10 }, (_, i) => (
                                             <option key={i + 1} value={i + 1}>
                                                 {i + 1}
                                             </option>
                                         ))}
-                                    </select>
+                                    </Select>
                                 </label>
                                 {events.length > 1 && (
                                     <fieldset className="space-y-2 text-sm">
@@ -171,7 +200,7 @@ export function Rsvp() {
                                 )}
                                 <label className="block space-y-1.5 text-sm">
                                     <span className="opacity-80">{copy('dietary')}</span>
-                                    <select name="dietary" className={field} defaultValue="">
+                                    <Select name="dietary" defaultValue="">
                                         <option value="">—</option>
                                         {culture.dietary.map((d) => (
                                             <option key={d} value={d}>
@@ -180,7 +209,7 @@ export function Rsvp() {
                                                     d}
                                             </option>
                                         ))}
-                                    </select>
+                                    </Select>
                                 </label>
                             </>
                         )}

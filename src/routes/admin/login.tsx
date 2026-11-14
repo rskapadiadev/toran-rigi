@@ -6,7 +6,7 @@ import { type SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import { FormField } from '@/admin/kit/form';
-import { BrandMark } from '@/admin/shell/app-sidebar';
+import { LoginCrown } from '@/admin/shell/login-crown';
 import { ToranSeal } from '@/components/brand/toran-seal';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -23,14 +23,18 @@ import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { ApiError, post } from '@/lib/api';
 import { formString } from '@/motion/hooks';
+import { fetchRegion } from '@/server-fns/region';
 
 export const Route = createFileRoute('/admin/login')({
     validateSearch: z.object({ next: z.string().optional() }),
+    // Which traditions the crown leads with: the visitor's country, read from the request.
+    loader: () => fetchRegion(),
     component: Login,
 });
 
 function Login() {
     const { next } = Route.useSearch();
+    const { country } = Route.useLoaderData();
     const navigate = useNavigate();
     const client = useQueryClient();
     const [step, setStep] = useState<'email' | 'code'>('email');
@@ -42,6 +46,34 @@ function Login() {
     useEffect(() => {
         if (step === 'code')
             formRef.current?.querySelector<HTMLInputElement>('input[name="code"]')?.focus();
+    }, [step]);
+
+    // Enter signs in wherever focus is (e.g. still on the Dev mail link after copying the code),
+    // and coming back to the tab puts the cursor back in the field.
+    useEffect(() => {
+        const field = () =>
+            formRef.current?.querySelector<HTMLInputElement>(
+                step === 'code' ? 'input[name="code"]' : 'input[name="email"]',
+            );
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== 'Enter' || e.isComposing) return;
+            const form = formRef.current;
+            if (!form || (e.target instanceof Node && form.contains(e.target))) return;
+            e.preventDefault();
+            // Respect the button's rules (busy, or fewer than six digits).
+            if (form.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled) return;
+            form.requestSubmit();
+        };
+        const onFocus = () => {
+            const el = field();
+            if (el && document.activeElement !== el) el.focus();
+        };
+        document.addEventListener('keydown', onKey);
+        window.addEventListener('focus', onFocus);
+        return () => {
+            document.removeEventListener('keydown', onKey);
+            window.removeEventListener('focus', onFocus);
+        };
     }, [step]);
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
@@ -75,16 +107,10 @@ function Login() {
     };
 
     return (
-        <div className="grid min-h-svh bg-background lg:grid-cols-[1.05fr_1fr]">
+        <div className="grid min-h-svh grid-rows-[auto_1fr] bg-background lg:grid-cols-[1.05fr_1fr] lg:grid-rows-1">
             <aside className="grain relative hidden overflow-hidden bg-night p-12 text-ivory lg:flex lg:flex-col">
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(195,154,78,0.28),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(110,26,46,0.7),transparent_55%)]" />
-                <div className="relative flex items-center gap-3">
-                    <BrandMark />
-                    <span className="font-display text-2xl">Toran</span>
-                    <span className="text-[10px] tracking-[0.3em] text-gold-bright/80 uppercase">
-                        Studio
-                    </span>
-                </div>
+                <LoginCrown country={country} />
                 <div className="relative mt-auto max-w-md space-y-5">
                     <ToranSeal className="size-36 text-gold-bright drop-shadow-[0_8px_30px_rgba(195,154,78,0.25)]" />
                     <div className="hairline w-24 text-gold" />
@@ -97,12 +123,24 @@ function Login() {
                     </p>
                 </div>
             </aside>
-            <main className="flex items-center justify-center px-4 py-12">
-                <Card className="w-full max-w-sm border-none bg-transparent shadow-none">
+            {/* Phones: the garland and greeting crown the page in a short dark band. */}
+            <header className="grain relative overflow-hidden bg-night px-6 pb-7 text-ivory lg:hidden">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,rgba(195,154,78,0.28),transparent_55%),radial-gradient(circle_at_90%_100%,rgba(110,26,46,0.7),transparent_60%)]" />
+                <LoginCrown compact country={country} />
+            </header>
+            <main className="relative flex items-center justify-center overflow-hidden px-4 py-12">
+                {/* Watermark seal: 75% on screen, 25% bleeding off the right edge, turning slowly. */}
+                <div
+                    aria-hidden
+                    className="pointer-events-none absolute end-0 top-1/2 size-[min(115vh,860px)] translate-x-1/4 -translate-y-1/2 select-none rtl:-translate-x-1/4"
+                >
+                    <ToranSeal
+                        title=""
+                        className="size-full animate-[spin_90s_linear_infinite] text-primary opacity-[0.06] motion-reduce:animate-none"
+                    />
+                </div>
+                <Card className="relative w-full max-w-sm border-none bg-transparent shadow-none ring-0">
                     <CardHeader className="gap-2 px-0">
-                        <div className="mb-4 lg:hidden">
-                            <ToranSeal className="size-20 text-primary" />
-                        </div>
                         <CardTitle className="text-2xl font-semibold tracking-tight">
                             {step === 'email' ? 'Sign in to Toran Studio' : 'Check your inbox'}
                         </CardTitle>

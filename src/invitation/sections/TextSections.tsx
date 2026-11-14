@@ -3,7 +3,8 @@ import type { LocalizedText } from '@shared/types';
 import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
-import { s, type StringKey } from '../strings';
+import { Editable, useEditing } from '../editing';
+import type { StringKey } from '../strings';
 
 function Divider() {
     const { data } = useInvite();
@@ -20,21 +21,27 @@ function Divider() {
 }
 
 interface ChapterProps {
+    field: 'welcome' | 'story' | 'family';
     title?: StringKey;
     text: LocalizedText | undefined;
     large?: boolean;
     variant: string;
 }
 
-function Chapter({ title, text, large = false, variant }: ChapterProps) {
-    const { t, locale } = useInvite();
-    const body = t(text);
-    if (!body) return null;
+function Chapter({ field, title, text, large = false, variant }: ChapterProps) {
+    const { t, copy, locale } = useInvite();
+    const editing = useEditing();
+    const raw = t(text);
+    // Empty chapters vanish for guests but stay visible (as a placeholder) in the editor.
+    if (!raw && !editing) return null;
+    const body = (
+        <Editable path={field} multiline>
+            {raw}
+        </Editable>
+    );
     const kicker = title && (
         <Reveal>
-            <p className="text-xs tracking-[0.4em] text-(--inv-gold) uppercase">
-                {s(title, locale)}
-            </p>
+            <p className="text-xs tracking-[0.4em] text-(--inv-gold) uppercase">{copy(title)}</p>
         </Reveal>
     );
     const bodyClass = large
@@ -80,7 +87,7 @@ function Chapter({ title, text, large = false, variant }: ChapterProps) {
                         <span className="h-16 w-px bg-(--inv-gold)" />
                         {title && (
                             <p className="text-[10px] tracking-[0.45em] text-(--inv-gold) uppercase [writing-mode:vertical-rl]">
-                                {s(title, locale)}
+                                {copy(title)}
                             </p>
                         )}
                         <span className="w-px flex-1 bg-(--inv-gold) opacity-40" />
@@ -114,17 +121,33 @@ interface VariantProps {
 
 export const Welcome = ({ variant }: VariantProps) => {
     const { data } = useInvite();
-    return <Chapter text={data.invitation.content.welcome} large variant={variant} />;
+    return (
+        <Chapter field="welcome" text={data.invitation.content.welcome} large variant={variant} />
+    );
 };
 
 export const Story = ({ variant }: VariantProps) => {
     const { data } = useInvite();
-    return <Chapter title="ourStory" text={data.invitation.content.story} variant={variant} />;
+    return (
+        <Chapter
+            field="story"
+            title="ourStory"
+            text={data.invitation.content.story}
+            variant={variant}
+        />
+    );
 };
 
 export const Family = ({ variant }: VariantProps) => {
     const { data } = useInvite();
-    return <Chapter title="family" text={data.invitation.content.family} variant={variant} />;
+    return (
+        <Chapter
+            field="family"
+            title="family"
+            text={data.invitation.content.family}
+            variant={variant}
+        />
+    );
 };
 
 export function Closing({ variant }: VariantProps) {
@@ -168,7 +191,9 @@ export function Closing({ variant }: VariantProps) {
                 <Divider />
             )}
             <Reveal className="inv-display mx-auto max-w-2xl text-[clamp(1.6rem,5cqw,3rem)] leading-tight">
-                {t(content.closing)}
+                <Editable path="closing" multiline>
+                    {t(content.closing)}
+                </Editable>
             </Reveal>
             {content.hashtag && (
                 <Reveal className="mt-6 text-sm tracking-[0.3em] text-(--inv-gold)">

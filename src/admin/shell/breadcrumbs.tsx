@@ -72,7 +72,7 @@ export function AdminBreadcrumbs() {
             to: '/admin/invitations',
         });
         if (routeId === '/admin/invitations/$id/')
-            crumbs.push({ label: labels.invitation ?? 'Composer' });
+            crumbs.push({ label: labels.invitation ?? 'Editor' });
         if (routeId === '/admin/invitations/$id/guests') {
             crumbs.push({
                 label: labels.invitation ?? 'Invitation',

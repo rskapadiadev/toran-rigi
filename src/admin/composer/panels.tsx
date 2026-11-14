@@ -50,7 +50,7 @@ import {
     Type,
     Wand2,
 } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import {
     Accordion,
@@ -357,12 +357,12 @@ interface OpeningPickerProps {
 }
 
 // Picking an entry replays it in the phone preview, so the designer sees it at once.
-function OpeningPicker({ value, gentleOnly, onChange }: OpeningPickerProps) {
+export function OpeningPicker({ value, gentleOnly, onChange }: OpeningPickerProps) {
     const selected = openingChoiceFor(value);
     const choices = openingChoices.filter((c) => !gentleOnly || c.gentle);
     return (
         <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 @xl:grid-cols-3">
                 {choices.map((c) => {
                     const Icon = openingIcon[c.id] ?? Sparkles;
                     const on = selected === c.id;
@@ -416,7 +416,7 @@ function ThemeGrid({ title, themes, selected, onPick }: ThemeGridProps) {
     return (
         <div className="mb-4 space-y-2 last:mb-0">
             <p className="text-xs font-medium text-muted-foreground uppercase">{title}</p>
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 @xl:grid-cols-3">
                 {themes.map((theme) => {
                     const on = selected === theme.slug;
                     const p = theme.design.palette;
@@ -574,7 +574,7 @@ export function DesignPanel({ draft, set }: PanelProps) {
                             Contrast is checked automatically, so text always stays readable.
                         </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-2 @md:grid-cols-4">
                         {paletteKeys.map((key) => (
                             <div
                                 key={key}
@@ -608,7 +608,7 @@ export function DesignPanel({ draft, set }: PanelProps) {
             </AccordionItem>
             <AccordionItem value="type">
                 <AccordionTrigger className={sectionTrigger}>Typography & ritual</AccordionTrigger>
-                <AccordionContent className="grid gap-4 sm:grid-cols-2">
+                <AccordionContent className="grid gap-4 @md:grid-cols-2">
                     <SelectField
                         label="Display font"
                         value={draft.design.fonts.display}
@@ -668,7 +668,7 @@ export function DesignPanel({ draft, set }: PanelProps) {
                             </p>
                         )}
                     </div>
-                    <div className="space-y-2 sm:col-span-2">
+                    <div className="space-y-2 @md:col-span-2">
                         <p className="text-[13px] font-medium text-foreground/80">Paper texture</p>
                         <ToggleGroup
                             type="single"
@@ -802,7 +802,7 @@ function PeopleFields({ occasion, people, locale, onChange }: PeopleFieldsProps)
         });
     };
     return (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 @md:grid-cols-2">
             {slots.map((slot) => {
                 const role = slot === 'one' ? occasion.people.one : occasion.people.two;
                 const person = people[slot];
@@ -883,7 +883,7 @@ export function ContentPanel({ draft, set }: PanelProps) {
     };
     return (
         <div className="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 @md:grid-cols-3">
                 <FormField label="Occasion">
                     {(id) => (
                         <OccasionSelect
@@ -1089,13 +1089,28 @@ const formatWhen = (iso: string) => {
           });
 };
 
-export function EventsPanel({ draft, set }: PanelProps) {
+interface EventsPanelProps extends PanelProps {
+    // Opens and scrolls to this ceremony (e.g. after clicking its card on the canvas).
+    focus?: number;
+}
+
+export function EventsPanel({ draft, set, focus }: EventsPanelProps) {
     const culture = cultureOf(draft.culture);
     // Ceremony names for this occasion in this tradition (besnu, aqiqah, pheras…).
     const vocab = eventVocabFor(occasionOf(draft.occasion), culture);
     const locale = draft.locales[0] ?? 'en';
-    const [open, setOpen] = useState<string[]>([]);
     const keyOf = (e: Draft['events'][number], i: number) => e.id ?? `new-${String(i)}`;
+    const focused = focus === undefined ? undefined : draft.events[focus];
+    const [open, setOpen] = useState<string[]>(
+        focused && focus !== undefined ? [keyOf(focused, focus)] : [],
+    );
+    const focusRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        focusRef.current?.scrollIntoView({
+            block: 'start',
+            behavior: 'smooth',
+        });
+    }, []);
     const update = (i: number, patch: Partial<Draft['events'][number]>) => {
         set((d) => ({
             ...d,
@@ -1142,24 +1157,27 @@ export function EventsPanel({ draft, set }: PanelProps) {
                     <AccordionItem
                         key={keyOf(e, i)}
                         value={keyOf(e, i)}
+                        ref={i === focus ? focusRef : undefined}
                         className="overflow-hidden rounded-lg border bg-card last:border-b"
                     >
                         <div className="flex items-center gap-1 pe-2">
                             <AccordionTrigger className="min-w-0 flex-1 items-center px-3.5 py-3 hover:no-underline">
-                                <span className="flex min-w-0 items-center gap-3">
+                                <span className="flex min-w-0 flex-1 items-center gap-3">
                                     <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-gold/12 font-mono text-xs font-semibold text-gold-deep">
                                         {i + 1}
                                     </span>
-                                    <span className="min-w-0">
+                                    <span className="min-w-0 flex-1">
                                         <span className="block truncate text-sm font-semibold">
                                             {e.title[locale] ||
                                                 eventLabel(draft.culture, e.kind, locale)}
                                         </span>
-                                        <span className="flex items-center gap-1.5 truncate text-xs font-normal text-muted-foreground">
-                                            <CalendarClock className="size-3" />{' '}
+                                        {/* A block (not flex) line, so a long venue truncates instead of pushing the buttons out. */}
+                                        <span className="block truncate text-xs font-normal text-muted-foreground">
+                                            <CalendarClock className="me-1 inline size-3 align-[-2px]" />
                                             {formatWhen(e.startsAt)}
-                                            <span aria-hidden>·</span>
-                                            <MapPin className="size-3" /> {e.venue}
+                                            <span aria-hidden> · </span>
+                                            <MapPin className="me-1 inline size-3 align-[-2px]" />
+                                            {e.venue}
                                         </span>
                                     </span>
                                 </span>
@@ -1216,7 +1234,7 @@ export function EventsPanel({ draft, set }: PanelProps) {
                                 <TooltipContent>Remove ceremony</TooltipContent>
                             </Tooltip>
                         </div>
-                        <AccordionContent className="grid gap-4 border-t bg-muted/20 p-3.5 sm:grid-cols-2">
+                        <AccordionContent className="grid gap-4 border-t bg-muted/20 p-3.5 @md:grid-cols-2">
                             <SelectField
                                 label="Ceremony"
                                 value={e.kind}
@@ -1268,7 +1286,7 @@ export function EventsPanel({ draft, set }: PanelProps) {
                             />
                             <TextField
                                 label="Google Maps link"
-                                className="sm:col-span-2"
+                                className="@md:col-span-2"
                                 value={e.mapsUrl}
                                 dir="ltr"
                                 onChange={(v) => {
@@ -1430,7 +1448,7 @@ export function ExtrasPanel({ draft, set }: PanelProps) {
                         )}
                     </span>
                 </AccordionTrigger>
-                <AccordionContent className="grid gap-4 sm:grid-cols-2">
+                <AccordionContent className="grid gap-4 @md:grid-cols-2">
                     <TextField
                         label="UPI ID"
                         value={x.shagun?.upiId}

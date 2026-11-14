@@ -5,6 +5,7 @@ import { type CSSProperties, type ReactNode, useMemo } from 'react';
 
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
+import { Editable } from '../editing';
 
 function PhotoCorner({ className }: { className: string }) {
     return (
@@ -89,9 +90,13 @@ export function InvitationCard({ variant }: { variant: string }) {
 
     const details = (
         <>
-            <p className="text-[0.95rem] opacity-80">{t(content.headline)}</p>
+            <p className="text-[0.95rem] opacity-80">
+                <Editable path="headline" multiline>
+                    {t(content.headline)}
+                </Editable>
+            </p>
             <p className="inv-script my-4 text-[clamp(2.6rem,12cqw,4rem)] leading-none">
-                {names.one}
+                <Editable path="people.one.name">{names.one}</Editable>
             </p>
             {names.two && (
                 <>
@@ -99,7 +104,7 @@ export function InvitationCard({ variant }: { variant: string }) {
                         {copy('and')}
                     </p>
                     <p className="inv-script my-4 text-[clamp(2.6rem,12cqw,4rem)] leading-none">
-                        {names.two}
+                        <Editable path="people.two.name">{names.two}</Editable>
                     </p>
                 </>
             )}

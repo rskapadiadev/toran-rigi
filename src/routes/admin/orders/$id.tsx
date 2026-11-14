@@ -461,7 +461,7 @@ function InvitationCard({ order, invitation }: InvitationCardProps) {
                         <div className="flex flex-wrap gap-2">
                             <Button size="sm" asChild>
                                 <Link to="/admin/invitations/$id" params={{ id: invitation.id }}>
-                                    Open Composer
+                                    Open editor
                                 </Link>
                             </Button>
                             <Button size="sm" variant="outline" asChild>
@@ -514,7 +514,7 @@ function InvitationCard({ order, invitation }: InvitationCardProps) {
                             }}
                             disabled={create.isPending}
                         >
-                            <Sparkles /> Create invitation & open Composer
+                            <Sparkles /> Create invitation & open editor
                         </Button>
                     </>
                 )}

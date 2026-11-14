@@ -89,6 +89,17 @@ export function CommandMenu({ user, open, onOpenChange, onSignOut }: CommandMenu
                 <CommandGroup heading="Go to">
                     {navGroups
                         .flatMap((g) => g.items)
+                        // Sub-pages (Library, New order) are jump targets too, with their parent's icon.
+                        .flatMap((item) => [
+                            item,
+                            ...(item.children ?? [])
+                                .filter((c) => c.to !== item.to)
+                                .map((c) => ({
+                                    ...c,
+                                    icon: item.icon,
+                                    keywords: [] as string[],
+                                })),
+                        ])
                         .filter((item) => can(user.role, item.permission))
                         .map((item) => (
                             <CommandItem

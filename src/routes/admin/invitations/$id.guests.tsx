@@ -164,7 +164,7 @@ function GuestsPage() {
                     <>
                         <Button variant="outline" asChild>
                             <Link to="/admin/invitations/$id" params={{ id }}>
-                                <PenLine /> Composer
+                                <PenLine /> Editor
                             </Link>
                         </Button>
                         <Button variant="outline" asChild>

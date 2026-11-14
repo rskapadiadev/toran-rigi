@@ -1,18 +1,15 @@
 import { can } from '@shared/permissions';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, Link, Navigate, Outlet, useLocation } from '@tanstack/react-router';
-import { Plus, Search } from 'lucide-react';
+import { createFileRoute, Navigate, Outlet, useLocation } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
 import { AppSidebar, BrandMark } from '@/admin/shell/app-sidebar';
-import { AdminBreadcrumbs } from '@/admin/shell/breadcrumbs';
 import { CommandMenu } from '@/admin/shell/command-menu';
+import { StatusBar } from '@/admin/shell/status-bar';
+import { applyAdminTheme, readAdminTheme } from '@/admin/shell/theme';
 import { activeStatuses, type Dashboard } from '@/admin/types';
 import { useMe } from '@/admin/useMe';
-import { Button } from '@/components/ui/button';
-import { Kbd } from '@/components/ui/kbd';
-import { Separator } from '@/components/ui/separator';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -45,8 +42,9 @@ function AdminRoot() {
     // shadcn's global border/outline defaults are scoped to the admin (see app.css), never invitations.
     useEffect(() => {
         document.documentElement.classList.add('admin-ui');
+        applyAdminTheme(readAdminTheme());
         return () => {
-            document.documentElement.classList.remove('admin-ui');
+            document.documentElement.classList.remove('admin-ui', 'dark');
         };
     }, []);
     return (
@@ -94,6 +92,9 @@ function AdminShell() {
     if (me.isPending || (me.isFetching && !me.data)) return <ShellSkeleton />;
     if (!user) return <Navigate to="/admin/login" search={{ next: location.pathname }} replace />;
 
+    // An invitation opens in the full-screen visual editor: no sidebar, header or page chrome.
+    if (/^\/admin\/invitations\/(?!new\b)[^/]+\/?$/.test(location.pathname)) return <Outlet />;
+
     const logout = async () => {
         await post('/auth/logout', {});
         client.clear();
@@ -102,8 +103,6 @@ function AdminShell() {
     const active = (dashboard?.byStatus ?? [])
         .filter((s) => activeStatuses.includes(s.status))
         .reduce((sum, s) => sum + s.n, 0);
-    // The Composer is a full-bleed workspace; every other page sits in a centred column.
-    const fullBleed = /^\/admin\/invitations\/[^/]+\/?$/.test(location.pathname);
 
     return (
         <SidebarProvider defaultOpen={defaultOpen}>
@@ -115,57 +114,13 @@ function AdminShell() {
                 }}
                 onSignOut={() => void logout()}
             />
-            <SidebarInset className="min-w-0 bg-background">
-                <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:px-6">
-                    <SidebarTrigger className="-ms-1.5 text-muted-foreground" />
-                    <Separator
-                        orientation="vertical"
-                        className="me-1 data-[orientation=vertical]:h-4"
-                    />
-                    <AdminBreadcrumbs />
-                    <div className="ms-auto flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="hidden h-8 w-56 justify-start gap-2 bg-card px-2.5 font-normal text-muted-foreground shadow-none lg:flex"
-                            onClick={() => {
-                                setCommandOpen(true);
-                            }}
-                        >
-                            <Search />
-                            Search or jump to…
-                            <Kbd className="ms-auto">⌘K</Kbd>
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="lg:hidden"
-                            aria-label="Open command menu"
-                            onClick={() => {
-                                setCommandOpen(true);
-                            }}
-                        >
-                            <Search />
-                        </Button>
-                        {can(user.role, 'orders.create') && (
-                            <Button size="sm" className="h-8" asChild>
-                                <Link to="/admin/orders/new">
-                                    <Plus />
-                                    <span className="hidden sm:inline">New order</span>
-                                </Link>
-                            </Button>
-                        )}
-                    </div>
-                </header>
-                <main
-                    className={
-                        fullBleed
-                            ? 'min-w-0 flex-1'
-                            : 'mx-auto w-full max-w-[1400px] min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8'
-                    }
-                >
+            {/* PayD's inset: pages sit on the grey ground with 16px around them; main is the only
+                scroller, so a page that fills fits it exactly. */}
+            <SidebarInset className="isolate flex h-svh min-h-0 min-w-0 flex-col bg-background">
+                <main className="admin-page flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-none p-4">
                     <Outlet />
                 </main>
+                <StatusBar />
             </SidebarInset>
             <CommandMenu
                 user={user}

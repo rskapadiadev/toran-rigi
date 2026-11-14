@@ -8,6 +8,7 @@ import { type CSSProperties, type ReactNode, useMemo } from 'react';
 
 import { EnterContext } from '../motion/Reveal';
 import { useInvite } from './context';
+import { useEditing } from './editing';
 
 interface SceneStyle {
     background: string;
@@ -352,6 +353,7 @@ interface SceneProps {
 // One section = one block: its own backdrop, edge and entrance, all chosen in the Composer.
 export function Scene({ block, index, children }: SceneProps) {
     const { data, tier, dir, motion } = useInvite();
+    const edit = useEditing();
     const { design, culture, seed } = data.invitation;
     const scene = useMemo(
         () => buildScene(block.scene, design, culture, seed, block.motif),
@@ -372,6 +374,7 @@ export function Scene({ block, index, children }: SceneProps) {
         backgroundColor: color,
         color: 'var(--inv-ink)',
     } as CSSProperties;
+    const selected = edit?.selected === block.type;
     return (
         <div
             className="relative isolate"
@@ -379,7 +382,26 @@ export function Scene({ block, index, children }: SceneProps) {
             data-scene={block.scene}
             data-block={`${block.type}:${block.variant}`}
             data-block-key={blockKey(block)}
+            data-selected={selected || undefined}
+            data-empty-hint={edit?.hint(block.type)}
+            // In the visual editor a click anywhere in a section selects it (text stays typeable).
+            onClickCapture={
+                edit
+                    ? (e) => {
+                          const card = (e.target as HTMLElement).closest<HTMLElement>(
+                              '[data-event-index]',
+                          );
+                          const event = card ? Number(card.dataset.eventIndex) : undefined;
+                          edit.select(block.type, { event });
+                      }
+                    : undefined
+            }
         >
+            {edit && selected && (
+                <span className="pointer-events-none absolute start-3 top-3 z-50 rounded-md bg-[#6366f1] px-2 py-0.5 font-sans text-[11px] font-medium tracking-normal text-white shadow">
+                    {edit.label(block.type)}
+                </span>
+            )}
             {index > 0 && block.edge === 'seam' && <Seam />}
             {index > 0 && (
                 <Edge

@@ -1,9 +1,8 @@
-import { pickText } from '@shared/cultures';
-import { titleOf } from '@shared/people';
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { z } from 'zod';
 
 import { InvitationView } from '../invitation/InvitationView';
+import { shareMeta } from '../lib/share-meta';
 import { fetchInvitation } from '../server-fns/invitations';
 
 const search = z.object({
@@ -25,40 +24,19 @@ export const Route = createFileRoute('/$slug')({
         if (!result) throw notFound();
         return result;
     },
-    head: ({ loaderData }) => {
+    head: ({ loaderData, params, match }) => {
         if (!loaderData) return {};
-        const { content, locales } = loaderData.invitation.invitation;
-        const locale = locales[0] ?? 'en';
-        const title = titleOf(content, locale);
-        const description = pickText(content.headline, locale);
+        const { invitation, origin, guest } = loaderData;
+        const g = guest ? `&g=${encodeURIComponent(guest.token)}` : '';
         return {
-            meta: [
-                { title: `${title} — Toran` },
-                {
-                    name: 'description',
-                    content: description,
-                },
-                {
-                    property: 'og:title',
-                    content: title,
-                },
-                {
-                    property: 'og:description',
-                    content: description,
-                },
-                {
-                    property: 'og:type',
-                    content: 'website',
-                },
-                {
-                    name: 'twitter:card',
-                    content: 'summary_large_image',
-                },
-                {
-                    name: 'theme-color',
-                    content: loaderData.invitation.invitation.design.palette.bg,
-                },
-            ],
+            meta: shareMeta({
+                source: invitation,
+                origin,
+                path: `/${params.slug}`,
+                image: `/og/${params.slug}.png?v=${String(invitation.invitation.version)}${g}`,
+                guestName: guest?.name,
+                lang: match.search.lang,
+            }),
         };
     },
     component: InvitationPage,

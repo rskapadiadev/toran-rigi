@@ -6,9 +6,10 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { ExternalLink, Sparkles } from 'lucide-react';
 
+import { PanelCard } from '@/admin/kit/card';
 import { DataTable, inFilter, SortHeader } from '@/admin/kit/data-table';
 import { OccasionBadge } from '@/admin/kit/occasion';
-import { EmptyState, PageHeader, PageSkeleton } from '@/admin/kit/page';
+import { EmptyState, PageSkeleton } from '@/admin/kit/page';
 import { InvitationStatusBadge } from '@/admin/kit/status';
 import { cultureLabel } from '@/admin/labels';
 import { Button } from '@/components/ui/button';
@@ -53,7 +54,7 @@ const columns: ColumnDef<InvitationRow>[] = [
                     <Sparkles className="size-4" />
                 </span>
                 <span>
-                    <span className="block font-display text-[17px] leading-tight font-semibold group-hover:underline">
+                    <span className="block text-sm group-hover:underline">
                         {couple(row.original)}
                     </span>
                     <span className="font-mono text-xs text-muted-foreground" dir="ltr">
@@ -134,6 +135,10 @@ const columns: ColumnDef<InvitationRow>[] = [
     },
 ];
 
+const TITLE = 'Invitations';
+const SUBTITLE =
+    'Open any invitation in the visual editor. New invitations are created from an order.';
+
 function InvitationsPage() {
     const navigate = useNavigate();
     const { data, isPending } = useQuery({
@@ -144,20 +149,23 @@ function InvitationsPage() {
     const traditions = [...new Set(rows.map(tradition))];
     return (
         <>
-            <PageHeader
-                title="Invitations"
-                description="Open any invitation in the Composer. New invitations are created from an order."
-            />
-            {isPending ? (
-                <PageSkeleton />
-            ) : rows.length === 0 ? (
-                <EmptyState
-                    icon={Sparkles}
-                    title="No invitations yet"
-                    description="Create one from an order’s detail page."
-                />
+            {isPending || rows.length === 0 ? (
+                <PanelCard title={TITLE} subtitle={SUBTITLE}>
+                    {isPending ? (
+                        <PageSkeleton />
+                    ) : (
+                        <EmptyState
+                            icon={Sparkles}
+                            title="No invitations yet"
+                            description="Create one from an order’s detail page."
+                        />
+                    )}
+                </PanelCard>
             ) : (
                 <DataTable
+                    title={TITLE}
+                    subtitle={SUBTITLE}
+                    noun="invitations"
                     columns={columns}
                     data={rows}
                     searchPlaceholder="Search names, links, orders…"

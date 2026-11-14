@@ -38,34 +38,40 @@ function OrdersPage() {
     const columns = useMemo(() => orderColumns(now), [now]);
     const orders = data ?? [];
     const packages = [...new Set(orders.map((o) => o.packageCode))];
+    const subtitle = isPending
+        ? 'Loading…'
+        : `${String(orders.length)} orders · ${String(orders.filter((o) => !closed.includes(o.status)).length)} open`;
+    // Title row, left to right: (search, Filter) the view switcher, then the primary button.
+    const headerActions = (
+        <>
+            <TabsList>
+                <TabsTrigger value="board" className="px-3">
+                    <Columns3 /> Board
+                </TabsTrigger>
+                <TabsTrigger value="table" className="px-3">
+                    <List /> Table
+                </TabsTrigger>
+            </TabsList>
+            <Button asChild>
+                <Link to="/admin/orders/new">
+                    <Plus /> New order
+                </Link>
+            </Button>
+        </>
+    );
 
     return (
         <Tabs
+            className="min-h-0 flex-1"
             value={view}
             onValueChange={(v) => {
                 void navigate({ search: { view: v === 'table' ? 'table' : undefined } });
             }}
         >
-            <PageHeader
-                title="Orders"
-                description={
-                    isPending
-                        ? 'Loading…'
-                        : `${String(orders.length)} orders · ${String(orders.filter((o) => !closed.includes(o.status)).length)} open`
-                }
-                actions={
-                    <>
-                        <TabsList>
-                            <TabsTrigger value="board" className="px-3">
-                                <Columns3 /> Board
-                            </TabsTrigger>
-                            <TabsTrigger value="table" className="px-3">
-                                <List /> Table
-                            </TabsTrigger>
-                        </TabsList>
-                    </>
-                }
-            />
+            {/* The table view is one card (PayD); the board keeps a page heading above its columns. */}
+            {(view === 'board' || isPending || orders.length === 0) && (
+                <PageHeader title="Orders" description={subtitle} actions={headerActions} />
+            )}
             {isPending ? (
                 <PageSkeleton />
             ) : orders.length === 0 ? (
@@ -85,8 +91,12 @@ function OrdersPage() {
                     <TabsContent value="board">
                         <Board orders={orders} now={now} />
                     </TabsContent>
-                    <TabsContent value="table">
+                    <TabsContent value="table" className="flex min-h-0 flex-col">
                         <DataTable
+                            title="Orders"
+                            subtitle={subtitle}
+                            actions={headerActions}
+                            noun="orders"
                             columns={columns}
                             data={orders}
                             searchPlaceholder="Search orders, customers…"

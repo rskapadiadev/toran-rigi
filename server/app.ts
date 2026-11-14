@@ -2,6 +2,7 @@ import { createStartHandler, defaultStreamHandler } from '@tanstack/react-start/
 import { Hono } from 'hono';
 
 import { api } from './api';
+import { og } from './og/route';
 import { runWithPlatform } from './platform/context';
 import type { Platform } from './platform/types';
 
@@ -17,6 +18,7 @@ export function createApp() {
 
     app.use('*', async (c, next) => runWithPlatform(c.env, next));
     app.route('/api', api);
+    app.route('/og', og);
 
     app.get('/media/*', async (c) => {
         const key = decodeURIComponent(c.req.path.slice('/media/'.length));

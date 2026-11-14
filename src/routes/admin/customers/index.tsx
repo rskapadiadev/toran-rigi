@@ -3,8 +3,9 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Users } from 'lucide-react';
 
+import { PanelCard } from '@/admin/kit/card';
 import { DataTable, inFilter, SortHeader } from '@/admin/kit/data-table';
-import { EmptyState, PageHeader, PageSkeleton, ToneBadge } from '@/admin/kit/page';
+import { EmptyState, PageSkeleton, ToneBadge } from '@/admin/kit/page';
 import { initials } from '@/admin/shell/nav';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { api } from '@/lib/api';
@@ -85,6 +86,10 @@ const columns: ColumnDef<CustomerRow>[] = [
     },
 ];
 
+// Fixed copy, so the heading does not change as the rows land.
+const TITLE = 'Customers';
+const SUBTITLE = 'Every couple and family you’ve worked with.';
+
 function CustomersPage() {
     const navigate = useNavigate();
     const { data, isPending } = useQuery({
@@ -95,20 +100,23 @@ function CustomersPage() {
     const countries = [...new Set(rows.map((c) => c.country))];
     return (
         <>
-            <PageHeader
-                title="Customers"
-                description={`Every couple and family you’ve worked with${rows.length ? ` · ${String(rows.length)}` : ''}.`}
-            />
-            {isPending ? (
-                <PageSkeleton />
-            ) : rows.length === 0 ? (
-                <EmptyState
-                    icon={Users}
-                    title="No customers yet"
-                    description="Customers are created with their first order."
-                />
+            {isPending || rows.length === 0 ? (
+                <PanelCard title={TITLE} subtitle={SUBTITLE}>
+                    {isPending ? (
+                        <PageSkeleton />
+                    ) : (
+                        <EmptyState
+                            icon={Users}
+                            title="No customers yet"
+                            description="Customers are created with their first order."
+                        />
+                    )}
+                </PanelCard>
             ) : (
                 <DataTable
+                    title={TITLE}
+                    subtitle={SUBTITLE}
+                    noun="customers"
                     columns={columns}
                     data={rows}
                     searchPlaceholder="Search name, email or phone…"

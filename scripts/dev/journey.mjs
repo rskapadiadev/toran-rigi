@@ -35,41 +35,41 @@ await page.waitForURL(/\/admin\/orders\/[a-z0-9]+$/);
 step('order created from the New order form');
 await page.waitForSelector('button:has-text("Create invitation")');
 await page.getByRole('button', { name: /Create invitation/ }).click();
-await page.waitForSelector('text=Live preview');
-step('composer opened');
+// Invitations open straight into the full-screen visual editor.
+await page.waitForSelector('nav[aria-label="Editor panels"]');
+step('editor opened');
 
-await page
-    .getByRole('tab', {
-        name: 'Words',
-        exact: true,
-    })
-    .click();
+const panelTab = (name) =>
+    page.locator('nav[aria-label="Editor panels"]').getByRole('button', {
+ name,
+exact: true 
+});
+await panelTab('Details').click();
 await page.getByLabel('Partner one', { exact: true }).fill('Riya');
 await page.getByLabel('Partner two', { exact: true }).fill('Kabir');
-await page
-    .getByRole('tab', {
-        name: 'Ceremonies',
-        exact: true,
-    })
-    .click();
+await panelTab('Events').click();
 await page.getByRole('button', { name: /Add ceremony/ }).click();
-await page.getByRole('button', { name: /Save changes/ }).click();
-await page.waitForSelector('button:has-text("Saved")');
+await page.getByRole('button', {
+ name: 'Save',
+exact: true 
+}).click();
+await page.waitForSelector('header >> text=Saved');
 step('names + ceremony saved');
 await page.waitForTimeout(1500);
-await page.screenshot({ path: `${out}/composer.png` });
+await page.screenshot({ path: `${out}/editor.png` });
 
-await page
-    .getByRole('tab', {
-        name: 'Publish',
-        exact: true,
-    })
-    .click();
-await page.getByRole('button', { name: 'Publish invitation' }).click();
+const publish = async () => {
+    await page.getByRole('button', {
+ name: 'Publish',
+exact: true 
+}).click();
+    await page.getByRole('button', { name: 'Publish invitation' }).click();
+};
+await publish();
 await page.waitForSelector('text=Balance outstanding');
 step('publish blocked while balance due');
 
-const orderUrl = page.url();
+const editorUrl = page.url();
 await page.goto(`${base}/admin/billing`);
 await page
     .locator('tbody tr')
@@ -81,18 +81,17 @@ await page.getByRole('button', { name: 'Save payment' }).click();
 await page.waitForSelector('text=Payment recorded', { timeout: 5000 });
 step('balance collected');
 
-await page.goto(orderUrl);
-await page
-    .getByRole('tab', {
-        name: 'Publish',
-        exact: true,
-    })
-    .click();
-await page.getByRole('button', { name: 'Publish invitation' }).click();
+await page.goto(editorUrl);
+await page.waitForSelector('nav[aria-label="Editor panels"]');
+await publish();
 await page.waitForSelector('text=Open live invitation');
 step('published');
+await page.keyboard.press('Escape');
 
-await page.getByRole('link', { name: /Guests & RSVPs/ }).click();
+await page.getByRole('link', {
+ name: 'Guests',
+exact: true 
+}).click();
 await page.waitForURL(/\/guests$/);
 await page.waitForSelector('text=Personal guest links');
 await page.fill('textarea', 'Shah Parivar, +919800000002, 4\nKhan Family, +971500000001, 2');
