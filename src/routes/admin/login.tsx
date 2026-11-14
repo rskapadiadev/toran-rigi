@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { FormField } from '@/admin/kit/form';
 import { BrandMark } from '@/admin/shell/app-sidebar';
+import { ToranSeal } from '@/components/brand/toran-seal';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -85,6 +86,7 @@ function Login() {
                     </span>
                 </div>
                 <div className="relative mt-auto max-w-md space-y-5">
+                    <ToranSeal className="size-36 text-gold-bright drop-shadow-[0_8px_30px_rgba(195,154,78,0.25)]" />
                     <div className="hairline w-24 text-gold" />
                     <p className="font-display text-4xl leading-tight text-balance">
                         Every invitation begins at the doorway.
@@ -99,7 +101,7 @@ function Login() {
                 <Card className="w-full max-w-sm border-none bg-transparent shadow-none">
                     <CardHeader className="gap-2 px-0">
                         <div className="mb-4 lg:hidden">
-                            <BrandMark />
+                            <ToranSeal className="size-20 text-primary" />
                         </div>
                         <CardTitle className="text-2xl font-semibold tracking-tight">
                             {step === 'email' ? 'Sign in to Toran Studio' : 'Check your inbox'}

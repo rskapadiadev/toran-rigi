@@ -53,6 +53,15 @@ export function OpeningShell({
                     </div>
                 </div>
             )}
+            {onTap && !busy && (
+                // The whole screen opens the invitation, not just the prompt.
+                <button
+                    type="button"
+                    aria-label={copy(prompt)}
+                    onClick={onTap}
+                    className="absolute inset-0 z-[25] cursor-pointer"
+                />
+            )}
             {!hidePrompt && onTap && (
                 <button
                     type="button"

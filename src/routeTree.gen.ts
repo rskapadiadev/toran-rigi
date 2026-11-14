@@ -15,6 +15,7 @@ import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as DevMailRouteImport } from './routes/dev-mail'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminBillingRouteImport } from './routes/admin/billing'
+import { Route as AdminLibraryRouteImport } from './routes/admin/library'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as PTokenRouteImport } from './routes/p.$token'
 import { Route as AdminCustomersIndexRouteImport } from './routes/admin/customers/index'
@@ -54,6 +55,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminBillingRoute = AdminBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminLibraryRoute = AdminLibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof SlugRoute
   '/dev-mail': typeof DevMailRoute
   '/admin/billing': typeof AdminBillingRoute
+  '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/p/$token': typeof PTokenRoute
   '/admin/': typeof AdminIndexRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/$slug': typeof SlugRoute
   '/dev-mail': typeof DevMailRoute
   '/admin/billing': typeof AdminBillingRoute
+  '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/p/$token': typeof PTokenRoute
   '/admin': typeof AdminIndexRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/$slug': typeof SlugRoute
   '/dev-mail': typeof DevMailRoute
   '/admin/billing': typeof AdminBillingRoute
+  '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/p/$token': typeof PTokenRoute
   '/admin/': typeof AdminIndexRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/dev-mail'
     | '/admin/billing'
+    | '/admin/library'
     | '/admin/login'
     | '/p/$token'
     | '/admin/'
@@ -187,6 +197,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/dev-mail'
     | '/admin/billing'
+    | '/admin/library'
     | '/admin/login'
     | '/p/$token'
     | '/admin'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/dev-mail'
     | '/admin/billing'
+    | '/admin/library'
     | '/admin/login'
     | '/p/$token'
     | '/admin/'
@@ -268,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/billing'
       fullPath: '/admin/billing'
       preLoaderRoute: typeof AdminBillingRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/library': {
+      id: '/admin/library'
+      path: '/library'
+      fullPath: '/admin/library'
+      preLoaderRoute: typeof AdminLibraryRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/login': {
@@ -345,6 +364,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteRouteChildren {
   AdminBillingRoute: typeof AdminBillingRoute
+  AdminLibraryRoute: typeof AdminLibraryRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCustomersIdRoute: typeof AdminCustomersIdRoute
@@ -359,6 +379,7 @@ interface AdminRouteRouteChildren {
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminBillingRoute: AdminBillingRoute,
+  AdminLibraryRoute: AdminLibraryRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCustomersIdRoute: AdminCustomersIdRoute,

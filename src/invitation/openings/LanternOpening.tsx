@@ -159,7 +159,7 @@ export function LanternOpening({ onBegin, onOpened }: OpeningProps) {
                         onClick={() => {
                             light(i);
                         }}
-                        className="absolute top-0 w-[18vmin] max-w-28 -translate-x-1/2 animate-(--animate-float) rtl:translate-x-1/2"
+                        className="absolute top-0 z-30 w-[18vmin] max-w-28 -translate-x-1/2 animate-(--animate-float) rtl:translate-x-1/2"
                         style={{
                             insetInlineStart: `${l.x}%`,
                             transform: `translateY(${l.drop}vh) scale(${l.scale})`,

@@ -1,6 +1,7 @@
 import type { Permission } from '@shared/permissions';
 import {
     LayoutDashboard,
+    Library,
     type LucideIcon,
     Receipt,
     ShoppingBag,
@@ -9,7 +10,12 @@ import {
 } from 'lucide-react';
 
 export type NavPath =
-    '/admin' | '/admin/orders' | '/admin/invitations' | '/admin/customers' | '/admin/billing';
+    | '/admin'
+    | '/admin/orders'
+    | '/admin/invitations'
+    | '/admin/library'
+    | '/admin/customers'
+    | '/admin/billing';
 
 export interface NavItem {
     to: NavPath;
@@ -48,6 +54,13 @@ export const navGroups: NavGroup[] = [
                 icon: Sparkles,
                 permission: 'orders.view',
                 keywords: ['composer', 'design'],
+            },
+            {
+                to: '/admin/library',
+                label: 'Library',
+                icon: Library,
+                permission: 'orders.view',
+                keywords: ['components', 'openings', 'templates', 'layouts', 'themes', 'demo'],
             },
         ],
     },

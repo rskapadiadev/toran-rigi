@@ -124,6 +124,12 @@
         background-clip: text;
         color: transparent;
         animation: var(--animate-shimmer);
+        /* background-clip:text paints only the box: pad it (and pull the layout back) so tall marks
+           (Devanagari matras, Gujarati/Arabic ascenders, accents) are never sliced off. */
+        padding-block: 0.22em;
+        margin-block: -0.22em;
+        box-decoration-break: clone;
+        -webkit-box-decoration-break: clone;
     }
 
     .hairline {
@@ -162,6 +168,14 @@
     .inv-display {
         font-family: var(--inv-display);
         letter-spacing: 0.01em;
+    }
+
+    /* Tight Latin leading clips Indic and Arabic scripts, whose marks sit far above and below the
+       line; these scripts get room whatever leading a layout asks for. */
+    .inv-root:is(:lang(hi), :lang(gu), :lang(mr), :lang(pa), :lang(ar), :lang(ur), :lang(he))
+        :is(.inv-display, .inv-script) {
+        line-height: 1.35 !important;
+        letter-spacing: 0;
     }
 
     .inv-script {
@@ -534,5 +548,41 @@ path.ornament-draw[fill]:not([fill='none']) {
     50% {
         transform: scale(1.12);
         opacity: 1;
+    }
+}
+
+/* Doors opening: each toran strand sways from its knot. */
+@keyframes toran-sway {
+    0%,
+    100% {
+        transform: rotate(-4deg);
+    }
+    50% {
+        transform: rotate(4deg);
+    }
+}
+
+/* Chuppah opening: the valance breathes in a breeze; a few petals drift down. */
+@keyframes valance-sway {
+    0%,
+    100% {
+        transform: skewX(0deg) translateY(0);
+    }
+    50% {
+        transform: skewX(1.2deg) translateY(2px);
+    }
+}
+
+@keyframes petal-fall {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.7;
+    }
+    100% {
+        transform: translateY(110svh) translateX(40px) rotate(320deg);
+        opacity: 0;
     }
 }

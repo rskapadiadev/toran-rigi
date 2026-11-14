@@ -36,18 +36,18 @@ export function useCoverFacts() {
 }
 
 // Huge display names shrink to fit their longest word, so "Northwind" never splits into "Northwin / d".
-export function fitDisplay(names: string[], maxCqw: number, budget: number): string {
+export function fitDisplay(names: string[], maxCqw: number, budget: number, maxRem = 11): string {
     const longest = Math.max(
         4,
         ...names.flatMap((n) => n.split(/\s+/)).map((w) => Array.from(w).length),
     );
-    return `clamp(2.2rem, ${String(Math.min(maxCqw, budget / longest))}cqw, 11rem)`;
+    return `clamp(2rem, ${String(Math.min(maxCqw, budget / longest))}cqw, ${String(maxRem)}rem)`;
 }
 
 const initial = (name: string) => Array.from(name.trim())[0] ?? '';
 
 // Doorway silhouettes per tradition: jharokha, mihrab, lancet, gurdwara dome, chuppah canopy.
-function archPath(culture: CultureId): string {
+export function archPath(culture: CultureId): string {
     switch (culture) {
         case 'hindu':
         case 'jain': {
@@ -156,7 +156,8 @@ export function ArchCover() {
     const d = archPath(culture.id);
     return (
         <section className="relative flex min-h-svh items-center justify-center px-5 py-16">
-            <div className="relative aspect-[300/470] w-[min(88cqw,440px)]">
+            {/* Its own container: names size to the arch, not to a 1900px-wide desktop page. */}
+            <div className="[container-type:inline-size] relative aspect-[300/470] w-[min(88cqw,440px,62svh)]">
                 <svg
                     viewBox="0 0 300 470"
                     className="absolute inset-0 size-full overflow-visible"

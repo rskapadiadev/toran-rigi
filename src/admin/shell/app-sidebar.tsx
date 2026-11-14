@@ -2,6 +2,7 @@ import { can } from '@shared/permissions';
 import { Link, useLocation } from '@tanstack/react-router';
 import { ChevronsUpDown, LogOut, Mail, Search } from 'lucide-react';
 
+import { ToranSeal } from '@/components/brand/toran-seal';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
     DropdownMenu,
@@ -38,13 +39,11 @@ interface AppSidebarProps {
     onSignOut: () => void;
 }
 
+// The full Toran seal, small: the same stamp as the login page, gold on a dark disc.
 export function BrandMark() {
     return (
-        <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary text-primary-foreground shadow-sm ring-1 ring-gold/40">
-            <span className="absolute inset-x-0 top-0 h-px bg-gold/70" />
-            <span className="font-display text-lg leading-none font-semibold text-gold-bright">
-                T
-            </span>
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-night text-gold-bright shadow-sm ring-1 ring-gold/30">
+            <ToranSeal className="size-[2.15rem]" />
         </span>
     );
 }

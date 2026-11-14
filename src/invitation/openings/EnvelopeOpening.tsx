@@ -32,31 +32,15 @@ function sealOutline(seed: number, r = 100, cx = 110, cy = 110) {
     return `M${f(first[0])} ${f(first[1])} ${segments.join(' ')} Z`;
 }
 
-// Jagged crack from top to bottom; returns the left-half polygon (the right half is its complement).
-function crackPath(seed: number) {
-    const rand = rng(seed ^ 0x5bd1e995);
-    const xs = Array.from(
-        { length: 9 },
-        (_, i) => [110 + (rand.next() - 0.5) * 34, (220 / 8) * i] as const,
-    );
-    return {
-        left: `M0 0 ${xs.map(([x, y]) => `L${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')} L0 220 Z`,
-        right: `M220 0 ${xs.map(([x, y]) => `L${x.toFixed(1)} ${y.toFixed(1)}`).join(' ')} L220 220 Z`,
-        line: `M${xs.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' L')}`,
-    };
-}
-
 interface SealProps {
     seed: number;
     initials: string;
     motif: string[];
-    half?: 'left' | 'right';
-    crack: ReturnType<typeof crackPath>;
 }
 
-function WaxSeal({ seed, initials, motif, half, crack }: SealProps) {
+function WaxSeal({ seed, initials, motif }: SealProps) {
     const outline = useMemo(() => sealOutline(seed), [seed]);
-    const id = `seal-${half ?? 'whole'}`;
+    const id = `seal-${String(seed)}`;
     return (
         <svg viewBox="0 0 220 220" className="size-full overflow-visible" aria-hidden>
             <defs>
@@ -107,19 +91,8 @@ function WaxSeal({ seed, initials, motif, half, crack }: SealProps) {
                         <feMergeNode in="si" />
                     </feMerge>
                 </filter>
-                <clipPath id={`${id}-clip`}>
-                    <path
-                        d={
-                            half === 'left'
-                                ? crack.left
-                                : half === 'right'
-                                  ? crack.right
-                                  : 'M0 0H220V220H0Z'
-                        }
-                    />
-                </clipPath>
             </defs>
-            <g clipPath={`url(#${id}-clip)`}>
+            <g>
                 <ellipse
                     cx="114"
                     cy="120"
@@ -165,16 +138,16 @@ function WaxSeal({ seed, initials, motif, half, crack }: SealProps) {
     );
 }
 
-const flapBase = 'absolute inset-0 [backface-visibility:hidden] will-change-transform';
+const flapBase = 'absolute inset-0 will-change-transform';
 
-// Silk envelope with piped gold edges; the seal cracks, flaps fold open in 3D, the cotton-paper letter rises.
+// Silk envelope with piped gold edges. The wax seal glows, lifts, and rides the top flap as it
+// swings open on its hinge; light pours from the opening and carries guests inside.
 export function EnvelopeOpening({ onBegin, onOpened }: OpeningProps) {
-    const { data, tier, names, copy } = useInvite();
+    const { data, tier, names } = useInvite();
     const { design, seed, culture } = data.invitation;
     const p = design.palette;
     const [motifId = 'paisley'] = cultureMotifs[cultureOf(culture).id];
     const initials = names.initials.join('');
-    const crack = useMemo(() => crackPath(seed), [seed]);
     const stage = useRef<HTMLDivElement>(null);
     const [busy, setBusy] = useState(false);
 
@@ -202,16 +175,6 @@ export function EnvelopeOpening({ onBegin, onOpened }: OpeningProps) {
             }),
         [p.bg, p.gold, motifId, seed],
     );
-    const paper = useMemo(
-        () =>
-            materialBackground({
-                kind: 'paper',
-                base: '#fbf6ec',
-                seed: seed + 9,
-            }),
-        [seed],
-    );
-
     const open = async () => {
         if (busy) return;
         setBusy(true);
@@ -224,132 +187,98 @@ export function EnvelopeOpening({ onBegin, onOpened }: OpeningProps) {
         const gsap = await loadGsap();
         const q = (sel: string) => root.querySelector(sel);
         const tl = gsap.timeline({ onComplete: onOpened });
-        tl.to(q('[data-seal]'), {
-            scale: 0.9,
-            duration: 0.18,
-            ease: 'power2.in',
+        // 1. The seal warms: a gold halo breathes out from under the wax.
+        tl.to(q('[data-halo]'), {
+            opacity: 1,
+            scale: 1.25,
+            duration: 0.55,
+            ease: 'power2.out',
         })
-            .to(q('[data-seal]'), {
-                scale: 1,
-                duration: 0.25,
-                ease: 'back.out(3)',
-            })
-            .set(q('[data-seal-whole]'), { opacity: 0 })
-            .set([q('[data-seal-left]'), q('[data-seal-right]'), q('[data-crack]')], { opacity: 1 })
             .call(() => {
-                if ('vibrate' in navigator) navigator.vibrate([18, 30, 40]);
+                if ('vibrate' in navigator) navigator.vibrate(18);
             })
+            // 2. It lifts off the paper: bigger, with a deeper, softer shadow.
             .to(
-                q('[data-seal-left]'),
+                q('[data-seal]'),
                 {
-                    x: -60,
-                    y: 240,
-                    rotate: -38,
+                    scale: 1.08,
+                    y: -6,
+                    duration: 0.45,
+                    ease: 'power2.out',
+                },
+                0.25,
+            )
+            .to(
+                q('[data-seal-shadow]'),
+                {
+                    opacity: 0.55,
+                    y: 26,
+                    scale: 1.15,
+                    duration: 0.45,
+                },
+                0.25,
+            )
+            .to(q('[data-halo]'), {
+                opacity: 0,
+                duration: 0.4,
+            })
+            // 3. The top flap swings up on its hinge, slowly, carrying the seal with it.
+            .to(
+                q('[data-top]'),
+                {
+                    // Negative: the tip travels up towards the hinge, so the seal rises and foreshortens.
+                    rotateX: -176,
+                    duration: 1.35,
+                    ease: 'power2.inOut',
+                },
+                0.8,
+            )
+            .to(
+                [q('[data-seal-shadow]'), q('[data-flap-lines]')],
+                {
                     opacity: 0,
-                    duration: 1,
-                    ease: 'power2.in',
+                    duration: 0.35,
                 },
-                '+=0.12',
+                0.8,
             )
+            // 4. Light warms the lining inside the open envelope…
             .to(
-                [q('[data-crack]'), q('[data-flap-lines]')],
+                q('[data-glow]'),
                 {
-                    opacity: 0,
-                    duration: 0.3,
-                },
-                '<',
-            )
-            .to(
-                q('[data-seal-right]'),
-                {
-                    x: 60,
-                    y: 260,
-                    rotate: 32,
-                    opacity: 0,
-                    duration: 1,
-                    ease: 'power2.in',
-                },
-                '<',
-            )
-            .to(
-                q('[data-flap=top]'),
-                {
-                    rotateX: -178,
-                    duration: 1,
-                    ease: 'power3.inOut',
-                },
-                '-=0.6',
-            )
-            .to(
-                q('[data-flap=left]'),
-                {
-                    rotateY: 178,
-                    duration: 1,
-                    ease: 'power3.inOut',
-                },
-                '-=0.85',
-            )
-            .to(
-                q('[data-flap=right]'),
-                {
-                    rotateY: -178,
-                    duration: 1,
-                    ease: 'power3.inOut',
-                },
-                '<',
-            )
-            .to(
-                q('[data-flap=bottom]'),
-                {
-                    rotateX: 178,
-                    duration: 1,
-                    ease: 'power3.inOut',
-                },
-                '-=0.8',
-            )
-            .fromTo(
-                q('[data-letter]'),
-                {
-                    y: '18%',
-                    scale: 0.7,
-                    opacity: 0,
-                },
-                {
-                    y: '0%',
-                    scale: 1,
                     opacity: 1,
-                    duration: 1.1,
-                    ease: 'power3.out',
+                    duration: 0.9,
+                    ease: 'power1.in',
                 },
-                '-=0.6',
+                1.3,
             )
+            // 5. …then pours out of the opening and fills the screen; the invitation waits behind it.
             .to(
-                q('[data-letter]'),
+                q('[data-bloom]'),
                 {
-                    scale: 2.6,
-                    opacity: 0,
-                    duration: 1,
-                    ease: 'power3.in',
+                    '--r': '190%',
+                    duration: 1.1,
+                    ease: 'power2.in',
                 },
-                '+=0.9',
+                1.9,
             )
             .to(
                 root.parentElement ?? root,
                 {
                     opacity: 0,
-                    duration: 0.6,
+                    duration: 0.75,
+                    ease: 'power1.out',
                 },
-                '-=0.5',
+                2.85,
             );
     };
 
     const pipe = mixHex(p.gold, '#ffffff', 0.2);
     // Real sealing wax is deep and saturated: pull the theme primary towards oxblood.
     const wax = mixHex(p.primary, '#5e0815', 0.72);
-    const flapStyle = (clip: string, origin: string): CSSProperties => ({
+    const lining = mixHex(p.primary, p.gold, 0.35);
+    const flapStyle = (clip: string): CSSProperties => ({
         backgroundImage: flapSilk,
         clipPath: clip,
-        transformOrigin: origin,
         filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.25))',
     });
 
@@ -362,61 +291,45 @@ export function EnvelopeOpening({ onBegin, onOpened }: OpeningProps) {
         >
             <div
                 ref={stage}
-                className="absolute inset-0 overflow-hidden [perspective:1600px]"
+                className="absolute inset-0 overflow-hidden [perspective:1800px]"
                 style={{ backgroundImage: silk }}
             >
+                {/* Inside of the envelope: a warm lining with a fine gold lattice. */}
                 <div
-                    data-letter
-                    className="absolute inset-[9%] flex flex-col items-center justify-center opacity-0 shadow-2xl"
+                    className="absolute inset-0"
                     style={{
-                        backgroundImage: paper,
-                        color: '#2b1d18',
+                        clipPath: 'polygon(0 0, 100% 0, 50% 50%)',
+                        background: `radial-gradient(ellipse at 50% 0%, ${mixHex(lining, '#ffffff', 0.25)}, ${lining} 70%)`,
                     }}
-                >
-                    <div className="absolute inset-3 border-2" style={{ borderColor: p.gold }} />
-                    <p className="inv-script text-[clamp(2.6rem,13cqw,4.6rem)] leading-tight">
-                        {names.one}
-                    </p>
-                    {names.two && (
-                        <>
-                            <p className="inv-script text-3xl" style={{ color: p.gold }}>
-                                {copy('and')}
-                            </p>
-                            <p className="inv-script text-[clamp(2.6rem,13cqw,4.6rem)] leading-tight">
-                                {names.two}
-                            </p>
-                        </>
-                    )}
-                </div>
-                <div
-                    data-flap="bottom"
-                    className={flapBase}
-                    style={flapStyle('polygon(0 100%, 50% 50%, 100% 100%)', '50% 100%')}
                 />
                 <div
-                    data-flap="left"
+                    data-glow
+                    className="absolute inset-0 opacity-0"
+                    style={{
+                        clipPath: 'polygon(0 0, 100% 0, 50% 50%)',
+                        background:
+                            'radial-gradient(ellipse at 50% 18%, #fffdf6, #ffe7b0 40%, transparent 75%)',
+                    }}
+                />
+                {/* The pocket: side and bottom flaps stay put and hold the card. */}
+                <div className={flapBase} style={flapStyle('polygon(0 0, 50% 50%, 0 100%)')} />
+                <div
                     className={flapBase}
-                    style={flapStyle('polygon(0 0, 50% 50%, 0 100%)', '0 50%')}
+                    style={flapStyle('polygon(100% 0, 50% 50%, 100% 100%)')}
                 />
                 <div
-                    data-flap="right"
                     className={flapBase}
-                    style={flapStyle('polygon(100% 0, 50% 50%, 100% 100%)', '100% 50%')}
-                />
-                <div
-                    data-flap="top"
-                    className={`${flapBase} z-10`}
-                    style={flapStyle('polygon(0 0, 100% 0, 50% 50%)', '50% 0')}
+                    style={flapStyle('polygon(0 100%, 50% 50%, 100% 100%)')}
                 />
                 <svg
-                    className="pointer-events-none absolute inset-0 z-10 size-full"
+                    className="pointer-events-none absolute inset-0 size-full"
                     viewBox="0 0 100 100"
                     preserveAspectRatio="none"
                     aria-hidden
                     data-flap-lines
                 >
                     <path
-                        d="M0 0 L50 50 L100 0 M0 100 L50 50 L100 100"
+                        d="M0 100 L50 50 L100 100"
                         stroke={pipe}
                         strokeWidth="0.5"
                         fill="none"
@@ -424,51 +337,61 @@ export function EnvelopeOpening({ onBegin, onOpened }: OpeningProps) {
                         opacity="0.9"
                     />
                 </svg>
+                {/* Top flap + seal turn together about the top edge. */}
                 <div
-                    data-seal
-                    className="absolute inset-0 z-20 m-auto size-[min(52cqw,240px)]"
-                    style={{ '--wax': wax } as CSSProperties}
+                    data-top
+                    className="absolute inset-0 z-10 [transform-style:preserve-3d]"
+                    style={{ transformOrigin: '50% 0%' }}
                 >
-                    <div data-seal-whole className="absolute inset-0">
-                        <WaxSeal
-                            seed={seed}
-                            initials={initials}
-                            motif={motifs[motifId]}
-                            crack={crack}
-                        />
-                    </div>
-                    <div data-seal-left className="absolute inset-0 opacity-0">
-                        <WaxSeal
-                            seed={seed}
-                            initials={initials}
-                            motif={motifs[motifId]}
-                            crack={crack}
-                            half="left"
-                        />
-                    </div>
-                    <div data-seal-right className="absolute inset-0 opacity-0">
-                        <WaxSeal
-                            seed={seed}
-                            initials={initials}
-                            motif={motifs[motifId]}
-                            crack={crack}
-                            half="right"
-                        />
-                    </div>
+                    <div className={flapBase} style={flapStyle('polygon(0 0, 100% 0, 50% 50%)')} />
                     <svg
-                        data-crack
-                        viewBox="0 0 220 220"
-                        className="pointer-events-none absolute inset-0 opacity-0"
+                        className="pointer-events-none absolute inset-0 size-full"
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
                         aria-hidden
                     >
                         <path
-                            d={crack.line}
-                            stroke="rgba(0,0,0,0.55)"
-                            strokeWidth="2.5"
+                            d="M0 0 L50 50 L100 0"
+                            stroke={pipe}
+                            strokeWidth="0.5"
                             fill="none"
+                            vectorEffect="non-scaling-stroke"
+                            opacity="0.9"
                         />
                     </svg>
+                    <div
+                        className="absolute start-1/2 top-1/2 size-[min(46cqw,220px)] -translate-x-1/2 -translate-y-1/2 rtl:translate-x-1/2"
+                        style={{ '--wax': wax } as CSSProperties}
+                    >
+                        <div
+                            data-halo
+                            className="absolute -inset-[35%] scale-75 rounded-full opacity-0 blur-2xl"
+                            style={{background: `radial-gradient(circle, ${p.gold}, transparent 65%)`,}}
+                        />
+                        <div
+                            data-seal-shadow
+                            className="absolute inset-[8%] rounded-full bg-black opacity-25 blur-xl"
+                        />
+                        <div data-seal className="absolute inset-0">
+                            <WaxSeal seed={seed} initials={initials} motif={motifs[motifId]} />
+                        </div>
+                    </div>
                 </div>
+                {/* Soft-edged circle of light that grows from the opening (a mask, so no hard edge). */}
+                <div
+                    data-bloom
+                    className="pointer-events-none absolute inset-0 z-30"
+                    style={
+                        {
+                            '--r': '0%',
+                            background: `radial-gradient(circle at 50% 22%, #fffdf6, ${mixHex(p.bg, '#fff8ec', 0.8)} 45%, ${mixHex(p.bg, '#fff8ec', 0.55)} 100%)`,
+                            maskImage:
+                                'radial-gradient(circle at 50% 22%, black calc(var(--r) - 30%), transparent var(--r))',
+                            WebkitMaskImage:
+                                'radial-gradient(circle at 50% 22%, black calc(var(--r) - 30%), transparent var(--r))',
+                        } as CSSProperties
+                    }
+                />
             </div>
         </OpeningShell>
     );

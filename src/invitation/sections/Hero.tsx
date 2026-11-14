@@ -68,7 +68,7 @@ function SpotlightCover() {
                 <Honorific />
                 <h2
                     className="inv-display leading-[0.9] font-light break-normal hyphens-none"
-                    style={{ fontSize: fitDisplay([names.one, names.two], 13, 110) }}
+                    style={{ fontSize: fitDisplay([names.one, names.two], 13, 110, 8.5) }}
                 >
                     <span className="foil-text block">{names.one}</span>
                     {names.two && (
