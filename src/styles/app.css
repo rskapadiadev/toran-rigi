@@ -1545,9 +1545,7 @@ body:has([data-opening]) [data-preview-bar] {
             pw-glow 4s ease-in-out 1.6s infinite alternate;
     }
     .pw-monogram {
-        animation:
-            pw-draw 2.2s cubic-bezier(0.65, 0, 0.35, 1) both,
-            pw-shine 5s ease-in-out 2.4s infinite;
+        animation: pw-draw 2.2s cubic-bezier(0.65, 0, 0.35, 1) both;
     }
     .pw-meadow {
         transform-origin: 50% 100%;
@@ -1585,10 +1583,20 @@ body:has([data-opening]) [data-preview-bar] {
         );
         transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
     }
+    /* Only opacity and scale on scroll: both run on the compositor, so no repaint per frame. */
     .pw-hero-centre {
         opacity: clamp(0, calc(1 - var(--s, 0) * 1.9), 1);
         scale: calc(1 + var(--s, 0) * 0.55);
-        filter: blur(calc(var(--s, 0) * 8px));
+        will-change: opacity, scale;
+    }
+    .pw-fly-far,
+    .pw-fly-side,
+    .pw-fly-near-left,
+    .pw-fly-near-right,
+    .pw-fly-near-bottom,
+    .pw-bokeh,
+    .pw-depth {
+        will-change: transform, translate, scale;
     }
     .pw-fly-far {
         transform-origin: 50% 100%;
@@ -1714,7 +1722,7 @@ body:has([data-opening]) [data-preview-bar] {
     .pw-art {
         transform-origin: 50% 100%;
         scale: calc(1 - var(--i) * 0.05);
-        filter: saturate(calc(1 - var(--i) * 0.25));
+        will-change: scale;
     }
     .pw-layer {
         --l: clamp(0, calc((var(--s, 1) - var(--o, 0)) / 0.16), 1);
@@ -1739,6 +1747,7 @@ body:has([data-opening]) [data-preview-bar] {
         scale: 1 calc(0.4 + var(--l) * 0.6);
     }
     .pw-scene .pw-card {
+        will-change: opacity, translate;
         opacity: var(--i);
         translate: 0 calc((1 - var(--i)) * 70%);
         pointer-events: auto;
@@ -2016,11 +2025,8 @@ body:has([data-opening]) [data-preview-bar] {
     .pw-dj {
         display: block;
         overflow: hidden;
-        animation: pw-beat 0.5s ease-in-out infinite alternate;
     }
-    .pw-dj-night {
-        mix-blend-mode: screen;
-    }
+
     .pw-beam {
         position: absolute;
         top: -2%;
@@ -2034,17 +2040,18 @@ body:has([data-opening]) [data-preview-bar] {
             color-mix(in oklab, var(--beam) 30%, transparent) 55%,
             transparent 92%
         );
-        clip-path: polygon(47% 0, 53% 0, 100% 100%, 0 100%);
-        filter: blur(5px);
-        opacity: 0.55;
+        /* A soft cone from gradients alone (no blur filter), then only rotated on the compositor. */
+        clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+        mask-image: linear-gradient(to right, transparent, #000 30%, #000 70%, transparent);
+        opacity: 0.5;
+        will-change: rotate;
         animation-name: pw-beam;
         animation-timing-function: ease-in-out;
         animation-iteration-count: infinite;
         animation-direction: alternate;
     }
     .pw-dj:not(.pw-dj-night) .pw-beam {
-        opacity: 0.7;
-        filter: blur(7px);
+        opacity: 0.65;
     }
     .pw-beam-head {
         position: absolute;
@@ -2066,8 +2073,8 @@ body:has([data-opening]) [data-preview-bar] {
             color-mix(in oklab, var(--beam) 70%, transparent),
             transparent
         );
-        filter: blur(6px);
         opacity: 0.6;
+        will-change: translate;
     }
     .pw-spot-a {
         left: 0;

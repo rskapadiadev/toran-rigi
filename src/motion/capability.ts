@@ -43,6 +43,15 @@ export function probeFps(durationMs = 600): Promise<number> {
     });
 }
 
+const settled = () =>
+    new Promise<void>((resolve) => {
+        const idle = () => {
+            window.setTimeout(resolve, 1200);
+        };
+        if (document.readyState === 'complete') idle();
+        else window.addEventListener('load', idle, { once: true });
+    });
+
 let tier: MotionTier | undefined;
 const listeners = new Set<() => void>();
 
@@ -51,14 +60,18 @@ function subscribe(listener: () => void) {
     if (tier === undefined) {
         tier = detectTier();
         if (tier === 'full') {
-            void probeFps().then((fps) => {
-                if (fps < 45) {
-                    tier = 'lite';
-                    listeners.forEach((l) => {
-                        l();
-                    });
-                }
-            });
+            // Measured once the page has loaded and gone quiet: during load, image decoding and
+            // hydration make every phone look slow, and a wrong downgrade visibly swaps effects.
+            void settled()
+                .then(() => probeFps(1000))
+                .then((fps) => {
+                    if (fps < 40) {
+                        tier = 'lite';
+                        listeners.forEach((l) => {
+                            l();
+                        });
+                    }
+                });
         }
     }
     return () => {

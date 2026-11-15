@@ -235,16 +235,17 @@ export function GardenCover() {
     const live = tier === 'full';
     const hero = useRef<HTMLElement>(null);
     const scene = useRef<HTMLDivElement>(null);
-    useStageProgress(hero, live, 0);
+    useStageProgress(hero, true, 0);
     useTilt(scene, live);
     return (
         <>
-            <section ref={hero} className={cn('pw-hero relative', live && 'h-[220svh]')}>
+            {/* Same layout on every device (no swap after load); reduced motion just unpins it. */}
+            <section ref={hero} className="pw-hero relative h-[220svh] motion-reduce:h-auto">
                 <div
                     ref={scene}
                     className={cn(
-                        'pw-hero-sky top-0 h-svh min-h-[560px] overflow-hidden',
-                        live ? 'sticky' : 'relative',
+                        'pw-hero-sky top-0 h-dvh min-h-[560px] overflow-hidden',
+                        'sticky motion-reduce:relative',
                     )}
                 >
                     <Bokeh />
@@ -291,12 +292,12 @@ export function GardenCover() {
                         <Meadow className="pw-soft size-full" style={{ animationDelay: '0.2s' }} />
                     </Depth>
                     <Ambient kind="butterflies" />
-                    {live && (
-                        <div className="pw-hero-cue absolute inset-x-0 bottom-[3svh] z-10 flex flex-col items-center gap-2 text-[10px] tracking-[0.4em] text-white uppercase drop-shadow">
+                    {
+                        <div className="pw-hero-cue absolute inset-x-0 bottom-[3svh] z-10 flex flex-col items-center gap-2 text-[10px] tracking-[0.4em] text-white uppercase drop-shadow motion-reduce:hidden">
                             Scroll
                             <span className="pw-cue-line h-10 w-px bg-white/80" />
                         </div>
-                    )}
+                    }
                 </div>
             </section>
         </>
@@ -522,7 +523,7 @@ function CeremonyScene({ event, index, day }: SceneProps) {
     const live = tier === 'full';
     const page = pageFor(event.kind);
     const scene = useRef<HTMLElement>(null);
-    useStageProgress(scene, live);
+    useStageProgress(scene, true);
     const when = dayParts(zonedToUtc(event.startsAt, event.timezone), event.timezone);
     const sky = {
         background: page.sky,
@@ -533,43 +534,45 @@ function CeremonyScene({ event, index, day }: SceneProps) {
         <section
             ref={scene}
             id={`pw-${event.id}`}
-            className={cn('pw-scene relative', live && 'h-[300svh]', page.dark && 'pw-dark')}
+            className={cn(
+                'pw-scene relative h-[300svh] motion-reduce:h-auto',
+                page.dark && 'pw-dark',
+            )}
         >
             <div
                 className={cn(
                     'top-0 overflow-hidden',
-                    live ? 'sticky h-svh min-h-[600px]' : 'relative pb-6',
+                    'sticky h-dvh min-h-[600px] motion-reduce:relative motion-reduce:h-auto motion-reduce:pb-6',
                 )}
                 style={sky}
             >
                 {page.dark && <Stars />}
                 {page.lights && live && <DjLights dark={page.dark} />}
                 {page.lights && <MirrorBall />}
-                <header className="pw-scene-head relative z-[2] px-6 pt-[7svh] text-center @5xl:absolute @5xl:end-[6%] @5xl:top-[9svh] @5xl:w-[min(32rem,40cqw)] @5xl:pt-0">
-                    <p
-                        className="text-[11px] font-semibold tracking-[0.4em] uppercase"
-                        style={{ color: page.tint }}
-                    >
-                        Day {day} · {when.weekday} {when.day} {when.month}
-                    </p>
-                    {event.dressCode?.title && (
-                        <h2 className="inv-display mt-3 text-[clamp(2.2rem,10cqw,4.2rem)] leading-[1.02]">
-                            {t(event.dressCode.title)}
-                        </h2>
-                    )}
-                    <p className="mt-3 flex items-center justify-center gap-3 text-sm font-semibold tracking-[0.3em] uppercase">
-                        <span className="h-px w-8 bg-current opacity-40" />
-                        <Editable path={eventPath(index, 'title')}>{t(event.title)}</Editable>
-                        <span className="h-px w-8 bg-current opacity-40" />
-                    </p>
-                </header>
+                {/* Title above, details below, in one column so the card never covers the title. */}
+                <div className="pointer-events-none absolute inset-0 z-[3] flex flex-col justify-between gap-4 px-3 pt-[6svh] pb-3 motion-reduce:relative motion-reduce:pb-6 @5xl:start-auto @5xl:end-[6%] @5xl:w-[min(32rem,40cqw)] @5xl:justify-center @5xl:gap-6 @5xl:px-0 @5xl:py-[6svh]">
+                    <header className="pw-scene-head pointer-events-auto relative shrink-0 px-3 text-center">
+                        <p
+                            className="text-[11px] font-semibold tracking-[0.4em] uppercase"
+                            style={{ color: page.tint }}
+                        >
+                            Day {day} · {when.weekday} {when.day} {when.month}
+                        </p>
+                        {event.dressCode?.title && (
+                            <h2 className="inv-display mt-3 text-[clamp(2.2rem,10cqw,4.2rem)] leading-[1.02] [@media(max-height:760px)]:mt-2 [@media(max-height:760px)]:text-[clamp(1.8rem,8.5cqw,3rem)]">
+                                {t(event.dressCode.title)}
+                            </h2>
+                        )}
+                        <p className="mt-3 flex items-center justify-center gap-3 text-sm font-semibold tracking-[0.3em] uppercase">
+                            <span className="h-px w-8 bg-current opacity-40" />
+                            <Editable path={eventPath(index, 'title')}>{t(event.title)}</Editable>
+                            <span className="h-px w-8 bg-current opacity-40" />
+                        </p>
+                    </header>
+                    <DetailsCard event={event} index={index} />
+                </div>
                 <div
-                    className={cn(
-                        'pw-art z-[1] mx-auto w-[min(100%,calc(74svh*0.745))] @5xl:w-[min(52cqw,calc(84svh*0.745))]',
-                        live
-                            ? 'absolute inset-x-0 bottom-0 @5xl:start-[4%] @5xl:end-auto @5xl:mx-0'
-                            : 'relative mt-6',
-                    )}
+                    className="pw-art absolute inset-x-0 bottom-0 z-[1] mx-auto w-[min(100%,calc(74svh*0.745))] motion-reduce:relative @5xl:start-[4%] @5xl:end-auto @5xl:mx-0 @5xl:w-[min(52cqw,calc(84svh*0.745))]"
                     style={art}
                 >
                     {page.layers.map((layer, i) => (
@@ -577,7 +580,6 @@ function CeremonyScene({ event, index, day }: SceneProps) {
                     ))}
                 </div>
                 <Ambient kind={page.ambient} />
-                <DetailsCard event={event} index={index} live={live} />
             </div>
         </section>
     );
@@ -609,11 +611,10 @@ function StageLayer({ layer }: { layer: Layer }) {
 interface DetailsProps {
     event: PublicInvitationEvent;
     index: number;
-    live: boolean;
 }
 
 // Everything a guest needs for the day, on frosted glass over the scene.
-function DetailsCard({ event, index, live }: DetailsProps) {
+function DetailsCard({ event, index }: DetailsProps) {
     const { t, copy } = useInvite();
     const page = pageFor(event.kind);
     const dress = event.dressCode;
@@ -627,18 +628,17 @@ function DetailsCard({ event, index, live }: DetailsProps) {
     return (
         <div
             className={cn(
-                'pw-card z-[3] mx-3 max-h-[calc(100svh-2rem)] overflow-y-auto rounded-[28px] p-6 text-center shadow-[0_30px_60px_-20px_rgba(40,10,30,0.45)] ring-1 backdrop-blur-xl @xl:mx-auto @xl:max-w-md',
-                page.dark ? 'bg-[#0d1638]/70 ring-white/15' : 'bg-white/75 ring-white/60',
-                live
-                    ? 'absolute inset-x-0 bottom-3 @5xl:start-auto @5xl:end-[6%] @5xl:bottom-[8svh] @5xl:w-[min(32rem,40cqw)] @5xl:max-w-none'
-                    : 'relative mt-4',
+                'pw-card pointer-events-auto min-h-0 w-full overflow-y-auto rounded-[28px] p-6 text-center shadow-[0_30px_60px_-20px_rgba(40,10,30,0.45)] ring-1 @xl:mx-auto @xl:max-w-md @5xl:max-w-none @5xl:backdrop-blur-xl [@media(max-height:760px)]:rounded-3xl [@media(max-height:760px)]:p-4',
+                page.dark
+                    ? 'bg-[#0d1638]/92 ring-white/15 @5xl:bg-[#0d1638]/70'
+                    : 'bg-white/92 ring-white/60 @5xl:bg-white/75',
             )}
         >
-            <p className="inv-display text-2xl">
+            <p className="inv-display text-2xl [@media(max-height:760px)]:text-xl">
                 {time} · <Editable path={eventPath(index, 'venue')}>{event.venue}</Editable>
             </p>
             {event.address && (
-                <p className="mt-1 text-[15px] opacity-80">
+                <p className="mt-1 text-[15px] opacity-80 [@media(max-height:760px)]:text-[13px]">
                     <Editable path={eventPath(index, 'address')}>{event.address}</Editable>
                 </p>
             )}
@@ -646,11 +646,16 @@ function DetailsCard({ event, index, live }: DetailsProps) {
                 <EventActions event={event} />
             </div>
             {dress?.note && (
-                <div className="mt-5 border-t border-current/15 pt-5">
+                <div className="mt-5 border-t border-current/15 pt-5 [@media(max-height:760px)]:mt-3 [@media(max-height:760px)]:pt-3">
                     <p className={label}>{copy('dressCode')}</p>
-                    <p className="mt-1.5 text-[16px] leading-snug">{t(dress.note)}</p>
+                    <p className="mt-1.5 text-[16px] leading-snug [@media(max-height:760px)]:text-[14px]">
+                        {t(dress.note)}
+                    </p>
                     {dress.swatches.length > 0 && (
-                        <div className="mt-3 flex justify-center gap-2" aria-hidden>
+                        <div
+                            className="mt-3 flex justify-center gap-2 [@media(max-height:760px)]:mt-2"
+                            aria-hidden
+                        >
                             {dress.swatches.map((c) => (
                                 <span
                                     key={c}
@@ -663,23 +668,27 @@ function DetailsCard({ event, index, live }: DetailsProps) {
                 </div>
             )}
             {(dress?.ladies ?? dress?.gentlemen) && (
-                <div className="mt-5 grid gap-3 text-start @xl:grid-cols-2">
+                <div className="mt-5 grid gap-3 text-start @xl:grid-cols-2 [@media(max-height:760px)]:mt-3 [@media(max-height:760px)]:grid-cols-2 [@media(max-height:760px)]:gap-2">
                     {dress.ladies && (
-                        <div className="rounded-2xl bg-current/[0.06] p-3.5">
+                        <div className="rounded-2xl bg-current/[0.06] p-3.5 [@media(max-height:760px)]:p-2.5">
                             <p className={label}>For the ladies</p>
-                            <p className="mt-1 text-[15px] leading-snug">{t(dress.ladies)}</p>
+                            <p className="mt-1 text-[15px] leading-snug [@media(max-height:760px)]:text-[13px]">
+                                {t(dress.ladies)}
+                            </p>
                         </div>
                     )}
                     {dress.gentlemen && (
-                        <div className="rounded-2xl bg-current/[0.06] p-3.5">
+                        <div className="rounded-2xl bg-current/[0.06] p-3.5 [@media(max-height:760px)]:p-2.5">
                             <p className={label}>For the gentlemen</p>
-                            <p className="mt-1 text-[15px] leading-snug">{t(dress.gentlemen)}</p>
+                            <p className="mt-1 text-[15px] leading-snug [@media(max-height:760px)]:text-[13px]">
+                                {t(dress.gentlemen)}
+                            </p>
                         </div>
                     )}
                 </div>
             )}
             {event.description && (
-                <p className="mt-5 text-[15px] leading-relaxed italic opacity-90">
+                <p className="mt-5 text-[15px] leading-relaxed italic opacity-90 [@media(max-height:760px)]:mt-3 [@media(max-height:760px)]:text-[13px] [@media(max-height:760px)]:leading-snug">
                     “{t(event.description)}”
                 </p>
             )}
@@ -688,8 +697,8 @@ function DetailsCard({ event, index, live }: DetailsProps) {
 }
 
 // Six white stage lights; warm white by day, cool white at night.
-const nightBeams = ['#ffffff', '#f4f7ff', '#ffffff', '#f4f7ff', '#ffffff', '#f4f7ff'];
-const dayBeams = ['#ffffff', '#fffaf0', '#ffffff', '#fffaf0', '#ffffff', '#fffaf0'];
+const nightBeams = ['#ffffff', '#f4f7ff', '#ffffff', '#f4f7ff'];
+const dayBeams = ['#ffffff', '#fffaf0', '#ffffff', '#fffaf0'];
 
 // Party lights in white: beams swing from heads along the top, spots sweep the floor, pulsing to a beat.
 function DjLights({ dark }: { dark: boolean }) {
@@ -704,13 +713,13 @@ function DjLights({ dark }: { dark: boolean }) {
         >
             {colours.map((c, i) => {
                 const beam = {
-                    left: `${String(8 + i * 16.8)}%`,
+                    left: `${String(12 + i * 25)}%`,
                     '--beam': c,
                     animationDuration: `${String(3.2 + ((i * 7) % 5) * 0.55)}s`,
                     animationDelay: `${String(i * -0.9)}s`,
                 } as CSSProperties;
                 const head = {
-                    left: `${String(8 + i * 16.8)}%`,
+                    left: `${String(12 + i * 25)}%`,
                     background: c,
                     boxShadow: `0 0 14px 5px ${c}`,
                 };
@@ -756,7 +765,7 @@ const glints = [
         d: '2.1s',
     },
 ];
-const specks = Array.from({ length: 22 }, (_, i) => ({
+const specks = Array.from({ length: 12 }, (_, i) => ({
     x: (i * 41 + 9) % 100,
     y: (i * 23 + 5) % 90,
     s: 3 + (i % 3) * 2,
@@ -840,7 +849,7 @@ function MirrorBall() {
     );
 }
 
-const starField = Array.from({ length: 40 }, (_, i) => ({
+const starField = Array.from({ length: 24 }, (_, i) => ({
     x: (i * 53 + 7) % 100,
     y: (i * 29 + 3) % 62,
     d: (i * 0.37) % 4,

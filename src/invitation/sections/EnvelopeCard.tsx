@@ -5,8 +5,17 @@
 import { cultureOf } from '@shared/cultures';
 import { materialSvg, mixHex } from '@shared/materials';
 import { cultureMotifs, motifs } from '@shared/motifs';
-import { m, useTransform } from 'motion/react';
-import { type CSSProperties, type ReactNode, useId, useMemo, useRef } from 'react';
+import { m, useMotionTemplate, useTransform } from 'motion/react';
+import {
+    type CSSProperties,
+    type ReactNode,
+    type RefObject,
+    useEffect,
+    useId,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 
 import { useInvite } from '../context';
 import { WaxSeal } from '../openings/EnvelopeOpening';
@@ -37,9 +46,13 @@ interface Materials {
     band: string;
 }
 
-function useMaterials(): Materials & { cream: string;
-gold: string;
-motifId: keyof typeof motifs } {
+interface SectionMaterials extends Materials {
+    cream: string;
+    gold: string;
+    motifId: keyof typeof motifs;
+}
+
+function useMaterials(): SectionMaterials {
     const { data } = useInvite();
     const { design, seed, culture } = data.invitation;
     const p = design.palette;
@@ -91,9 +104,13 @@ motifId: keyof typeof motifs } {
     }, [p.bg, p.gold, p.primary, motifId, seed]);
 }
 
-function Pattern({ id, href, tile }: { id: string;
-href: string;
-tile: number }) {
+interface PatternProps {
+    id: string;
+    href: string;
+    tile: number;
+}
+
+function Pattern({ id, href, tile }: PatternProps) {
     return (
         <pattern id={id} patternUnits="userSpaceOnUse" width={tile} height={tile}>
             <image href={href} width={tile} height={tile} />
@@ -257,16 +274,72 @@ interface Props {
     children: ReactNode;
 }
 
+interface CardFit {
+    startY: number;
+    riseY: number;
+    endY: number;
+    scale: number;
+}
+
+// Where the card rests (px from its starting place) and how much it shrinks so all of it fits on
+// screen, measured from the real card: wording, names and ceremonies vary per invitation.
+function useCardFit(
+    box: RefObject<HTMLDivElement | null>,
+    card: RefObject<HTMLDivElement | null>,
+): CardFit {
+    const [fit, setFit] = useState<CardFit>({
+        startY: 0,
+        riseY: 0,
+        endY: 0,
+        scale: 1,
+    });
+    useEffect(() => {
+        const b = box.current;
+        const c = card.current;
+        if (!b || !c) return;
+        const measure = () => {
+            const vh = window.innerHeight;
+            const h = c.offsetHeight;
+            // The card's top sits 5% down the envelope; the envelope is centred on screen.
+            const top = (vh - b.offsetHeight) / 2 + c.offsetTop;
+            const scale = Math.min(1, (vh * 0.9) / h);
+            setFit({
+                startY: h * 0.36,
+                riseY: -h * 0.06,
+                endY: vh / 2 - (top + h / 2),
+                scale,
+            });
+        };
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(c);
+        window.addEventListener('resize', measure);
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', measure);
+        };
+    }, [box, card]);
+    return fit;
+}
+
 export function EnvelopeCard({ children }: Props) {
     const { data, tier, names } = useInvite();
     const { seed, design } = data.invitation;
     const mat = useMaterials();
     const ref = useRef<HTMLDivElement>(null);
+    const box = useRef<HTMLDivElement>(null);
+    const card = useRef<HTMLDivElement>(null);
     const { scrollYProgress: p } = useSectionScroll(ref);
+    const fit = useCardFit(box, card);
 
-    // The card starts tucked in with its top showing, rises clear, then settles at full size.
-    const cardY = useTransform(p, [0.04, 0.5], ['36%', '-6%']);
-    const cardScale = useTransform(p, [0.42, 0.7], [0.92, 1]);
+    // The card starts tucked in with its top showing, rises clear, then settles centred on the
+    // screen, scaled down if its words make it taller than the screen.
+    const cardY = useTransform(p, [0.04, 0.5, 0.8], [fit.startY, fit.riseY, fit.endY]);
+    const cardScale = useTransform(p, [0.42, 0.8], [0.92, fit.scale]);
+    // Clipped at the pocket while the card is inside it; the clip drops away with the envelope so
+    // a long card is never cut off.
+    const clipBottom = useTransform(p, [0.5, 0.7], [0, -400]);
+    const clip = useMotionTemplate`inset(-80% -20% ${clipBottom}% -20%)`;
     const envY = useTransform(p, [0.5, 0.8], ['0%', '72%']);
     const envFade = useTransform(p, [0.6, 0.85], [1, 0]);
     // A slow sheen travels across the silk as guests scroll.
@@ -288,10 +361,10 @@ export function EnvelopeCard({ children }: Props) {
                         background: `radial-gradient(60% 45% at 50% 52%, ${mixHex(mat.gold, '#ffffff', 0.3)}33, transparent 70%)`,
                     }}
                 />
-                <div
+                <m.div
+                    ref={box}
                     className="relative aspect-[3/4] w-[min(84cqw,440px)]"
-                    // Clipped at the envelope's bottom edge only: the card may rise above, never hang below.
-                    style={{ clipPath: 'inset(-80% -20% 0 -20%)' }}
+                    style={{ clipPath: clip }}
                 >
                     <m.div
                         className="absolute inset-0"
@@ -304,7 +377,8 @@ export function EnvelopeCard({ children }: Props) {
                     </m.div>
 
                     <m.div
-                        className="absolute inset-x-0 top-[5%] z-10"
+                        ref={card}
+                        className="absolute inset-x-0 top-[5%] z-10 origin-center"
                         style={{
                             y: cardY,
                             scale: cardScale,
@@ -346,7 +420,7 @@ export function EnvelopeCard({ children }: Props) {
                             </div>
                         </div>
                     </m.div>
-                </div>
+                </m.div>
                 <m.div
                     className="absolute inset-x-0 bottom-[4svh] flex justify-center"
                     style={{ opacity: hint }}
