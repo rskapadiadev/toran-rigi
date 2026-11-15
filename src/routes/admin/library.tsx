@@ -6,6 +6,7 @@ import {
     openingChoices,
     sceneInfo,
 } from '@shared/blocks';
+import { brandingInfo, type BrandingStyle, brandingStyles } from '@shared/branding';
 import { generateOrnament, generativeInfo, seedFrom, type StrokeRole } from '@shared/generative';
 import { motifLabel, motifs } from '@shared/motifs';
 import { categoryInfo } from '@shared/occasions';
@@ -15,6 +16,7 @@ import type { EdgeKind, EnterPreset, SceneKind, SectionConfig, SectionType } fro
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import {
+    BadgeCheck,
     Brush,
     Dices,
     DoorOpen,
@@ -60,6 +62,7 @@ const categoryIds = [
     'motifs',
     'generative',
     'themes',
+    'branding',
 ] as const;
 type CategoryId = (typeof categoryIds)[number];
 
@@ -295,6 +298,19 @@ const catalogue: Category[] = [
     },
 ];
 
+const brandingCategory: Category = {
+    id: 'branding',
+    label: 'Branding',
+    hint: 'The small “Created with Toran” mark at the foot of every invitation',
+    icon: BadgeCheck,
+    items: brandingStyles.map((style) => ({
+        key: style,
+        label: brandingInfo[style].label,
+        hint: brandingInfo[style].hint,
+    })),
+};
+catalogue.push(brandingCategory);
+
 const section = (type: SectionType, patch: Partial<SectionConfig> = {}): SectionConfig => ({
     type,
     enabled: true,
@@ -409,6 +425,22 @@ function previewFor(
                             }),
                             section('events', { edge: 'none' }),
                         ],
+                    },
+                },
+                opening: false,
+            };
+        // The page's last section, then the mark beneath it.
+        case 'branding':
+            return {
+                data: {
+                    ...base,
+                    invitation: {
+                        ...invitation,
+                        extras: {
+                            ...invitation.extras,
+                            branding: { style: key as BrandingStyle },
+                        },
+                        sections: [section('closing', { enter: 'none' })],
                     },
                 },
                 opening: false,

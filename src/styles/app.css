@@ -2171,3 +2171,21 @@ body:has([data-opening]) [data-preview-bar] {
         rotate: 360deg;
     }
 }
+
+/* Branding toran: each strand swings a little from its nail. */
+@media (prefers-reduced-motion: no-preference) {
+    .bt-strand {
+        animation-name: bt-swing;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
+    }
+}
+@keyframes bt-swing {
+    from {
+        rotate: -5deg;
+    }
+    to {
+        rotate: 5deg;
+    }
+}

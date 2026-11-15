@@ -38,19 +38,24 @@ function upsert(table: string, row: Record<string, unknown>, conflict: string): 
 }
 
 const sql: string[] = [];
+// The super admin's email changes only when --admin is given; a plain re-seed keeps whoever is set
+// (on production that is the real inbox sign-in codes go to).
+const adminGiven = process.argv.some((a) => a.startsWith('--admin'));
 const admin = option('admin', 'admin@therigi.co');
-
+const adminRow = upsert(
+    'users',
+    {
+        id: 'usr_superadmin',
+        email: admin,
+        name: 'Super Admin',
+        role: 'super_admin',
+    },
+    'id',
+);
 sql.push(
-    upsert(
-        'users',
-        {
-            id: 'usr_superadmin',
-            email: admin,
-            name: 'Super Admin',
-            role: 'super_admin',
-        },
-        'id',
-    ),
+    adminGiven
+        ? adminRow
+        : adminRow.replace(/ON CONFLICT\(id\) DO UPDATE SET .*;$/, 'ON CONFLICT(id) DO NOTHING;'),
 );
 
 packageCatalog.forEach((p, i) => {

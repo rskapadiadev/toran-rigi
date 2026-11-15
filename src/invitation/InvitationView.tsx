@@ -21,6 +21,7 @@ import {
 
 import { useMotionTier } from '../motion/capability';
 import { StageContext } from '../motion/Reveal';
+import { Branding } from './Branding';
 import { InviteProvider, useInvite } from './context';
 import { createPlayer, type MusicPlan, type MusicPlayer } from './music/player';
 import { Opening } from './openings/Opening';
@@ -73,7 +74,7 @@ function Credits() {
     const credits = data.invitation.extras.credits ?? [];
     if (credits.length === 0) return null;
     return (
-        <footer className="px-6 pt-4 pb-24 text-center text-[11px] leading-relaxed opacity-60">
+        <footer className="px-6 pt-4 text-center text-[11px] leading-relaxed opacity-60">
             {credits.map((c) => (
                 <p key={c.blobKey}>
                     <a
@@ -322,6 +323,7 @@ function Experience({ embedded, skipOpening }: ExperienceProps) {
                                 })}
                             </LazyMotion>
                             <Credits />
+                            <Branding />
                         </StageContext>
                     </ReplayOpeningContext>
                 </ScrollRootContext>

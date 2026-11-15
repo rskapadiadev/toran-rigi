@@ -1,4 +1,5 @@
 import { applyLayout, openingChoiceFor, openingChoices } from '@shared/blocks';
+import { brandingInfo, brandingStyles, DEFAULT_BRANDING } from '@shared/branding';
 import { cultureIds, cultureOf, eventLabel } from '@shared/cultures';
 import { type FontKey, fonts, fontStack } from '@shared/fonts';
 import { generativeInfo, seedFrom } from '@shared/generative';
@@ -769,6 +770,68 @@ export function DesignPanel({ draft, set }: PanelProps) {
                     >
                         <Dices /> Shuffle the generative art
                     </Button>
+                </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="branding">
+                <AccordionTrigger className={sectionTrigger}>Branding</AccordionTrigger>
+                <AccordionContent className="space-y-2 pb-5">
+                    <p className="text-xs text-muted-foreground">
+                        The small “Created with Toran” mark at the foot of the page. It links to our
+                        site.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                        {brandingStyles.map((style) => {
+                            const on = (draft.extras.branding?.style ?? DEFAULT_BRANDING) === style;
+                            return (
+                                <button
+                                    key={style}
+                                    type="button"
+                                    aria-pressed={on}
+                                    onClick={() => {
+                                        set((d) => ({
+                                            ...d,
+                                            extras: {
+                                                ...d.extras,
+                                                branding: {
+                                                    ...d.extras.branding,
+                                                    style,
+                                                },
+                                            },
+                                        }));
+                                    }}
+                                    className={cn(
+                                        'rounded-lg border p-2.5 text-start transition hover:border-gold/60',
+                                        on && 'border-primary bg-primary/5 ring-1 ring-primary',
+                                    )}
+                                >
+                                    <span className="block text-[13px] font-medium">
+                                        {brandingInfo[style].label}
+                                    </span>
+                                    <span className="line-clamp-2 text-xs text-muted-foreground">
+                                        {brandingInfo[style].hint}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <SwitchRow
+                        id="branding-dark"
+                        label="Dark background"
+                        description="A night-dark band behind the mark."
+                        checked={draft.extras.branding?.dark ?? false}
+                        onChange={(dark) => {
+                            set((d) => ({
+                                ...d,
+                                extras: {
+                                    ...d.extras,
+                                    branding: {
+                                        style: d.extras.branding?.style ?? DEFAULT_BRANDING,
+                                        dark,
+                                    },
+                                },
+                            }));
+                        }}
+                    />
                 </AccordionContent>
             </AccordionItem>
         </Accordion>

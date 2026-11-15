@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { brandingStyles } from '../branding';
 import { musicSources, musicStyles } from '../music';
 import { occasionIds } from '../occasions';
 import { stockKinds, stockProviders } from '../stock';
@@ -290,6 +291,14 @@ export const extrasSchema = z.object({
         })
         .optional(),
     wishes: z.object({ enabled: z.boolean() }).optional(),
+    // Which "Created with Toran" mark sits at the foot of the page (see shared/branding.ts).
+    branding: z
+        .object({
+            style: z.enum(brandingStyles),
+            // A night-dark band behind the mark instead of the page's own colour.
+            dark: z.boolean().optional(),
+        })
+        .optional(),
     // Credits for free stock media (Pixabay / Openverse). CC BY-style licences require them on the page.
     credits: z
         .array(

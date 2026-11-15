@@ -139,7 +139,13 @@ const rawDemos: DemoInvitation[] = [
                 },
             },
         ],
-        extras: { wishes: { enabled: true } },
+        extras: {
+            wishes: { enabled: true },
+            branding: {
+                style: 'signature',
+                dark: true,
+            },
+        },
         sections: [
             'cover',
             'story',
