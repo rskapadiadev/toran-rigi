@@ -22,6 +22,41 @@
       "when": 1794724455874,
       "tag": "0002_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1794761545675,
+      "tag": "0003_template_posters",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794765065980,
+      "tag": "0004_template_prices",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794765769282,
+      "tag": "0005_template_default_price",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794766160725,
+      "tag": "0006_template_usd_prices",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1794766321462,
+      "tag": "0007_template_default_was_price",
+      "breakpoints": true
     }
   ]
 }

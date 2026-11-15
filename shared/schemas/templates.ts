@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { cultureIds } from '../cultures';
 import { occasionIds } from '../occasions';
+import { priceMapSchema } from '../pricing';
 
 const culture = z
     .string()
@@ -28,6 +29,9 @@ export const updateTemplateInput = z
         isFeatured: z.boolean(),
         fromPackage: z.string().max(40),
         sort: z.number().int().min(0).max(10_000),
+        // Null clears it: the template then sells at its package's price, with no "was" price.
+        prices: priceMapSchema.nullable(),
+        comparePrices: priceMapSchema.nullable(),
     })
     .partial();
 export type UpdateTemplateInput = z.infer<typeof updateTemplateInput>;

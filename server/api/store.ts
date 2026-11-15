@@ -33,6 +33,7 @@ import {
     payOrderFake,
     publishMine,
     saveMyContent,
+    shopCurrency,
     type StoreCustomer,
     storeTemplate,
 } from '../repos/store';
@@ -42,6 +43,8 @@ interface StoreEnv extends AppEnv {
     Variables: { customer: StoreCustomer };
 }
 
+// Set by the shop's currency switcher (readable by the page, no secrets in it).
+const CURRENCY_COOKIE = 'toran_currency';
 const CODE_TTL_MS = 10 * 60_000;
 const MAX_ATTEMPTS = 5;
 const SESSION_DAYS = 60;
@@ -62,9 +65,18 @@ const requireCustomer: MiddlewareHandler<StoreEnv> = async (c, next) => {
     await next();
 };
 
-// The visitor's currency: dirhams in the UAE, rupees elsewhere.
-const currencyOf = (c: Context<StoreEnv>) =>
-    (c.req.header('cf-ipcountry') ?? c.req.query('country')) === 'AE' ? 'AED' : 'INR';
+// Where the visitor is (Cloudflare's country stamp; ?country= in local testing) and the currency
+// they see: rupees in India, their own currency elsewhere, or what they picked in the switcher.
+async function shopWhere(c: Context<StoreEnv>) {
+    const country = c.req.header('cf-ipcountry') ?? c.req.query('country') ?? null;
+    const known = country && country !== 'XX' && country !== 'T1' ? country : null;
+    const { currency, rates } = await shopCurrency(known, getCookie(c, CURRENCY_COOKIE));
+    return {
+        currency,
+        rates,
+        country: known,
+    };
+}
 
 const contentInput = saveInvitationInput
     .pick({ content: true })
@@ -93,16 +105,17 @@ storeApi.onError((error, c) => {
 // ── Public ──────────────────────────────────────────────────────────────────
 
 storeApi.get('/templates', async (c) => {
-    const currency = currencyOf(c);
+    const { currency, rates } = await shopWhere(c);
     return c.json({
         currency,
-        templates: await listStoreTemplates(currency),
+        templates: await listStoreTemplates(currency, rates),
     });
 });
 
-storeApi.get('/templates/:slug', async (c) =>
-    c.json(await storeTemplate(c.req.param('slug'), currencyOf(c))),
-);
+storeApi.get('/templates/:slug', async (c) => {
+    const { currency, rates } = await shopWhere(c);
+    return c.json(await storeTemplate(c.req.param('slug'), currency, rates));
+});
 
 // ── Sign in ─────────────────────────────────────────────────────────────────
 
@@ -186,7 +199,7 @@ storeApi.post('/me/buy/:slug', async (c) => {
     if (!parsed.success)
         return fail(c, 422, parsed.error.issues[0]?.message ?? 'Check your details');
     return c.json(
-        await buyTemplate(c.get('customer'), c.req.param('slug'), parsed.data, currencyOf(c)),
+        await buyTemplate(c.get('customer'), c.req.param('slug'), parsed.data, await shopWhere(c)),
     );
 });
 

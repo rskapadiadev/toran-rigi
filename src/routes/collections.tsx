@@ -32,7 +32,7 @@ function Collections() {
     const on = 'border-gold bg-gold text-night';
     const off = 'border-white/15 text-ivory/75 hover:border-white/30 hover:text-ivory';
     return (
-        <ShopShell tone="dark">
+        <ShopShell tone="dark" currency={currency}>
             <section className="relative overflow-hidden">
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_20%_0%,rgba(195,154,78,0.2),transparent_55%),radial-gradient(circle_at_90%_10%,rgba(110,26,46,0.6),transparent_55%)]" />
                 <div className="relative mx-auto max-w-6xl px-5 pt-32">

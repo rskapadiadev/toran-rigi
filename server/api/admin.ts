@@ -32,6 +32,7 @@ import {
     OrderError,
     updateOrderStatus,
 } from '../repos/orders';
+import { refreshUsdRates, usdRates } from '../services/fx';
 
 export const adminApi = new Hono<AdminEnv>();
 
@@ -71,6 +72,17 @@ adminApi.get('/dashboard', requirePermission('dashboard.view'), async (c) => {
 });
 
 adminApi.get('/catalog', async (c) => c.json(await listCatalog()));
+
+// Exchange rates behind the shop's local prices: the stored snapshot, and refreshing it on demand.
+adminApi.get('/fx', requirePermission('billing.view'), async (c) => c.json(await usdRates()));
+
+adminApi.post('/fx/refresh', requirePermission('catalog.manage'), async (c) => {
+    try {
+        return c.json(await refreshUsdRates());
+    } catch {
+        return fail(c, 409, 'Couldn’t reach the exchange-rate service. Try again in a minute');
+    }
+});
 adminApi.get('/staff', async (c) => c.json(await listStaff()));
 
 adminApi.get('/orders', requirePermission('orders.view'), async (c) => {

@@ -1,3 +1,4 @@
+import type { PriceMap } from '@shared/pricing';
 import type { InvitationDesign } from '@shared/types';
 
 export type TemplateStatus = 'draft' | 'published' | 'archived';
@@ -11,6 +12,9 @@ export interface TemplateRow {
     eventKind: string;
     culture: string;
     fromPackage: string;
+    posterKey: string | null;
+    prices: PriceMap | null;
+    comparePrices: PriceMap | null;
     status: TemplateStatus;
     isFeatured: boolean;
     sort: number;

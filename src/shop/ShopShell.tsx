@@ -1,3 +1,4 @@
+import { featuredCurrencies } from '@shared/fx';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { type ReactNode, useEffect } from 'react';
@@ -21,9 +22,11 @@ interface ShopShellProps {
     bare?: boolean;
     // Landing and collections: the night-and-gold editorial look.
     tone?: 'light' | 'dark';
+    // The currency prices are shown in; the footer's switcher changes it.
+    currency?: string;
 }
 
-export function ShopShell({ children, bare = false, tone = 'light' }: ShopShellProps) {
+export function ShopShell({ children, bare = false, tone = 'light', currency }: ShopShellProps) {
     const dark = tone === 'dark';
     useEffect(() => {
         document.documentElement.classList.add('shop-ui');
@@ -37,12 +40,12 @@ export function ShopShell({ children, bare = false, tone = 'light' }: ShopShellP
                 className={cn(
                     'shop min-h-dvh',
                     bare && 'h-dvh overflow-hidden',
-                    dark && 'shop-dark bg-night text-ivory',
+                    dark && 'shop-dark overflow-x-clip bg-night text-ivory',
                 )}
             >
                 {!bare && (dark ? <FloatingHeader /> : <ShopHeader />)}
                 {children}
-                {!bare && <ShopFooter dark={dark} />}
+                {!bare && <ShopFooter dark={dark} currency={currency} />}
             </div>
             <Toaster position="top-center" />
         </QueryClientProvider>
@@ -80,7 +83,50 @@ function ShopHeader() {
     );
 }
 
-function ShopFooter({ dark }: { dark: boolean }) {
+interface FooterProps {
+    dark: boolean;
+    currency?: string;
+}
+
+// Remembered for a year; the server prices everything in it from the next page load.
+function pickCurrency(code: string) {
+    document.cookie = `toran_currency=${code}; path=/; max-age=31536000; samesite=lax`;
+    window.location.reload();
+}
+
+interface SwitcherProps {
+    currency: string;
+    dark: boolean;
+}
+
+function CurrencySwitcher({ currency, dark }: SwitcherProps) {
+    const options = [...new Set([currency, ...featuredCurrencies])];
+    return (
+        <label className="flex items-center gap-2">
+            <span>Currency</span>
+            <select
+                value={currency}
+                onChange={(e) => {
+                    pickCurrency(e.target.value);
+                }}
+                className={cn(
+                    'rounded-full border px-3 py-1 text-sm',
+                    dark
+                        ? 'border-white/15 bg-white/5 text-ivory'
+                        : 'border-black/10 bg-white text-ink',
+                )}
+            >
+                {options.map((c) => (
+                    <option key={c} value={c} className="text-ink">
+                        {c}
+                    </option>
+                ))}
+            </select>
+        </label>
+    );
+}
+
+function ShopFooter({ dark, currency }: FooterProps) {
     return (
         <footer className={cn('mt-24 border-t', dark ? 'border-white/10' : 'border-black/5')}>
             <div
@@ -100,7 +146,10 @@ function ShopFooter({ dark }: { dark: boolean }) {
                     </span>{' '}
                     · Every celebration begins at the Toran.
                 </p>
-                <p>Toran by Rigi</p>
+                <div className="flex items-center gap-5">
+                    {currency && <CurrencySwitcher currency={currency} dark={dark} />}
+                    <p>Toran by Rigi</p>
+                </div>
             </div>
         </footer>
     );

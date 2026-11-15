@@ -1,5 +1,5 @@
-import { packageCatalog } from '@shared/catalog';
 import { cultureIds } from '@shared/cultures';
+import { formatMoney } from '@shared/money';
 import {
     categoryInfo,
     occasionCategories,
@@ -9,6 +9,7 @@ import {
     occasionsIn,
 } from '@shared/occasions';
 import { can } from '@shared/permissions';
+import { DEFAULT_TEMPLATE_PRICE, type PriceMap, shopPrice } from '@shared/pricing';
 import { themeCatalog } from '@shared/themes';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
@@ -16,6 +17,7 @@ import {
     Archive,
     Copy,
     ExternalLink,
+    ImageUp,
     LayoutTemplate,
     MoreHorizontal,
     Paintbrush,
@@ -27,7 +29,7 @@ import {
     Star,
     Undo2,
 } from 'lucide-react';
-import { type SyntheticEvent, useState } from 'react';
+import { type SyntheticEvent, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -37,6 +39,7 @@ import { categoryIcon, OccasionSelect } from '@/admin/kit/occasion';
 import { EmptyState, PageSkeleton } from '@/admin/kit/page';
 import { InvitationStatusBadge } from '@/admin/kit/status';
 import { cultureLabel } from '@/admin/labels';
+import { fromDraft, MoneyInputs, toDraft } from '@/admin/pricing/MoneyInput';
 import { LiveThumb, TemplatePreviewDialog } from '@/admin/templates/TemplatePreview';
 import { type TemplateRow, templatesQuery, type TemplateStatus } from '@/admin/templates/types';
 import { useMe } from '@/admin/useMe';
@@ -67,7 +70,7 @@ import {
 } from '@/components/ui/sheet';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { api, ApiError, patch, post } from '@/lib/api';
+import { api, ApiError, patch, post, upload } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { formString } from '@/motion/hooks';
 
@@ -324,16 +327,33 @@ interface TemplateCardProps {
     onPreview: () => void;
 }
 
+interface TemplateChange {
+    status?: TemplateStatus;
+    isFeatured?: boolean;
+}
+
 function TemplateCard({ template: t, canManage, onEdit, onPreview }: TemplateCardProps) {
     const client = useQueryClient();
     const navigate = useNavigate();
     const previewUrl = `/p/${t.previewToken}`;
     const refresh = () => client.invalidateQueries(templatesQuery);
     const change = useMutation({
-        mutationFn: (body: { status?: TemplateStatus;
-isFeatured?: boolean }) =>
-            patch(`/admin/templates/${t.id}`, body),
+        mutationFn: (body: TemplateChange) => patch(`/admin/templates/${t.id}`, body),
         onSuccess: refresh,
+        onError: (e) => toast.error(failure(e)),
+    });
+    const coverInput = useRef<HTMLInputElement>(null);
+    // The still picture the shop's landing and collection show for this design.
+    const cover = useMutation({
+        mutationFn: (file: File) => {
+            const form = new FormData();
+            form.append('file', file);
+            return upload(`/admin/templates/${t.id}/poster`, form);
+        },
+        onSuccess: async () => {
+            toast.success('Shop cover picture updated');
+            await refresh();
+        },
         onError: (e) => toast.error(failure(e)),
     });
     const duplicate = useMutation({
@@ -381,12 +401,28 @@ isFeatured?: boolean }) =>
                     </span>
                 </span>
             </button>
+            <input
+                ref={coverInput}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                hidden
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) cover.mutate(file);
+                    e.target.value = '';
+                }}
+            />
             <div className="flex items-center gap-2 border-t px-3 py-2.5">
                 <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{t.name}</p>
                     <p className="truncate text-xs text-muted-foreground">
                         {cultureLabel[t.culture.split('.')[0] ?? ''] ?? t.culture} ·{' '}
-                        <span className="capitalize">{t.fromPackage}</span>
+                        <span className="tabular-nums">
+                            {formatMoney(
+                                shopPrice(t.prices, t.comparePrices, 'INR')?.price ?? 0,
+                                'INR',
+                            )}
+                        </span>
                     </p>
                 </div>
                 <DropdownMenu>
@@ -413,6 +449,12 @@ isFeatured?: boolean }) =>
                             <>
                                 <DropdownMenuItem onSelect={onEdit}>
                                     <Pencil /> Name & details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    disabled={cover.isPending}
+                                    onSelect={() => coverInput.current?.click()}
+                                >
+                                    <ImageUp /> Shop cover picture
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     disabled={duplicate.isPending}
@@ -489,8 +531,12 @@ function CreateTemplate({ occasion, onClose }: CreateTemplateProps) {
     );
 }
 
-function CreateTemplateForm({ initial, onClose }: { initial: OccasionId;
-onClose: () => void }) {
+interface CreateTemplateFormProps {
+    initial: OccasionId;
+    onClose: () => void;
+}
+
+function CreateTemplateForm({ initial, onClose }: CreateTemplateFormProps) {
     const client = useQueryClient();
     const navigate = useNavigate();
     const [occasion, setOccasion] = useState<OccasionId>(initial);
@@ -623,6 +669,13 @@ function TemplateDetails({ template, onClose }: TemplateDetailsProps) {
     );
 }
 
+interface TemplateDetails {
+    name: string;
+    description: string;
+    prices: PriceMap | null;
+    comparePrices: PriceMap | null;
+}
+
 function TemplateDetailsForm({
     template,
     onClose,
@@ -631,10 +684,10 @@ function TemplateDetailsForm({
     onClose: () => void;
 }) {
     const client = useQueryClient();
-    const [pkg, setPkg] = useState(template.fromPackage);
+    const [own, setOwn] = useState(() => toDraft(template.prices));
+    const [was, setWas] = useState(() => toDraft(template.comparePrices));
     const save = useMutation({
-        mutationFn: (body: Record<string, string>) =>
-            patch(`/admin/templates/${template.id}`, body),
+        mutationFn: (body: TemplateDetails) => patch(`/admin/templates/${template.id}`, body),
         onSuccess: async () => {
             toast.success('Template updated');
             await client.invalidateQueries(templatesQuery);
@@ -648,7 +701,8 @@ function TemplateDetailsForm({
         save.mutate({
             name: formString(form, 'name'),
             description: formString(form, 'description'),
-            fromPackage: pkg,
+            prices: fromDraft(own),
+            comparePrices: fromDraft(was),
         });
     };
     return (
@@ -684,25 +738,28 @@ function TemplateDetailsForm({
                         />
                     )}
                 </FormField>
-                <FormField
-                    label="Available from package"
-                    description="The lowest package this template is offered in."
-                >
-                    {(id) => (
-                        <Select value={pkg} onValueChange={setPkg}>
-                            <SelectTrigger id={id} className="w-full">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {packageCatalog.map((p) => (
-                                    <SelectItem key={p.code} value={p.code}>
-                                        {p.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    )}
-                </FormField>
+                <div className="space-y-2">
+                    <p className="text-[13px] font-medium text-foreground/80">Price</p>
+                    <MoneyInputs
+                        label="Price"
+                        value={own}
+                        onChange={setOwn}
+                        placeholders={DEFAULT_TEMPLATE_PRICE}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        What customers pay for this design. Empty means the default (shown greyed).
+                    </p>
+                </div>
+                <div className="space-y-2">
+                    <p className="text-[13px] font-medium text-foreground/80">
+                        Was price <span className="text-muted-foreground">(optional)</span>
+                    </p>
+                    <MoneyInputs label="Was price" value={was} onChange={setWas} />
+                    <p className="text-xs text-muted-foreground">
+                        Shown struck through with the saving, e.g. “₹1,999 ₹999 · 50% off”. Only
+                        shows when it is higher than the price.
+                    </p>
+                </div>
             </div>
             <SheetFooter className="border-t">
                 <Button type="submit" disabled={save.isPending}>

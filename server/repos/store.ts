@@ -1,7 +1,9 @@
 // The self-serve shop: customers browse published templates, try one, buy it and then edit their own
 // copy (words, photos, ceremonies only; the design stays as the studio made it).
 import { cultureOf } from '@shared/cultures';
+import { type RateSnapshot, shopCurrencyFor } from '@shared/fx';
 import { occasionOf } from '@shared/occasions';
+import { shopPrice } from '@shared/pricing';
 import type { EventInput, SaveInvitationInput } from '@shared/schemas/composer';
 import type { InvitationContent } from '@shared/types';
 import { and, asc, desc, eq, gt } from 'drizzle-orm';
@@ -11,13 +13,13 @@ import {
     invitations,
     orderEvents,
     orders,
-    packagePrices,
     packages,
     sessions,
     templates,
     themes,
 } from '../db/schema';
 import { getPlatform } from '../platform/context';
+import { usdRates } from '../services/fx';
 import { invoicesForOrder, recordPayment } from './billing';
 import {
     createInvitationForOrder,
@@ -87,9 +89,24 @@ export async function customerByEmail(email: string) {
 
 // ── Catalogue ───────────────────────────────────────────────────────────────
 
-export async function listStoreTemplates(currency: string) {
+// The visitor's shop currency: rupees in India, otherwise their own currency when the rate snapshot
+// has it (else dollars). A currency they picked in the switcher wins when the shop can price it.
+export async function shopCurrency(country: string | null | undefined, picked?: string | null) {
+    const rates = await usdRates();
+    const choice = picked?.toUpperCase();
+    const currency =
+        choice && (choice === 'INR' || choice === 'USD' || rates?.rates[choice])
+            ? choice
+            : shopCurrencyFor(country, rates);
+    return {
+        currency,
+        rates,
+    };
+}
+
+export async function listStoreTemplates(currency: string, rates: RateSnapshot | null) {
     const { db } = getPlatform();
-    return db
+    const rows = await db
         .select({
             slug: templates.slug,
             name: templates.name,
@@ -97,26 +114,27 @@ export async function listStoreTemplates(currency: string) {
             eventKind: templates.eventKind,
             culture: templates.culture,
             isFeatured: templates.isFeatured,
-            packageCode: templates.fromPackage,
-            packageName: packages.name,
-            price: packagePrices.amountMinor,
+            prices: templates.prices,
+            comparePrices: templates.comparePrices,
             sampleSlug: invitations.slug,
+            posterKey: templates.posterKey,
             design: invitations.design,
             themeName: themes.name,
         })
         .from(templates)
         .innerJoin(invitations, eq(invitations.id, templates.invitationId))
-        .innerJoin(packages, eq(packages.code, templates.fromPackage))
-        .leftJoin(
-            packagePrices,
-            and(
-                eq(packagePrices.packageCode, templates.fromPackage),
-                eq(packagePrices.currency, currency),
-            ),
-        )
         .leftJoin(themes, eq(themes.id, templates.themeId))
         .where(eq(templates.status, 'published'))
         .orderBy(desc(templates.isFeatured), asc(templates.sort), asc(templates.name));
+    return rows.map(({ prices, comparePrices, ...row }) => {
+        const shop = shopPrice(prices, comparePrices, currency, rates);
+        return {
+            ...row,
+            price: shop?.price ?? null,
+            comparePrice: shop?.compare ?? null,
+            off: shop?.off ?? null,
+        };
+    });
 }
 
 async function publishedTemplate(slug: string) {
@@ -130,27 +148,35 @@ async function publishedTemplate(slug: string) {
     return template;
 }
 
-async function packageOffer(code: string, currency: string) {
+// What a purchase includes (photos, ceremonies, hosting). Never shown to customers as a package.
+async function includedLimits(code: string) {
     const { db } = getPlatform();
     return db
         .select({
             code: packages.code,
-            name: packages.name,
             limits: packages.limits,
-            price: packagePrices.amountMinor,
         })
         .from(packages)
-        .innerJoin(packagePrices, eq(packagePrices.packageCode, packages.code))
-        .where(and(eq(packages.code, code), eq(packagePrices.currency, currency)))
+        .where(eq(packages.code, code))
         .get();
 }
 
 // Everything the try page needs: the sample invitation as the editor loads it, plus the price.
-export async function storeTemplate(slug: string, currency: string) {
+export async function storeTemplate(slug: string, currency: string, rates: RateSnapshot | null) {
     const template = await publishedTemplate(slug);
     const edit = await invitationForEdit(template.invitationId);
     if (!edit) throw new OrderError('This design is no longer available');
-    const offer = await packageOffer(template.fromPackage, currency);
+    const pkg = await includedLimits(template.fromPackage);
+    const shop = shopPrice(template.prices, template.comparePrices, currency, rates);
+    const offer =
+        pkg && shop
+            ? {
+                  ...pkg,
+                  price: shop.price,
+                  comparePrice: shop.compare,
+                  off: shop.off,
+              }
+            : null;
     return {
         template: {
             slug: template.slug,
@@ -179,6 +205,12 @@ export async function storeTemplate(slug: string, currency: string) {
 }
 
 // ── The customer's own words ────────────────────────────────────────────────
+
+export interface ShopWhere {
+    currency: string;
+    rates: RateSnapshot | null;
+    country?: string | null;
+}
 
 export interface CustomerContent {
     content: InvitationContent;
@@ -244,28 +276,36 @@ export async function buyTemplate(
     customer: StoreCustomer,
     slug: string,
     input: CustomerContent,
-    currency: string,
+    where: ShopWhere,
 ) {
     const { db } = getPlatform();
+    const { currency, rates, country } = where;
     const template = await publishedTemplate(slug);
     const name = coupleName(input.content) || customer.name;
+    // Charged exactly what the shop showed, in the currency it showed.
+    const own = shopPrice(template.prices, template.comparePrices, currency, rates)?.price;
+    if (own === undefined) throw new OrderError('This design can’t be bought in your currency yet');
     const firstDate = input.events.map((e) => e.startsAt.slice(0, 10)).sort()[0];
     const order = await createOrder(
         {
             customer: {
                 name,
                 email: customer.email ?? undefined,
-                country: currency === 'AED' ? 'AE' : 'IN',
+                country: country?.toUpperCase() ?? (currency === 'INR' ? 'IN' : 'US'),
             },
             packageCode: template.fromPackage,
             addons: [],
-            currency: currency === 'AED' ? 'AED' : 'INR',
+            currency,
             occasion: occasionOf(template.eventKind).id,
             culture: cultureOf(template.culture).id,
             weddingDate: firstDate,
             notes: `Ordered online from the “${template.name}” template.`,
         },
         null,
+        {
+            packagePrice: own,
+            packageLine: `${template.name} invitation`,
+        },
     );
     // The account was made from an email; the invitation's names are a better label for the studio.
     if (customer.name === customer.email?.split('@')[0] && name !== customer.name)
@@ -369,13 +409,12 @@ async function owned(customerId: string, invitationId: string) {
 export async function myInvitation(customerId: string, invitationId: string) {
     const edit = await owned(customerId, invitationId);
     const order = await ownedOrder(customerId, edit.order?.id ?? '');
-    const offer = await packageOffer(order.packageCode, order.currency);
     return {
         edit,
         orderId: order.id,
         balance: await balanceOf(order.id),
         currency: order.currency,
-        price: offer?.price ?? order.totalMinor,
+        price: order.totalMinor,
         lockedAfter: lockedAfter(edit.events),
     };
 }

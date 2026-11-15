@@ -11,6 +11,7 @@ import {
 } from '../shared/catalog';
 import { demoInvitations } from '../shared/demo';
 import { newToken } from '../shared/ids';
+import { DEFAULT_TEMPLATE_PRICE, DEFAULT_TEMPLATE_WAS_PRICE } from '../shared/pricing';
 import { themeCatalog } from '../shared/themes';
 
 const args = process.argv.slice(2);
@@ -198,6 +199,8 @@ for (const demo of demoInvitations) {
         theme_id: `thm_${theme.slug}`,
         invitation_id: id,
         from_package: theme.fromPackage,
+        prices: JSON.stringify(DEFAULT_TEMPLATE_PRICE),
+        compare_prices: JSON.stringify(DEFAULT_TEMPLATE_WAS_PRICE),
         status: 'published',
         is_featured: theme.featured,
         sort: demoInvitations.indexOf(demo),

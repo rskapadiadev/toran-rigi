@@ -1,11 +1,14 @@
+import { occasionOf } from '@shared/occasions';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Eye, PenLine, Send } from 'lucide-react';
 
 import { LoginCrown } from '@/admin/shell/login-crown';
 import { ToranSeal } from '@/components/brand/toran-seal';
+import { cn } from '@/lib/utils';
 import {
     HeroFan,
-    LivePhone,
+    heroPicks,
+    PosterPhone,
     Rise,
     ScreenShowcase,
     SectionHeading,
@@ -89,104 +92,143 @@ const faqs = [
     },
 ];
 
+interface SealWatermarkProps {
+    side: 'start' | 'end';
+}
+
+// The studio login's watermark: the Toran seal, huge and faint, turning slowly with a quarter of it
+// off the edge of the page.
+function SealWatermark({ side }: SealWatermarkProps) {
+    return (
+        <div
+            aria-hidden
+            className={cn(
+                'pointer-events-none absolute top-1/2 -z-10 size-[min(110vh,820px)] -translate-y-1/2 select-none',
+                side === 'end'
+                    ? 'end-0 translate-x-[45%] rtl:-translate-x-[45%]'
+                    : 'start-0 -translate-x-[45%] rtl:translate-x-[45%]',
+            )}
+        >
+            <ToranSeal
+                title=""
+                className="size-full animate-[spin_90s_linear_infinite] text-gold opacity-[0.08] motion-reduce:animate-none"
+            />
+        </div>
+    );
+}
+
 function Home() {
     const { templates, currency } = Route.useLoaderData();
-    const fan = templates.slice(0, 5);
+    const fan = heroPicks(templates);
     const tiles = templates.slice(0, 5);
 
     return (
-        <ShopShell tone="dark">
+        <ShopShell tone="dark" currency={currency}>
             {/* ── Hero: the login's tradition panel on the left, five live designs on the right ── */}
-            <section className="relative overflow-hidden bg-night">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_78%_45%,rgba(110,26,46,0.55),transparent_55%),radial-gradient(circle_at_70%_100%,rgba(195,154,78,0.12),transparent_50%)]" />
-                <div className="relative mx-auto grid max-w-[1360px] gap-10 px-3 pt-20 pb-16 sm:px-5 lg:grid-cols-[minmax(0,640px)_1fr] lg:pt-24">
-                    {/* Left: greeting crown + promise, exactly as the studio login greets you */}
-                    <div className="grain relative flex min-h-[640px] flex-col overflow-hidden rounded-[32px] border border-white/10 bg-night p-7 text-ivory sm:p-10 lg:min-h-[820px] lg:p-12">
-                        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(195,154,78,0.28),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(110,26,46,0.7),transparent_55%)]" />
-                        <div className="hidden lg:block">
-                            <LoginCrown />
-                        </div>
-                        <div className="lg:hidden">
-                            <LoginCrown compact />
-                        </div>
-                        <div className="relative mt-auto pt-20 lg:pt-10">
-                            <Rise>
-                                <p className="text-[11px] tracking-[0.35em] text-gold uppercase">
-                                    Every tradition · Every celebration
-                                </p>
-                            </Rise>
-                            <Rise delay={80}>
-                                <h1 className="mt-4 font-display text-5xl leading-[1.02] text-balance md:text-6xl">
-                                    Made for <em className="text-gold-bright">your</em> ceremonies.
-                                </h1>
-                            </Rise>
-                            <Rise delay={160}>
-                                <p className="mt-4 max-w-md text-[15px] leading-relaxed text-ivory/65">
-                                    Every celebration begins at the Toran. Living invitations with
-                                    your names, every ceremony and your story, shared as one link.
-                                </p>
-                            </Rise>
-                            <Rise delay={240}>
-                                <div className="mt-7 inline-flex rounded-full border border-white/10 bg-white/5 p-1.5">
-                                    <Link
-                                        to="/collections"
-                                        className="rounded-full bg-gradient-to-b from-gold-bright to-gold px-6 py-3 text-sm font-semibold text-night shadow-[0_12px_30px_-10px_rgba(232,196,119,0.7)] transition hover:brightness-105"
-                                    >
-                                        Create your invite
-                                    </Link>
-                                    <a
-                                        href="#collection"
-                                        className="rounded-full px-5 py-3 text-sm text-ivory transition hover:bg-white/5"
-                                    >
-                                        See designs
-                                    </a>
-                                </div>
-                                <p className="mt-3 ps-2 text-xs tracking-wide text-ivory/50">
-                                    Try free · Pay only when you love it · Share on WhatsApp
-                                </p>
-                            </Rise>
-                        </div>
-                    </div>
-
-                    {/* Right: five live invitations, fanned */}
-                    {fan.length > 0 && (
-                        <div className="relative hidden lg:block">
-                            <div
-                                aria-hidden
-                                className="pointer-events-none absolute start-1/2 top-1/2 size-[680px] -translate-x-1/2 -translate-y-1/2 select-none"
-                            >
-                                <ToranSeal
-                                    title=""
-                                    className="size-full animate-[spin_120s_linear_infinite] text-gold opacity-[0.07] motion-reduce:animate-none"
-                                />
+            <section className="overflow-hidden bg-night pt-[76px]">
+                {/* The hero is the crown's canvas: garland across the top, greeting on the left,
+                    the tradition's emblem glowing behind the fanned designs. No card around it. */}
+                <div className="hero-crown grain relative">
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(195,154,78,0.24),transparent_40%),radial-gradient(circle_at_78%_50%,rgba(110,26,46,0.6),transparent_55%),radial-gradient(circle_at_70%_100%,rgba(195,154,78,0.1),transparent_50%)]" />
+                    <div className="mx-auto grid max-w-[1360px] gap-10 px-5 pb-12 lg:grid-cols-[minmax(0,600px)_1fr]">
+                        {/* Left: greeting crown + promise. On phones the crown stays in this column. */}
+                        <div className="relative flex flex-col text-ivory lg:static">
+                            <div className="hidden lg:block">
+                                <LoginCrown className="[[&>div.relative]:!mt-[calc(clamp(110px,9.5vw,150px)+48px)]>div.relative]:!mt-[calc(clamp(110px,9.5vw,150px)+28px)]" />
                             </div>
-                            <HeroFan templates={fan} />
-                        </div>
-                    )}
-                    {/* Phones: the five designs side by side, swipe through */}
-                    {fan.length > 0 && (
-                        <div className="-mx-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 lg:hidden">
-                            {fan.map((t) => (
-                                <Link
-                                    key={t.slug}
-                                    to="/try/$slug"
-                                    params={{ slug: t.slug }}
-                                    aria-label={`Try ${t.name}`}
-                                    className="shrink-0 snap-center"
-                                >
-                                    <LivePhone slug={t.sampleSlug} title={t.name} width={210} />
-                                    <p className="mt-3 text-center font-display text-xl text-ivory">
-                                        {t.name}
+                            <div className="lg:hidden">
+                                <LoginCrown compact />
+                            </div>
+                            <div className="relative z-10 pt-16 lg:pt-6 [@media(max-height:760px)]:lg:pt-0">
+                                <Rise>
+                                    <p className="text-[11px] tracking-[0.35em] text-gold uppercase">
+                                        Every tradition · Every celebration
                                     </p>
-                                </Link>
-                            ))}
+                                </Rise>
+                                <Rise delay={80}>
+                                    <h1 className="mt-4 font-display text-5xl leading-[1.02] text-balance md:text-6xl [@media(max-height:760px)]:lg:text-5xl">
+                                        Made for <em className="text-gold-bright">your</em>{' '}
+                                        ceremonies.
+                                    </h1>
+                                </Rise>
+                                <Rise delay={160}>
+                                    <p className="mt-4 max-w-md text-[15px] leading-relaxed text-ivory/65">
+                                        Every celebration begins at the Toran. Living invitations
+                                        with your names, every ceremony and your story, shared as
+                                        one link.
+                                    </p>
+                                </Rise>
+                                <Rise delay={240}>
+                                    <div className="mt-7 inline-flex rounded-full border border-white/10 bg-white/5 p-1.5">
+                                        <Link
+                                            to="/collections"
+                                            className="rounded-full bg-gradient-to-b from-gold-bright to-gold px-6 py-3 text-sm font-semibold text-night shadow-[0_12px_30px_-10px_rgba(232,196,119,0.7)] transition hover:brightness-105"
+                                        >
+                                            Create your invite
+                                        </Link>
+                                        <a
+                                            href="#collection"
+                                            className="rounded-full px-5 py-3 text-sm text-ivory transition hover:bg-white/5"
+                                        >
+                                            See designs
+                                        </a>
+                                    </div>
+                                    <p className="mt-3 ps-2 text-xs tracking-wide text-ivory/50">
+                                        Try free · Pay only when you love it · Share on WhatsApp
+                                    </p>
+                                </Rise>
+                            </div>
                         </div>
-                    )}
+
+                        {/* Right: five live invitations, fanned */}
+                        {fan.length > 0 && (
+                            <div className="relative z-10 hidden lg:block">
+                                <div
+                                    aria-hidden
+                                    className="pointer-events-none absolute start-1/2 top-1/2 size-[680px] -translate-x-1/2 -translate-y-1/2 select-none"
+                                >
+                                    <ToranSeal
+                                        title=""
+                                        className="size-full animate-[spin_120s_linear_infinite] text-gold opacity-[0.12] motion-reduce:animate-none"
+                                    />
+                                </div>
+                                <div className="origin-bottom translate-y-[46%] scale-[0.82] xl:scale-100">
+                                    <HeroFan templates={fan} />
+                                </div>
+                            </div>
+                        )}
+                        {/* Phones: the five designs side by side, swipe through */}
+                        {fan.length > 0 && (
+                            <div className="relative z-10 -mx-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 lg:hidden">
+                                {fan.map((t) => (
+                                    <Link
+                                        key={t.slug}
+                                        to="/try/$slug"
+                                        params={{ slug: t.slug }}
+                                        aria-label={`Try ${t.name}`}
+                                        className="shrink-0 snap-center"
+                                    >
+                                        <PosterPhone template={t} width={210} priority />
+                                        <p className="mt-3 text-center font-display text-xl text-ivory">
+                                            {t.name}
+                                        </p>
+                                        <p className="text-center text-[10px] tracking-[0.2em] text-gold uppercase">
+                                            {occasionOf(t.eventKind).name.en}
+                                        </p>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </section>
 
             {/* ── Collection ── */}
-            <section id="collection" className="mx-auto max-w-6xl scroll-mt-24 px-5 pt-24">
+            <section
+                id="collection"
+                className="relative isolate mx-auto max-w-6xl scroll-mt-24 px-5 pt-24"
+            >
+                <SealWatermark side="end" />
                 <SectionHeading
                     eyebrow="The collection"
                     before="Find"
@@ -244,7 +286,11 @@ function Home() {
             </section>
 
             {/* ── How it works ── */}
-            <section id="how" className="mx-auto max-w-6xl scroll-mt-24 px-5 pt-32">
+            <section
+                id="how"
+                className="relative isolate mx-auto max-w-6xl scroll-mt-24 px-5 pt-32"
+            >
+                <SealWatermark side="start" />
                 <SectionHeading
                     eyebrow="How it works"
                     before="Three simple"
@@ -292,7 +338,7 @@ function Home() {
             {/* ── Closing call ── */}
             <section className="px-5 pt-32">
                 <Rise className="relative mx-auto max-w-5xl overflow-hidden rounded-[36px] border border-gold/20 bg-[radial-gradient(circle_at_50%_0%,rgba(195,154,78,0.25),transparent_60%),linear-gradient(180deg,#4a0f1f,#120b0d)] px-6 py-16 text-center">
-                    <ToranSeal className="mx-auto size-24 text-gold-bright drop-shadow-[0_8px_30px_rgba(195,154,78,0.35)]" />
+                    <ToranSeal className="mx-auto size-24 animate-[spin_40s_linear_infinite] text-gold-bright drop-shadow-[0_8px_30px_rgba(195,154,78,0.35)] motion-reduce:animate-none" />
                     <h2 className="mt-6 font-display text-5xl text-ivory">
                         Open your <em className="text-gold-bright">doorway</em>
                     </h2>

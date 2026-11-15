@@ -19,6 +19,7 @@ import { Route as AdminBillingRouteImport } from './routes/admin/billing'
 import { Route as AdminLibraryRouteImport } from './routes/admin/library'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminMusicRouteImport } from './routes/admin/music'
+import { Route as AdminPricingRouteImport } from './routes/admin/pricing'
 import { Route as MyIndexRouteImport } from './routes/my.index'
 import { Route as MyIdRouteImport } from './routes/my.$id'
 import { Route as PTokenRouteImport } from './routes/p.$token'
@@ -82,6 +83,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 const AdminMusicRoute = AdminMusicRouteImport.update({
   id: '/music',
   path: '/music',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPricingRoute = AdminPricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const MyIndexRoute = MyIndexRouteImport.update({
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
+  '/admin/pricing': typeof AdminPricingRoute
   '/my/$id': typeof MyIdRoute
   '/p/$token': typeof PTokenRoute
   '/try/$slug': typeof TrySlugRoute
@@ -191,6 +198,7 @@ export interface FileRoutesByTo {
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
+  '/admin/pricing': typeof AdminPricingRoute
   '/my/$id': typeof MyIdRoute
   '/p/$token': typeof PTokenRoute
   '/try/$slug': typeof TrySlugRoute
@@ -218,6 +226,7 @@ export interface FileRoutesById {
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
+  '/admin/pricing': typeof AdminPricingRoute
   '/my/$id': typeof MyIdRoute
   '/p/$token': typeof PTokenRoute
   '/try/$slug': typeof TrySlugRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/admin/library'
     | '/admin/login'
     | '/admin/music'
+    | '/admin/pricing'
     | '/my/$id'
     | '/p/$token'
     | '/try/$slug'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/admin/library'
     | '/admin/login'
     | '/admin/music'
+    | '/admin/pricing'
     | '/my/$id'
     | '/p/$token'
     | '/try/$slug'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/admin/library'
     | '/admin/login'
     | '/admin/music'
+    | '/admin/pricing'
     | '/my/$id'
     | '/p/$token'
     | '/try/$slug'
@@ -396,6 +408,13 @@ declare module '@tanstack/react-router' {
       path: '/music'
       fullPath: '/admin/music'
       preLoaderRoute: typeof AdminMusicRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/pricing': {
+      id: '/admin/pricing'
+      path: '/pricing'
+      fullPath: '/admin/pricing'
+      preLoaderRoute: typeof AdminPricingRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/my/': {
@@ -504,6 +523,7 @@ interface AdminRouteRouteChildren {
   AdminLibraryRoute: typeof AdminLibraryRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminMusicRoute: typeof AdminMusicRoute
+  AdminPricingRoute: typeof AdminPricingRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCustomersIdRoute: typeof AdminCustomersIdRoute
   AdminOrdersIdRoute: typeof AdminOrdersIdRoute
@@ -522,6 +542,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminLibraryRoute: AdminLibraryRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminMusicRoute: AdminMusicRoute,
+  AdminPricingRoute: AdminPricingRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCustomersIdRoute: AdminCustomersIdRoute,
   AdminOrdersIdRoute: AdminOrdersIdRoute,

@@ -9,10 +9,11 @@ export interface StoreTemplate {
     eventKind: string;
     culture: string;
     isFeatured: boolean;
-    packageCode: string;
-    packageName: string;
     price: number | null;
+    comparePrice: number | null;
+    off: number | null;
     sampleSlug: string;
+    posterKey: string | null;
     design: InvitationDesign;
     themeName: string | null;
 }
@@ -24,9 +25,10 @@ export interface StoreCatalogue {
 
 export interface StoreOffer {
     code: string;
-    name: string;
     limits: OrderLimits & { hostingMonths?: number };
     price: number;
+    comparePrice: number | null;
+    off: number | null;
     currency: string;
 }
 

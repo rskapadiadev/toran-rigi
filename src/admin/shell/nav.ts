@@ -8,6 +8,7 @@ import {
     Receipt,
     ShoppingBag,
     Sparkles,
+    Tag,
     Users,
 } from 'lucide-react';
 
@@ -18,6 +19,7 @@ export type NavPath =
     | '/admin/invitations'
     | '/admin/templates'
     | '/admin/library'
+    | '/admin/pricing'
     | '/admin/music'
     | '/admin/customers'
     | '/admin/billing';
@@ -105,6 +107,13 @@ export const navGroups: NavGroup[] = [
                 icon: LayoutTemplate,
                 permission: 'orders.view',
                 keywords: ['designs', 'catalogue', 'starting point', 'samples', 'demos'],
+            },
+            {
+                to: '/admin/pricing',
+                label: 'Pricing',
+                icon: Tag,
+                permission: 'billing.view',
+                keywords: ['prices', 'packages', 'sale', 'discount', 'rates'],
             },
             {
                 to: '/admin/music',

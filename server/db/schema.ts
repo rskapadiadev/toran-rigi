@@ -548,6 +548,13 @@ export const templates = sqliteTable(
             .unique()
             .references(() => invitations.id),
         fromPackage: text('from_package').notNull().default('signature'),
+        // Still picture of the design's cover for the shop's cards, so the catalogue loads as images
+        // instead of running every invitation live.
+        posterKey: text('poster_key'),
+        // The shop price, per currency (minor units). Missing currency → the package's price.
+        prices: json<Partial<Record<string, number>>>('prices'),
+        // "Was" price shown struck through beside the price, per currency; only when it is higher.
+        comparePrices: json<Partial<Record<string, number>>>('compare_prices'),
         status: text('status', { enum: templateStatuses }).notNull().default('draft'),
         isFeatured: bool('is_featured').notNull().default(false),
         sort: integer('sort').notNull().default(0),

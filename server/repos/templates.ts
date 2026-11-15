@@ -5,6 +5,8 @@ import { cultureOf } from '@shared/cultures';
 import { seedFrom } from '@shared/generative';
 import { newToken } from '@shared/ids';
 import { defaultSectionsFor, occasionOf } from '@shared/occasions';
+import type { PhotoMime } from '@shared/photos';
+import { cleanPrices, DEFAULT_TEMPLATE_PRICE, DEFAULT_TEMPLATE_WAS_PRICE } from '@shared/pricing';
 import type { CreateTemplateInput, UpdateTemplateInput } from '@shared/schemas/templates';
 import { themeBySlug, themeLayouts } from '@shared/themes';
 import type { InvitationExtras } from '@shared/types';
@@ -15,6 +17,7 @@ import { getPlatform } from '../platform/context';
 import { invalidateInvitationCache } from './invitations';
 import { resolveMusic } from './music';
 import { OrderError } from './orders';
+import { deletePhoto, storePhoto } from './photos';
 import { slugify, starterContent, uniqueSlug } from './slugs';
 
 export async function listTemplates() {
@@ -28,6 +31,9 @@ export async function listTemplates() {
             eventKind: templates.eventKind,
             culture: templates.culture,
             fromPackage: templates.fromPackage,
+            posterKey: templates.posterKey,
+            prices: templates.prices,
+            comparePrices: templates.comparePrices,
             status: templates.status,
             isFeatured: templates.isFeatured,
             sort: templates.sort,
@@ -143,6 +149,8 @@ export async function createTemplate(input: CreateTemplateInput) {
             themeId,
             invitationId: sample.id,
             fromPackage: theme.fromPackage,
+            prices: { ...DEFAULT_TEMPLATE_PRICE },
+            comparePrices: { ...DEFAULT_TEMPLATE_WAS_PRICE },
             status: 'draft',
         })
         .returning({
@@ -243,6 +251,8 @@ export async function duplicateTemplate(id: string) {
             themeId: template.themeId,
             invitationId,
             fromPackage: template.fromPackage,
+            prices: template.prices,
+            comparePrices: template.comparePrices,
             status: 'draft',
             sort: template.sort + 1,
         })
@@ -269,10 +279,16 @@ export async function updateTemplate(id: string, input: UpdateTemplateInput) {
         .where(eq(invitations.id, template.invitationId))
         .get();
     const now = new Date().toISOString();
+    // Empty price maps are stored as null ("use the package price", "no was price").
+    const priceChanges: Partial<typeof templates.$inferInsert> = {};
+    if (input.prices !== undefined) priceChanges.prices = cleanPrices(input.prices);
+    if (input.comparePrices !== undefined)
+        priceChanges.comparePrices = cleanPrices(input.comparePrices);
     await db
         .update(templates)
         .set({
             ...input,
+            ...priceChanges,
             slug: input.name ? await uniqueTemplateSlug(input.name, id) : template.slug,
             updatedAt: now,
         })
@@ -311,4 +327,21 @@ export async function syncTemplateFromInvitation(invitationId: string) {
             updatedAt: new Date().toISOString(),
         })
         .where(eq(templates.invitationId, invitationId));
+}
+
+// The shop shows this picture instead of running the design live. Replaces (and removes) the old one.
+export async function setTemplatePoster(id: string, mime: PhotoMime, body: ArrayBuffer) {
+    const { db } = getPlatform();
+    const template = await getTemplate(id);
+    if (!template) throw new OrderError('Template not found');
+    const key = await storePhoto(template.invitationId, mime, body);
+    await db
+        .update(templates)
+        .set({
+            posterKey: key,
+            updatedAt: new Date().toISOString(),
+        })
+        .where(eq(templates.id, id));
+    if (template.posterKey) await deletePhoto(template.invitationId, template.posterKey);
+    return key;
 }

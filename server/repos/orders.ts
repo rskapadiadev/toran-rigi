@@ -9,6 +9,7 @@ import {
     invoices,
     orderEvents,
     orders,
+    packages,
     payments,
     users,
 } from '../db/schema';
@@ -17,6 +18,22 @@ import { createInvoice, invoicesForOrder, nextNumber } from './billing';
 import { priceLines } from './catalog';
 
 export class OrderError extends Error {}
+
+interface AddonLine {
+    code: string;
+    name: string;
+    amount: number;
+}
+
+async function packageName(code: string) {
+    const { db } = getPlatform();
+    const row = await db
+        .select({ name: packages.name })
+        .from(packages)
+        .where(eq(packages.code, code))
+        .get();
+    return row?.name;
+}
 
 async function findOrCreateCustomer(input: CreateOrderInput['customer']) {
     const { db } = getPlatform();
@@ -47,10 +64,34 @@ async function findOrCreateCustomer(input: CreateOrderInput['customer']) {
     return created;
 }
 
+export interface OrderOptions {
+    // The shop sells some templates at their own price; this replaces the package's price.
+    packagePrice?: number;
+    // Invoice line for the package, e.g. "Mehfil invitation (Premium package)".
+    packageLine?: string;
+}
+
 // userId is null when the customer orders online themselves.
-export async function createOrder(input: CreateOrderInput, userId: string | null) {
+// Studio orders use the launch currencies; shop orders may be in any currency the visitor pays in.
+type OrderInput = Omit<CreateOrderInput, 'currency'> & { currency: string };
+
+export async function createOrder(
+    input: OrderInput,
+    userId: string | null,
+    options: OrderOptions = {},
+) {
     const { db } = getPlatform();
-    const pricing = await priceLines(input.packageCode, input.addons, input.currency);
+    // A shop order brings its own price (any currency); a studio order prices from the package.
+    const pricing =
+        options.packagePrice === undefined
+            ? await priceLines(input.packageCode, input.addons, input.currency)
+            : {
+                  pkg: {
+                      name: (await packageName(input.packageCode)) ?? input.packageCode,
+                      amount: options.packagePrice,
+                  },
+                  addons: [] as AddonLine[],
+              };
     if (!pricing)
         throw new OrderError(`No ${input.currency} price for package ${input.packageCode}`);
     const customer = await findOrCreateCustomer(input.customer);
@@ -84,7 +125,7 @@ export async function createOrder(input: CreateOrderInput, userId: string | null
         items: [
             {
                 kind: 'package',
-                description: `${pricing.pkg.name} package`,
+                description: options.packageLine ?? `${pricing.pkg.name} package`,
                 qty: 1,
                 unitPrice: pricing.pkg.amount,
             },

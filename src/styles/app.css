@@ -1477,3 +1477,22 @@ body:has([data-opening]) [data-preview-bar] {
         cursor: pointer;
     }
 }
+
+/* Landing hero: the login crown's garland spans the whole hero at its full height. Only over the
+   left column, where the greeting and title sit, do the hanging strands fade out (two mask layers
+   added together: a top-to-bottom fade everywhere, plus full strength right of the text). */
+@media (min-width: 1024px) {
+    .hero-crown svg[viewBox='0 0 800 140'] {
+        height: auto;
+        aspect-ratio: 800 / 140;
+        mask-image:
+            linear-gradient(to bottom, #000 30%, transparent 46%),
+            linear-gradient(to right, transparent 40%, #000 52%);
+        mask-composite: add;
+    }
+    /* The occasion's emblem (Om, rangoli, lantern…) sits below the garland's swags and above the
+       fanned designs, which rise from the hero's foot. */
+    .hero-crown [class~='top-[36%]'] {
+        top: 24%;
+    }
+}

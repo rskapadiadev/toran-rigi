@@ -2,10 +2,11 @@
 // reveals, live phone and laptop frames, template tiles.
 import { formatMoney } from '@shared/money';
 import { occasionOf } from '@shared/occasions';
+import { photoUrl } from '@shared/photos';
 import { Link } from '@tanstack/react-router';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion, useReducedMotion } from 'motion/react';
-import { type CSSProperties, type ReactNode, useState } from 'react';
+import { motion, useInView, useReducedMotion } from 'motion/react';
+import { type CSSProperties, type ReactNode, useRef, useState, useSyncExternalStore } from 'react';
 
 import { cn } from '@/lib/utils';
 
@@ -17,7 +18,7 @@ export function FloatingHeader() {
     const link = 'rounded-full px-3.5 py-1.5 text-sm text-ivory/80 transition hover:text-ivory';
     return (
         <header className="fixed inset-x-0 top-3 z-40 px-3 sm:top-4">
-            <div className="mx-auto flex h-13 max-w-[1336px] items-center justify-between rounded-full border border-white/10 bg-night/55 ps-5 pe-1.5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+            <div className="mx-auto flex h-13 max-w-[1600px] items-center justify-between rounded-full border border-white/10 bg-night/55 ps-5 pe-1.5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6)] backdrop-blur-xl">
                 <Link to="/" className="font-display text-2xl tracking-wide text-gold-bright">
                     Toran
                 </Link>
@@ -108,18 +109,32 @@ interface FrameProps {
     // On-screen width in px; the page inside lays out at a real device width and is scaled down.
     width: number;
     className?: string;
-    style?: CSSProperties;
-    eager?: boolean;
 }
 
-export function LivePhone({ slug, title, width, className, style, eager = false }: FrameProps) {
-    const scale = (width - 12) / 390;
-    const height = Math.round(width * 2.05);
-    const inner = {
-        width: 390,
-        height: (height - 12) / scale,
-        transform: `scale(${String(scale)})`,
+const WIDE = '(min-width: 768px)';
+const subscribeWide = (cb: () => void) => {
+    const mq = window.matchMedia(WIDE);
+    mq.addEventListener('change', cb);
+    return () => {
+        mq.removeEventListener('change', cb);
     };
+};
+const isWide = () => window.matchMedia(WIDE).matches;
+
+interface PosterPhoneProps {
+    template: StoreTemplate;
+    width: number;
+    className?: string;
+    // Above the fold: fetch first.
+    priority?: boolean;
+}
+
+// A design's cover as one still picture in a phone. The catalogue shows these instead of running
+// each invitation live, so a page of designs costs a few images, not a few apps.
+export function PosterPhone({ template, width, className, priority = false }: PosterPhoneProps) {
+    const height = Math.round(width * 2.05);
+    const { palette } = template.design;
+    const fallback = { background: `linear-gradient(160deg, ${palette.primary}, ${palette.ink})` };
     return (
         <div
             className={cn(
@@ -129,25 +144,40 @@ export function LivePhone({ slug, title, width, className, style, eager = false 
             style={{
                 width,
                 height,
-                ...style,
             }}
         >
             <div className="size-full overflow-hidden rounded-[24px] bg-wine">
-                <iframe
-                    src={`/${slug}?embed=1`}
-                    title={title}
-                    loading={eager ? 'eager' : 'lazy'}
-                    tabIndex={-1}
-                    aria-hidden
-                    className="pointer-events-none origin-top-left border-0"
-                    style={inner}
-                />
+                {template.posterKey ? (
+                    <img
+                        src={photoUrl(template.posterKey)}
+                        alt={`${template.name} invitation`}
+                        width={width - 12}
+                        height={height - 12}
+                        loading={priority ? 'eager' : 'lazy'}
+                        fetchPriority={priority ? 'high' : 'auto'}
+                        decoding="async"
+                        draggable={false}
+                        className="size-full object-cover object-top"
+                    />
+                ) : (
+                    <div
+                        className="flex size-full flex-col items-center justify-center gap-3 p-4 text-center"
+                        style={fallback}
+                    >
+                        <span className="font-display text-3xl" style={{ color: palette.gold }}>
+                            {template.name}
+                        </span>
+                        <span className="text-[10px] tracking-[0.3em] text-white/70 uppercase">
+                            Tap to open
+                        </span>
+                    </div>
+                )}
             </div>
         </div>
     );
 }
 
-export function LiveLaptop({ slug, title, width }: FrameProps) {
+export function LiveLaptop({ slug, title, width, live = true }: FrameProps & { live?: boolean }) {
     const screen = width * 0.84;
     const scale = screen / 1280;
     const inner = {
@@ -169,21 +199,73 @@ export function LiveLaptop({ slug, title, width }: FrameProps) {
                         height: 800 * scale,
                     }}
                 >
-                    <iframe
-                        key={slug}
-                        src={`/${slug}?embed=1`}
-                        title={title}
-                        loading="lazy"
-                        tabIndex={-1}
-                        aria-hidden
-                        className="pointer-events-none origin-top-left border-0"
-                        style={inner}
-                    />
+                    {live && (
+                        <iframe
+                            key={slug}
+                            src={`/${slug}?embed=1`}
+                            title={title}
+                            loading="lazy"
+                            tabIndex={-1}
+                            aria-hidden
+                            className="pointer-events-none origin-top-left border-0"
+                            style={inner}
+                        />
+                    )}
                 </div>
             </div>
             <div className="h-3 w-full rounded-b-[14px] bg-gradient-to-b from-[#d9d4cf] to-[#8d8782]" />
             <div className="h-1.5 w-1/5 rounded-b-md bg-[#6f6a66]" />
         </div>
+    );
+}
+
+// ── Price ───────────────────────────────────────────────────────────────────
+
+interface PriceTagProps {
+    price: number;
+    compare: number | null;
+    off: number | null;
+    currency: string;
+    className?: string;
+    // Light pages (try, my invitations) need ink colours instead of ivory and gold.
+    tone?: 'dark' | 'light';
+}
+
+// "₹1,999 ₹999 50% off": the was-price struck through, the price, and the saving.
+export function PriceTag({
+    price,
+    compare,
+    off,
+    currency,
+    className,
+    tone = 'dark',
+}: PriceTagProps) {
+    const dark = tone === 'dark';
+    return (
+        <span className={cn('inline-flex items-baseline gap-2', className)}>
+            {compare !== null && (
+                <s className={cn('text-[0.8em]', dark ? 'text-ivory/40' : 'text-muted-foreground')}>
+                    <span className="sr-only">Was </span>
+                    {formatMoney(compare, currency)}
+                </s>
+            )}
+            <span className={dark ? 'text-gold-bright' : 'text-ink'}>
+                {compare !== null && <span className="sr-only">now </span>}
+                {formatMoney(price, currency)}
+            </span>
+            {off !== null && (
+                <span
+                    className={cn(
+                        'self-center rounded-full border px-1.5 py-px font-sans text-[10px] font-semibold tracking-wide',
+                        dark
+                            ? 'border-gold/50 text-gold-bright'
+                            : 'border-gold-deep/40 text-gold-deep',
+                    )}
+                >
+                    {off}% off
+                </span>
+            )}
+        </span>
     );
 }
 
@@ -209,9 +291,8 @@ export function TemplateTile({ template, currency }: TileProps) {
                 style={wash}
             >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_110%,rgba(232,196,119,0.35),transparent_60%)]" />
-                <LivePhone
-                    slug={template.sampleSlug}
-                    title={template.name}
+                <PosterPhone
+                    template={template}
                     width={170}
                     className="relative translate-y-10 transition duration-700 group-hover:translate-y-4"
                 />
@@ -224,9 +305,13 @@ export function TemplateTile({ template, currency }: TileProps) {
                     </p>
                 </div>
                 {template.price !== null && (
-                    <p className="shrink-0 font-display text-xl text-gold-bright">
-                        {formatMoney(template.price, currency)}
-                    </p>
+                    <PriceTag
+                        price={template.price}
+                        compare={template.comparePrice}
+                        off={template.off}
+                        currency={currency}
+                        className="shrink-0 flex-wrap justify-end font-display text-xl"
+                    />
                 )}
             </div>
             <div className="flex gap-2 px-3 pb-3">
@@ -259,6 +344,13 @@ interface ShowcaseProps {
 
 export function ScreenShowcase({ templates, currency }: ShowcaseProps) {
     const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
+    const stage = useRef<HTMLDivElement>(null);
+    const seen = useInView(stage, {
+        once: true,
+        margin: '200px',
+    });
+    // Phones get the phone view only: a laptop scaled to 260px says nothing.
+    const wide = useSyncExternalStore(subscribeWide, isWide, () => true);
     const [i, setI] = useState(0);
     const t = templates[i % templates.length];
     if (!t) return null;
@@ -269,7 +361,7 @@ export function ScreenShowcase({ templates, currency }: ShowcaseProps) {
         'flex size-11 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/5 text-ivory transition hover:bg-white/10';
     return (
         <div className="flex flex-col items-center">
-            <div className="flex rounded-full border border-white/10 bg-white/5 p-1">
+            <div className="hidden rounded-full border border-white/10 bg-white/5 p-1 md:flex">
                 {(['desktop', 'mobile'] as const).map((d) => (
                     <button
                         key={d}
@@ -298,18 +390,12 @@ export function ScreenShowcase({ templates, currency }: ShowcaseProps) {
                 >
                     <ChevronLeft className="size-5" />
                 </button>
-                <div className="flex min-h-[420px] items-center justify-center">
-                    {device === 'desktop' ? (
-                        <>
-                            <div className="hidden md:block">
-                                <LiveLaptop slug={t.sampleSlug} title={t.name} width={640} />
-                            </div>
-                            <div className="md:hidden">
-                                <LiveLaptop slug={t.sampleSlug} title={t.name} width={260} />
-                            </div>
-                        </>
+                <div ref={stage} className="flex min-h-[420px] items-center justify-center">
+                    {device === 'desktop' && wide ? (
+                        // The one live invitation on the page, started only once it scrolls into view.
+                        <LiveLaptop slug={t.sampleSlug} title={t.name} width={640} live={seen} />
                     ) : (
-                        <LivePhone key={t.slug} slug={t.sampleSlug} title={t.name} width={220} />
+                        <PosterPhone key={t.slug} template={t} width={220} />
                     )}
                 </div>
                 <button
@@ -325,8 +411,14 @@ export function ScreenShowcase({ templates, currency }: ShowcaseProps) {
             </div>
             <p className="mt-8 font-display text-3xl text-ivory">{t.name}</p>
             {t.price !== null && (
-                <p className="mt-1 text-sm text-gold-bright">
-                    {formatMoney(t.price, currency)} · {t.packageName}
+                <p className="mt-1 flex items-baseline justify-center gap-2 text-sm">
+                    <PriceTag
+                        price={t.price}
+                        compare={t.comparePrice}
+                        off={t.off}
+                        currency={currency}
+                    />
+                    <span className="text-ivory/45">· {occasionOf(t.eventKind).name.en}</span>
                 </p>
             )}
             <div className="mt-5 flex gap-3">
@@ -361,6 +453,87 @@ const FAN_SHIFT = [-210, -105, 0, 105, 210];
 const FAN_LIFT = [64, 20, 0, 20, 64];
 const FAN_LAYER = [1, 2, 3, 2, 1];
 
+// Hue (0–360) and lightness (0–1) of a #rrggbb colour.
+function hueLight(hex: string): [number, number] {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as [
+        number,
+        number,
+        number,
+    ];
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const light = (max + min) / 2;
+    if (max === min) return [0, light];
+    const d = max - min;
+    const hue =
+        max === r
+            ? ((g - b) / d + (g < b ? 6 : 0)) * 60
+            : max === g
+              ? ((b - r) / d + 2) * 60
+              : ((r - g) / d + 4) * 60;
+    return [hue, light];
+}
+
+// Same colour family on the same kind of paper (both light or both dark) reads as the same card.
+function lookAlike(a: StoreTemplate, b: StoreTemplate): boolean {
+    const [ha] = hueLight(a.design.palette.primary);
+    const [hb] = hueLight(b.design.palette.primary);
+    const [, la] = hueLight(a.design.palette.bg);
+    const [, lb] = hueLight(b.design.palette.bg);
+    const gap = Math.min(Math.abs(ha - hb), 360 - Math.abs(ha - hb));
+    return gap < 25 && la > 0.5 === lb > 0.5;
+}
+
+const toneRank: Record<string, number> = {
+    festive: 0,
+    joyful: 1,
+    formal: 2,
+    serene: 3,
+};
+
+// The hero's five: each a different occasion (and tradition where the catalogue allows), lively
+// ones first, never a remembrance. The wedding, if any, takes the front-centre seat.
+export function heroPicks(templates: readonly StoreTemplate[], count = 5): StoreTemplate[] {
+    const candidates = templates
+        .filter((t) => occasionOf(t.eventKind).tone !== 'solemn')
+        .map((t, i) => ({
+            t,
+            i,
+            rank: toneRank[occasionOf(t.eventKind).tone] ?? 9,
+        }))
+        .sort((a, b) => a.rank - b.rank || a.i - b.i)
+        .map((c) => c.t);
+    const picks: StoreTemplate[] = [];
+    const base = (t: StoreTemplate) => t.culture.split('.')[0] ?? t.culture;
+    const newOccasion = (t: StoreTemplate) => picks.every((p) => p.eventKind !== t.eventKind);
+    // The cover guests see first is the opening (envelope, doors, lantern…): two alike look like
+    // one design, whatever the occasion.
+    const newOpening = (t: StoreTemplate) =>
+        picks.every((p) => p.design.opening !== t.design.opening);
+    const newCulture = (t: StoreTemplate) => picks.every((p) => base(p) !== base(t));
+    const newColour = (t: StoreTemplate) => picks.every((p) => !lookAlike(p, t));
+    // Strictest first, loosening only when the catalogue runs out of variety.
+    const passes = [
+        (t: StoreTemplate) => newOccasion(t) && newOpening(t) && newCulture(t) && newColour(t),
+        (t: StoreTemplate) => newOccasion(t) && newOpening(t) && newColour(t),
+        (t: StoreTemplate) => newOccasion(t) && newOpening(t),
+        newOccasion,
+        () => true,
+    ];
+    for (const fits of passes)
+        for (const t of candidates) {
+            if (picks.length >= count) break;
+            if (!picks.includes(t) && fits(t)) picks.push(t);
+        }
+    const wedding = picks.findIndex((t) => t.eventKind === 'wedding');
+    const centre = Math.floor(picks.length / 2);
+    if (wedding >= 0 && picks.length > centre) {
+        const [w] = picks.splice(wedding, 1);
+        if (w) picks.splice(centre, 0, w);
+    }
+    return picks;
+}
+
 // Five live designs fanned like cards. Pointing at one (or tabbing to it) straightens and lifts it
 // to the front while its neighbours ease aside; nothing ever leaves the fan.
 export function HeroFan({ templates }: FanProps) {
@@ -394,7 +567,7 @@ export function HeroFan({ templates }: FanProps) {
     };
     return (
         <div
-            className="relative h-full min-h-[820px]"
+            className="relative h-full min-h-[680px]"
             onPointerLeave={() => {
                 setActive(null);
             }}
@@ -417,21 +590,19 @@ export function HeroFan({ templates }: FanProps) {
                     className="absolute start-1/2 top-1/2 rounded-[30px] transition-[transform,opacity,filter] duration-700 ease-[cubic-bezier(.22,1,.36,1)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold motion-reduce:transition-none"
                     style={place(i)}
                 >
-                    <LivePhone
-                        slug={t.sampleSlug}
-                        title={t.name}
-                        width={i === 2 ? 250 : 222}
-                        eager
-                    />
+                    <PosterPhone template={t} width={i === 2 ? 250 : 222} priority />
                     <span
                         className={cn(
-                            'absolute start-1/2 -bottom-14 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-night/80 py-1.5 ps-4 pe-1.5 whitespace-nowrap backdrop-blur transition duration-500',
+                            'absolute start-1/2 -top-14 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/15 bg-night/80 py-1.5 ps-4 pe-1.5 whitespace-nowrap backdrop-blur transition duration-500',
                             active === i
                                 ? 'translate-y-0 opacity-100'
                                 : 'pointer-events-none translate-y-2 opacity-0',
                         )}
                     >
                         <span className="font-display text-lg text-ivory">{t.name}</span>
+                        <span className="text-[10px] tracking-[0.2em] text-gold uppercase">
+                            {occasionOf(t.eventKind).name.en}
+                        </span>
                         <span className="rounded-full bg-gold px-3 py-1 text-xs font-semibold text-night">
                             Try it free
                         </span>

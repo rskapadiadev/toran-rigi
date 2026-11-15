@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { api, post } from '@/lib/api';
 import { FormEditor } from '@/shop/FormEditor';
+import { PriceTag } from '@/shop/landing';
 import { localPhotos, mapLocalPhotos, withoutLocalPhotos } from '@/shop/local-photos';
 import { ShopShell } from '@/shop/ShopShell';
 import { SignIn } from '@/shop/SignIn';
@@ -117,8 +118,6 @@ function TryPage() {
         [],
     );
 
-    const price = data.offer ? formatMoney(data.offer.price, data.offer.currency) : null;
-
     const bar = (
         <div className="flex h-14 items-center gap-3 px-3 sm:px-4">
             <Link
@@ -132,7 +131,16 @@ function TryPage() {
                 <span className="text-xs text-muted-foreground">Try · </span>
                 <span className="font-display text-xl text-ink">{data.template.name}</span>
             </p>
-            {price && <p className="hidden text-sm font-medium text-ink sm:block">{price}</p>}
+            {data.offer && (
+                <PriceTag
+                    price={data.offer.price}
+                    compare={data.offer.comparePrice}
+                    off={data.offer.off}
+                    currency={data.offer.currency}
+                    tone="light"
+                    className="hidden text-sm font-medium sm:inline-flex"
+                />
+            )}
             <Button
                 className="rounded-full bg-gold px-5 text-ink hover:bg-gold-bright"
                 onClick={() => {
@@ -327,7 +335,8 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
                     <DialogDescription>
                         {step === 'signin'
                             ? 'It’s saved to your account, so you can come back and edit it any time. The words you wrote come with you.'
-                            : `${offer?.name ?? ''} package`}
+                            : data.template.description ||
+                              'Your own invitation, yours to keep and share'}
                     </DialogDescription>
                 </DialogHeader>
                 {step === 'loading' && (
@@ -358,7 +367,16 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
                         )}
                         <div className="flex items-baseline justify-between border-t pt-4">
                             <span className="text-sm text-muted-foreground">Total</span>
-                            <span className="font-display text-3xl text-ink">{price}</span>
+                            {offer ? (
+                                <PriceTag
+                                    price={offer.price}
+                                    compare={offer.comparePrice}
+                                    off={offer.off}
+                                    currency={offer.currency}
+                                    tone="light"
+                                    className="font-display text-3xl"
+                                />
+                            ) : null}
                         </div>
                         <Button
                             size="lg"
