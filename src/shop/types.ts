@@ -61,7 +61,7 @@ export interface Me {
         email: string | null;
     };
     invitations: MyInvitationRow[];
-    payments: 'fake' | 'razorpay';
+    payments: 'fake' | 'razorpay' | 'off';
 }
 
 export interface MyInvitation {

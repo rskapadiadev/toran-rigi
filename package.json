@@ -14,6 +14,7 @@
         "start:node": "node --import tsx server/node-serve.ts",
         "preview": "npm run build && vite preview",
         "deploy": "npm run build && wrangler deploy",
+        "deploy:prod": "CLOUDFLARE_ENV=production vite build && wrangler deploy",
         "check:size": "npm run build && wrangler deploy --dry-run",
         "cf-typegen": "wrangler types",
         "lint": "eslint . --max-warnings 0",
@@ -24,9 +25,9 @@
         "test:watch": "vitest",
         "db:generate": "drizzle-kit generate",
         "db:migrate:local": "wrangler d1 migrations apply DB --local",
-        "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+        "db:migrate:remote": "wrangler d1 migrations apply DB --remote --env production",
         "db:seed:local": "tsx scripts/seed.ts",
-        "db:seed:remote": "tsx scripts/seed.ts --remote",
+        "db:seed:remote": "tsx scripts/seed.ts --remote --env production",
         "prepare": "husky"
     },
     "lint-staged": {

@@ -269,6 +269,7 @@ if (flag('libsql')) {
             'execute',
             'DB',
             flag('remote') ? '--remote' : '--local',
+            ...(flag('remote') ? ['--env', option('env', 'production')] : []),
             `--file=${file}`,
         ],
         { stdio: 'inherit' },

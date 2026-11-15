@@ -131,12 +131,22 @@ storeApi.post('/auth/request-code', async (c) => {
         await sha256(`${codeKey(email)}:${code}`),
         new Date(Date.now() + CODE_TTL_MS).toISOString(),
     );
-    await sendMail({
-        to: email,
-        subject: `${code} is your Toran code`,
-        text: `Your Toran code is ${code}. It expires in 10 minutes.`,
-        html: `<p>Your Toran code is</p><p style="font-size:28px;letter-spacing:6px"><b>${code}</b></p><p>It expires in 10 minutes. If you didn’t ask for it, ignore this email.</p>`,
-    });
+    try {
+        await sendMail({
+            to: email,
+            subject: `${code} is your Toran code`,
+            text: `Your Toran code is ${code}. It expires in 10 minutes.`,
+            html: `<p>Your Toran code is</p><p style="font-size:28px;letter-spacing:6px"><b>${code}</b></p><p>It expires in 10 minutes. If you didn’t ask for it, ignore this email.</p>`,
+        });
+    } catch (error) {
+        // Until the sending domain is verified, the mail service delivers to the studio's own inbox only.
+        console.error('[store] sign-in email', error);
+        return fail(
+            c,
+            409,
+            'We couldn’t email a code to that address just yet. Message us on WhatsApp and we’ll set up your invitation.',
+        );
+    }
     return c.json({ ok: true });
 });
 
@@ -190,7 +200,11 @@ storeApi.get('/me', async (c) => {
     return c.json({
         customer,
         invitations: await myInvitations(customer.id),
-        payments: c.env.config.PAYMENTS_DRIVER,
+        // 'off' on production until Razorpay exists: the buy flow then saves the order unpaid.
+        payments:
+            c.env.config.ENVIRONMENT === 'production' && c.env.config.PAYMENTS_DRIVER === 'fake'
+                ? 'off'
+                : c.env.config.PAYMENTS_DRIVER,
     });
 });
 
@@ -205,8 +219,10 @@ storeApi.post('/me/buy/:slug', async (c) => {
 
 storeApi.post('/me/orders/:id/pay', async (c) => {
     // Razorpay checkout replaces this once the account exists; until then payments are simulated.
-    if (c.env.config.PAYMENTS_DRIVER !== 'fake')
-        return fail(c, 409, 'Online payment is not set up yet');
+    // Never on production: a simulated payment there would hand out invitations for free.
+    const { PAYMENTS_DRIVER, ENVIRONMENT } = c.env.config;
+    if (PAYMENTS_DRIVER !== 'fake' || ENVIRONMENT === 'production')
+        return fail(c, 409, 'Online payment is coming soon. Message us on WhatsApp to order');
     await payOrderFake(c.get('customer').id, c.req.param('id'));
     return c.json({ ok: true });
 });

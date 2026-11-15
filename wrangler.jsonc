@@ -31,5 +31,46 @@
         "APP_ORIGIN": "http://localhost:5173",
         "INVITE_URL_MODE": "path",
     },
-    // Production: "routes": [{ "pattern": "toran.therigi.co", "custom_domain": true }]
+    // Live site: build and deploy with `npm run deploy:prod` (CLOUDFLARE_ENV=production).
+    // Bindings are not inherited by environments, so each one is listed again here.
+    "env": {
+        "production": {
+            // Same name as the top level, so the address stays toran.<account subdomain>.workers.dev.
+            "name": "toran",
+            "workers_dev": true,
+            "d1_databases": [
+                {
+                    "binding": "DB",
+                    "database_name": "toran",
+                    "database_id": "5b849354-99f4-423e-a81e-af2d1b9c46ac",
+                    "migrations_dir": "migrations",
+                },
+            ],
+            "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "toran-media" }],
+            "ratelimits": [
+                {
+                    "name": "RATE_LIMITER",
+                    "namespace_id": "1001",
+                    "simple": { "limit": 30, "period": 60 },
+                },
+            ],
+            "triggers": { "crons": ["*/15 * * * *", "30 3 * * *"] },
+            // Secrets (SESSION_SECRET, RESEND_API_KEY, PIXABAY_API_KEY, CLOUDFLARE_AI_TOKEN…) are set
+            // with `npx wrangler secret put NAME --env production`, never written here.
+            "vars": {
+                "ENVIRONMENT": "production",
+                "PARENT_DOMAIN": "therigi.co",
+                "APP_HOST": "toran.therigi.workers.dev",
+                "APP_ORIGIN": "https://toran.therigi.workers.dev",
+                "INVITE_URL_MODE": "path",
+                "MAILER_DRIVER": "resend",
+                // Resend's shared sender until therigi.co is verified; it only delivers to the
+                // email the Resend account was made with.
+                "MAIL_FROM": "Toran <onboarding@resend.dev>",
+                // Online payment is not live yet: orders are saved unpaid (see server/api/store.ts).
+                "PAYMENTS_DRIVER": "fake",
+            },
+            // Later, with the domain: "routes": [{ "pattern": "toran.therigi.co", "custom_domain": true }]
+        },
+    },
 }
