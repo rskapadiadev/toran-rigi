@@ -550,7 +550,7 @@ function CeremonyScene({ event, index, day }: SceneProps) {
                 {page.lights && live && <DjLights dark={page.dark} />}
                 {page.lights && <MirrorBall />}
                 {/* Title above, details below, in one column so the card never covers the title. */}
-                <div className="pointer-events-none absolute inset-0 z-[3] flex flex-col justify-between gap-4 px-3 pt-[6svh] pb-3 motion-reduce:relative motion-reduce:pb-6 @5xl:start-auto @5xl:end-[6%] @5xl:w-[min(32rem,40cqw)] @5xl:justify-center @5xl:gap-6 @5xl:px-0 @5xl:py-[6svh]">
+                <div className="pointer-events-none absolute inset-0 z-[3] flex flex-col justify-between gap-3 px-3 pt-[5svh] pb-3 motion-reduce:relative motion-reduce:pb-6 @5xl:start-auto @5xl:end-[6%] @5xl:w-[min(32rem,40cqw)] @5xl:justify-center @5xl:gap-6 @5xl:px-0 @5xl:py-[6svh]">
                     <header className="pw-scene-head pointer-events-auto relative shrink-0 px-3 text-center">
                         <p
                             className="text-[11px] font-semibold tracking-[0.4em] uppercase"
@@ -668,7 +668,7 @@ function DetailsCard({ event, index }: DetailsProps) {
                 </div>
             )}
             {(dress?.ladies ?? dress?.gentlemen) && (
-                <div className="mt-5 grid gap-3 text-start @xl:grid-cols-2 [@media(max-height:760px)]:mt-3 [@media(max-height:760px)]:grid-cols-2 [@media(max-height:760px)]:gap-2">
+                <div className="mt-5 grid grid-cols-2 gap-2 text-start @xl:gap-3 [@media(max-height:760px)]:mt-3">
                     {dress.ladies && (
                         <div className="rounded-2xl bg-current/[0.06] p-3.5 [@media(max-height:760px)]:p-2.5">
                             <p className={label}>For the ladies</p>
@@ -736,13 +736,6 @@ function DjLights({ dark }: { dark: boolean }) {
     );
 }
 
-// Mirror-ball tiles: rows of squares, drawn twice side by side so sliding them reads as a spin.
-const ballRows = Array.from({ length: 12 }, (_, r) => r);
-const ballCols = Array.from({ length: 24 }, (_, c) => c);
-const tileShade = (r: number, c: number) => {
-    const n = (r * 7 + c * 13) % 9;
-    return n > 6 ? '#ffffff' : n > 3 ? '#d6dbe4' : n > 1 ? '#aab1bd' : '#7d8593';
-};
 const glints = [
     {
         x: 34,
@@ -771,8 +764,9 @@ const specks = Array.from({ length: 12 }, (_, i) => ({
     s: 3 + (i % 3) * 2,
 }));
 
-// A disco mirror ball hanging on its rod: it sways, spins, glints, and throws specks of white
-// light that wheel slowly around the scene.
+// A disco mirror ball hanging on its rod: it sways, its mirror tiles slide past as it spins, it
+// glints, and it throws specks of white light that wheel slowly around the scene. Drawn with a few
+// gradient layers (not hundreds of tiles), so spinning it costs almost nothing.
 function MirrorBall() {
     const { tier } = useInvite();
     const live = tier === 'full';
@@ -798,52 +792,26 @@ function MirrorBall() {
             >
                 {/* On phones the ball hangs lower, below the title, on a longer rod. */}
                 <div className="mx-auto h-[9svh] w-[2.8%] bg-[#c9ced8] @5xl:hidden" />
-                <svg viewBox="0 0 100 150" className="-mt-px w-full overflow-visible">
-                    <defs>
-                        <clipPath id="pw-ball-clip">
-                            <circle cx="50" cy="100" r="40" />
-                        </clipPath>
-                        <radialGradient id="pw-ball-shade" cx="0.38" cy="0.32" r="0.75">
-                            <stop offset="0" stopColor="#ffffff" stopOpacity="0.35" />
-                            <stop offset="0.55" stopColor="#ffffff" stopOpacity="0" />
-                            <stop offset="1" stopColor="#0b1230" stopOpacity="0.75" />
-                        </radialGradient>
-                    </defs>
-                    <rect x="48.6" y="0" width="2.8" height="61" fill="#c9ced8" />
-                    <g clipPath="url(#pw-ball-clip)">
-                        <rect x="10" y="60" width="80" height="80" fill="#9aa2b0" />
-                        <g className="pw-ball-tiles">
-                            {[0, 1].map((copy) =>
-                                ballRows.map((r) =>
-                                    ballCols.map((c) => (
-                                        <rect
-                                            key={`${String(copy)}-${String(r)}-${String(c)}`}
-                                            x={10 + copy * 80 + c * 3.4}
-                                            y={60 + r * 6.8}
-                                            width="3"
-                                            height="6.2"
-                                            fill={tileShade(r, c)}
-                                        />
-                                    )),
-                                ),
-                            )}
-                        </g>
-                        <circle cx="50" cy="100" r="40" fill="url(#pw-ball-shade)" />
-                    </g>
-                    {glints.map((g) => (
-                        <g
-                            key={`${String(g.x)}-${String(g.y)}`}
-                            className="pw-glint"
-                            style={{ animationDelay: g.d }}
-                        >
-                            <path
-                                d={`M${String(g.x)} ${String(g.y + 58)} l1.4 -5 l1.4 5 l5 1.4 l-5 1.4 l-1.4 5 l-1.4 -5 l-5 -1.4 Z`}
-                                fill="#ffffff"
+                <div className="mx-auto w-[2.8%] bg-[#c9ced8] pb-[56%]" />
+                <div className="relative mx-auto aspect-square w-[80%]">
+                    <div className="pw-ball-tiles absolute inset-0 rounded-full" />
+                    <div className="pw-ball-shade absolute inset-0 rounded-full" />
+                    {glints.map((g) => {
+                        const style = {
+                            left: `${String(g.x - 10)}%`,
+                            top: `${String(g.y - 2)}%`,
+                            animationDelay: g.d,
+                        };
+                        return (
+                            <span
+                                key={`${String(g.x)}-${String(g.y)}`}
+                                className="pw-glint"
+                                style={style}
                             />
-                        </g>
-                    ))}
-                </svg>
-                <div className="pw-ball-pool mx-auto -mt-1 h-3 w-[70%] rounded-[50%] bg-white/40 blur-md" />
+                        );
+                    })}
+                </div>
+                <div className="pw-ball-pool mx-auto mt-1 h-3 w-[70%] rounded-[50%] bg-white/40" />
             </div>
         </>
     );

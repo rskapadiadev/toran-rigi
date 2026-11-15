@@ -2123,7 +2123,46 @@ body:has([data-opening]) [data-preview-bar] {
 /* Phoolwari mirror ball (Sangeet). It hangs still for reduced motion. */
 .pw-ball {
     transform-origin: 50% 0;
-    filter: drop-shadow(0 8px 18px rgb(150 170 255 / 0.35));
+}
+/* Mirror tiles: a grid of grout lines over checkered silver, slid sideways to read as a spin. */
+.pw-ball-tiles {
+    background-color: #b9c0cc;
+    background-image:
+        linear-gradient(90deg, rgb(70 76 90 / 0.55) 1px, transparent 1px),
+        linear-gradient(0deg, rgb(70 76 90 / 0.55) 1px, transparent 1px),
+        repeating-linear-gradient(
+            90deg,
+            #ffffff 0 9px,
+            #d5dae3 9px 18px,
+            #8f97a6 18px 27px,
+            #eef1f6 27px 36px
+        );
+    background-size:
+        9px 9px,
+        9px 9px,
+        36px 100%;
+    box-shadow:
+        0 6px 18px rgb(150 170 255 / 0.35),
+        inset 0 0 0 1px rgb(255 255 255 / 0.25);
+}
+.pw-ball-shade {
+    background: radial-gradient(
+        circle at 36% 30%,
+        rgb(255 255 255 / 0.55) 0%,
+        rgb(255 255 255 / 0) 42%,
+        rgb(11 18 48 / 0.65) 100%
+    );
+}
+.pw-glint {
+    position: absolute;
+    width: 20%;
+    height: 20%;
+    background: #fff;
+    clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%);
+    opacity: 0;
+}
+.pw-ball-pool {
+    filter: blur(8px);
 }
 @media (prefers-reduced-motion: no-preference) {
     .pw-ball {
@@ -2133,8 +2172,6 @@ body:has([data-opening]) [data-preview-bar] {
         animation: pw-ball-spin 7s linear infinite;
     }
     .pw-glint {
-        transform-box: fill-box;
-        transform-origin: 50% 50%;
         animation: pw-glint 2.4s ease-in-out infinite;
     }
     .pw-specks {
@@ -2159,7 +2196,10 @@ body:has([data-opening]) [data-preview-bar] {
 }
 @keyframes pw-ball-spin {
     to {
-        translate: -80px 0;
+        background-position:
+            -36px 0,
+            0 0,
+            -36px 0;
     }
 }
 @keyframes pw-glint {
