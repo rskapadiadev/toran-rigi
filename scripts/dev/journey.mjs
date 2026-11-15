@@ -47,14 +47,13 @@ exact: true
 await panelTab('Details').click();
 await page.getByLabel('Partner one', { exact: true }).fill('Riya');
 await page.getByLabel('Partner two', { exact: true }).fill('Kabir');
-await panelTab('Events').click();
-await page.getByRole('button', { name: /Add ceremony/ }).click();
 await page.getByRole('button', {
  name: 'Save',
 exact: true 
 }).click();
-await page.waitForSelector('header >> text=Saved');
-step('names + ceremony saved');
+// Exact match: "Saved" is also inside "Unsaved changes".
+await page.locator('header').getByText('Saved', { exact: true }).waitFor();
+step('names saved');
 await page.waitForTimeout(1500);
 await page.screenshot({ path: `${out}/editor.png` });
 

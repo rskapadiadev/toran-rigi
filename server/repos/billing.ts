@@ -161,7 +161,8 @@ export async function recordPayment(
         method: 'upi' | 'cash' | 'bank' | 'card' | 'online';
         reference?: string;
         paidAt?: string;
-        userId: string;
+        // Null for an online payment no one on the team recorded.
+        userId: string | null;
     },
 ) {
     const { db } = getPlatform();

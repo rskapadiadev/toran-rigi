@@ -1,13 +1,17 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
+import { useMemo, useState } from 'react';
 import { z } from 'zod';
 
 import { InvitationView } from '../invitation/InvitationView';
+import { applyTrial, PreviewBar, type Trial } from '../invitation/PreviewBar';
 import { shareMeta } from '../lib/share-meta';
 import { fetchInvitation } from '../server-fns/invitations';
 
 const search = z.object({
     lang: z.string().max(5).optional(),
     g: z.string().max(64).optional(),
+    // Set by the shop's template cards, which show the page in a small frame with no try bar.
+    embed: z.coerce.string().max(4).optional(),
 });
 
 export const Route = createFileRoute('/$slug')({
@@ -44,6 +48,16 @@ export const Route = createFileRoute('/$slug')({
 
 function InvitationPage() {
     const { invitation, guest } = Route.useLoaderData();
-    const { lang } = Route.useSearch();
-    return <InvitationView data={invitation} initialLocale={lang} guest={guest} />;
+    const { lang, embed } = Route.useSearch();
+    // Demos are template previews: visitors can try their own names and start an order.
+    const [trial, setTrial] = useState<Trial | null>(null);
+    const data = useMemo(() => applyTrial(invitation, trial), [invitation, trial]);
+    return (
+        <>
+            <InvitationView data={data} initialLocale={lang} guest={guest} />
+            {invitation.invitation.isDemo && embed === undefined && (
+                <PreviewBar data={invitation} trial={trial} onTrial={setTrial} />
+            )}
+        </>
+    );
 }

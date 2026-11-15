@@ -92,8 +92,9 @@ function AdminShell() {
     if (me.isPending || (me.isFetching && !me.data)) return <ShellSkeleton />;
     if (!user) return <Navigate to="/admin/login" search={{ next: location.pathname }} replace />;
 
-    // An invitation opens in the full-screen visual editor: no sidebar, header or page chrome.
-    if (/^\/admin\/invitations\/(?!new\b)[^/]+\/?$/.test(location.pathname)) return <Outlet />;
+    // An invitation or a template opens in the full-screen visual editor: no sidebar, header or chrome.
+    if (/^\/admin\/(invitations|templates)\/(?!new\b)[^/]+\/?$/.test(location.pathname))
+        return <Outlet />;
 
     const logout = async () => {
         await post('/auth/logout', {});

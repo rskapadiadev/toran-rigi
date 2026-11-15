@@ -1,3 +1,4 @@
+import { occasionOf } from '@shared/occasions';
 import { can } from '@shared/permissions';
 import { themeCatalog } from '@shared/themes';
 import { orderStatuses } from '@shared/types';
@@ -24,6 +25,7 @@ import { PageHeader, PageSkeleton, Panel, ToneBadge } from '@/admin/kit/page';
 import { InvitationStatusBadge, OrderStatusBadge, slaFor } from '@/admin/kit/status';
 import { cultureLabel, statusLabel } from '@/admin/labels';
 import { initials } from '@/admin/shell/nav';
+import { type TemplateRow, templatesQuery } from '@/admin/templates/types';
 import type { InvitationRef, OrderDetail } from '@/admin/types';
 import { useMe } from '@/admin/useMe';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -421,16 +423,48 @@ interface InvitationCardProps {
     invitation: InvitationRef | null;
 }
 
+const BLANK = '__blank';
+
 function InvitationCard({ order, invitation }: InvitationCardProps) {
     const navigate = useNavigate();
+    const occasion = occasionOf(order.eventKind);
+    const templates = useQuery({
+        ...templatesQuery,
+        queryFn: () => api<TemplateRow[]>('/admin/templates'),
+        enabled: !invitation,
+    });
+    // Published templates for this family of occasion: this exact occasion and tradition first.
+    const tradition = order.culture.split('.')[0] ?? '';
+    const choices = (templates.data ?? [])
+        .filter(
+            (t) =>
+                t.status === 'published' && occasionOf(t.eventKind).category === occasion.category,
+        )
+        .sort(
+            (a, b) =>
+                Number(b.eventKind === occasion.id) - Number(a.eventKind === occasion.id) ||
+                Number(b.culture.startsWith(tradition)) - Number(a.culture.startsWith(tradition)) ||
+                Number(b.isFeatured) - Number(a.isFeatured),
+        );
+    const [picked, setPicked] = useState<string | null>(null);
+    const choice = picked ?? choices[0]?.id ?? BLANK;
     const suggested = themeCatalog.find((t) => t.culture === order.culture)?.slug ?? 'editorial';
     const [theme, setTheme] = useState(suggested);
+    const chosen = choices.find((t) => t.id === choice);
     const create = useMutation({
         mutationFn: () =>
-            post<{ id: string }>('/admin/invitations', {
-                orderId: order.id,
-                themeSlug: theme,
-            }),
+            post<{ id: string }>(
+                '/admin/invitations',
+                choice === BLANK
+                    ? {
+                          orderId: order.id,
+                          themeSlug: theme,
+                      }
+                    : {
+                          orderId: order.id,
+                          templateId: choice,
+                      },
+            ),
         onSuccess: ({ id }) => {
             toast.success('Invitation created');
             return navigate({
@@ -487,32 +521,67 @@ function InvitationCard({ order, invitation }: InvitationCardProps) {
                     </>
                 ) : (
                     <>
-                        <FormField label="Starting theme">
+                        <FormField
+                            label="Start from template"
+                            description={
+                                chosen
+                                    ? `${occasionOf(chosen.eventKind).name.en} · ${chosen.themeName ?? ''}. Its design, sample text, sections and ceremonies are copied; names start blank.`
+                                    : choices.length === 0 && !templates.isPending
+                                      ? `No published ${occasion.name.en} template yet: start from a theme, or add one under Templates.`
+                                      : undefined
+                            }
+                        >
                             {(fieldId) => (
-                                <Select value={theme} onValueChange={setTheme}>
+                                <Select value={choice} onValueChange={setPicked}>
                                     <SelectTrigger id={fieldId} className="w-full bg-card">
-                                        <SelectValue />
+                                        <SelectValue placeholder="Loading templates…" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                        {themeCatalog.map((t) => (
-                                            <SelectItem key={t.slug} value={t.slug}>
+                                    <SelectContent className="max-h-80">
+                                        {choices.map((t) => (
+                                            <SelectItem key={t.id} value={t.id}>
+                                                <span
+                                                    className="size-3 rounded-full ring-1 ring-black/10"
+                                                    style={{ background: t.design.palette.primary }}
+                                                />
                                                 {t.name}
                                                 <span className="text-muted-foreground">
-                                                    {cultureLabel[t.culture]}
+                                                    {occasionOf(t.eventKind).name.en}
                                                 </span>
                                             </SelectItem>
                                         ))}
+                                        <SelectItem value={BLANK}>Blank: theme only</SelectItem>
                                     </SelectContent>
                                 </Select>
                             )}
                         </FormField>
+                        {choice === BLANK && (
+                            <FormField label="Theme">
+                                {(fieldId) => (
+                                    <Select value={theme} onValueChange={setTheme}>
+                                        <SelectTrigger id={fieldId} className="w-full bg-card">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {themeCatalog.map((t) => (
+                                                <SelectItem key={t.slug} value={t.slug}>
+                                                    {t.name}
+                                                    <span className="text-muted-foreground">
+                                                        {cultureLabel[t.culture]}
+                                                    </span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            </FormField>
+                        )}
                         <Button
                             variant="gold"
                             className="w-full"
                             onClick={() => {
                                 create.mutate();
                             }}
-                            disabled={create.isPending}
+                            disabled={create.isPending || templates.isPending}
                         >
                             <Sparkles /> Create invitation & open editor
                         </Button>

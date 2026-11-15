@@ -1,3 +1,4 @@
+import { aurora, confetti, leheriya, terrazzo, watercolor } from '@shared/backdrops';
 import { blockKey, type ResolvedBlock, settleEnter } from '@shared/blocks';
 import { cultureOf } from '@shared/cultures';
 import { rng } from '@shared/generative';
@@ -8,7 +9,8 @@ import { type CSSProperties, type ReactNode, useMemo } from 'react';
 
 import { EnterContext } from '../motion/Reveal';
 import { useInvite } from './context';
-import { useEditing } from './editing';
+import { type TextPath, useEditing } from './editing';
+import { BEAT, Heartbeat, isProcession, Procession } from './procession';
 
 interface SceneStyle {
     background: string;
@@ -155,6 +157,80 @@ function buildScene(
                 starry: true,
             };
         }
+        case 'terrazzo': {
+            const base = mixHex('#f1ede6', p.bg, isDark(p.bg) ? 0.04 : 0.25);
+            const chips = [
+                p.primary,
+                p.gold,
+                p.accent,
+                mixHex(p.primary, '#ffffff', 0.5),
+                '#9a948c',
+            ];
+            return {
+                background: terrazzo(base, chips, seed + 7),
+                vars: {
+                    ...light(base),
+                    '--inv-primary': mixHex(p.primary, '#000000', 0.2),
+                },
+                dappled: false,
+                spotlight: true,
+            };
+        }
+        case 'watercolor': {
+            const base = mixHex('#fbf7f0', p.bg, isDark(p.bg) ? 0.03 : 0.2);
+            return {
+                background: watercolor(base, [p.primary, p.accent, p.gold], seed + 8),
+                vars: {
+                    ...light(base),
+                    '--inv-primary': mixHex(p.primary, '#000000', 0.2),
+                },
+                dappled: false,
+            };
+        }
+        case 'leheriya': {
+            const base = mixHex(p.bg, '#ffffff', isDark(p.bg) ? 0.85 : 0.4);
+            // Four bands, so the colour cycle repeats within one tile (see leheriya()).
+            const bands = [
+                mixHex(p.primary, '#ffffff', 0.5),
+                mixHex(p.gold, '#ffffff', 0.4),
+                mixHex(p.accent, '#ffffff', 0.5),
+                base,
+            ];
+            return {
+                background: leheriya(base, bands, seed + 10),
+                vars: {
+                    ...light(base),
+                    '--inv-primary': mixHex(p.primary, '#000000', 0.25),
+                },
+                dappled: false,
+                spotlight: true,
+            };
+        }
+        case 'aurora': {
+            const base = mixHex(p.primary, '#05030c', 0.86);
+            // mixHex normalises every colour to 6-digit hex, so the alpha suffix in aurora() is valid.
+            const glows = [p.primary, p.accent, p.gold, mixHex(p.primary, '#6a4cff', 0.4)].map(
+                (c) => mixHex(c, c, 0),
+            );
+            return {
+                background: aurora(glows, seed + 12),
+                vars: dark(base),
+                dappled: false,
+            };
+        }
+        case 'confetti': {
+            const base = mixHex('#fffdf8', p.bg, isDark(p.bg) ? 0.03 : 0.3);
+            const colors = [p.primary, p.gold, p.accent, mixHex(p.primary, '#ffffff', 0.4)];
+            return {
+                background: confetti(base, colors, seed + 13),
+                vars: {
+                    ...light(base),
+                    '--inv-primary': mixHex(p.primary, '#000000', 0.15),
+                },
+                dappled: false,
+                spotlight: true,
+            };
+        }
         case 'plain': {
             const vars = isDark(p.bg) ? dark(p.bg) : light(p.bg);
             return {
@@ -244,7 +320,7 @@ const spotlight =
     'radial-gradient(ellipse 62% 48% at 50% 50%, var(--inv-bg) 40%, transparent 100%)';
 
 // Gold brocade ribbon sewn between two different fabrics.
-function Seam() {
+function Seam({ animated }: { animated: boolean }) {
     const { data } = useInvite();
     const p = data.invitation.design.palette;
     const background = useMemo(
@@ -262,10 +338,37 @@ function Seam() {
     return (
         <div
             aria-hidden
-            className="relative z-10 h-4 shadow-[0_2px_6px_rgba(0,0,0,0.25)]"
+            className={`relative z-10 h-4 shadow-[0_2px_6px_rgba(0,0,0,0.25)] ${animated ? 'seam-flow' : ''}`}
             style={{
                 backgroundImage: background,
                 backgroundSize: '40px 40px',
+            }}
+        />
+    );
+}
+
+// Gold zari lace: a woven band with scalloped borders and a row of pierced holes.
+function LaceRibbon() {
+    const { data } = useInvite();
+    const gold = data.invitation.design.palette.gold;
+    const light = mixHex(gold, '#fff3c4', 0.45);
+    const dark = mixHex(gold, '#5a3c0c', 0.35);
+    const tile = useMemo(() => {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="28" viewBox="0 0 24 28">
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${light}"/><stop offset="0.5" stop-color="${gold}"/><stop offset="1" stop-color="${dark}"/></linearGradient></defs>
+<path fill="url(#g)" fill-rule="evenodd" d="M0 6 A6 6 0 0 1 12 6 A6 6 0 0 1 24 6 V22 A6 6 0 0 1 12 22 A6 6 0 0 1 0 22 Z M12 14 m-3 0 a3 3 0 1 0 6 0 a3 3 0 1 0 -6 0 Z M6 5 m-1.4 0 a1.4 1.4 0 1 0 2.8 0 a1.4 1.4 0 1 0 -2.8 0 Z M18 5 m-1.4 0 a1.4 1.4 0 1 0 2.8 0 a1.4 1.4 0 1 0 -2.8 0 Z M6 23 m-1.4 0 a1.4 1.4 0 1 0 2.8 0 a1.4 1.4 0 1 0 -2.8 0 Z M18 23 m-1.4 0 a1.4 1.4 0 1 0 2.8 0 a1.4 1.4 0 1 0 -2.8 0 Z"/>
+<path d="M0 10 H24 M0 18 H24" stroke="${dark}" stroke-width="0.6" opacity="0.6"/>
+</svg>`;
+        return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+    }, [gold, light, dark]);
+    return (
+        <div
+            aria-hidden
+            className="relative z-10 -my-3.5 h-7"
+            style={{
+                backgroundImage: tile,
+                backgroundSize: '24px 28px',
+                filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))',
             }}
         />
     );
@@ -275,10 +378,12 @@ interface EdgeShape {
     mask: string;
     size: string;
     height: string;
+    /** Animated: a repeating edge drifts by one tile (px); a full-width one breathes instead. */
+    drift?: number;
 }
 
 // Torn, scalloped or arched top edge: the scene's own fabric masked into a shape over the previous one.
-function edgeShape(kind: EdgeKind, seed: number): EdgeShape | null {
+export function edgeShape(kind: EdgeKind, seed: number): EdgeShape | null {
     switch (kind) {
         case 'torn': {
             const r = rng(seed * 31 + 7);
@@ -292,6 +397,7 @@ function edgeShape(kind: EdgeKind, seed: number): EdgeShape | null {
                 ),
                 size: '400px 100%',
                 height: '22px',
+                drift: 400,
             };
         }
         case 'scallop':
@@ -301,6 +407,7 @@ function edgeShape(kind: EdgeKind, seed: number): EdgeShape | null {
                 ),
                 size: '40px 100%',
                 height: '20px',
+                drift: 40,
             };
         case 'arch':
             return {
@@ -310,10 +417,115 @@ function edgeShape(kind: EdgeKind, seed: number): EdgeShape | null {
                 size: '100% 100%',
                 height: 'min(14cqw, 90px)',
             };
+        case 'cusped':
+            return tile(cuspedArcade(), 80, 40, 'evenodd');
+        case 'ogee':
+            return tile(
+                'M0 32 V24 C0 16 14 14 20 8 C23 5 24 2 24 0 C24 2 25 5 28 8 C34 14 48 16 48 24 V32 Z',
+                48,
+                32,
+            );
+        case 'lotus':
+            return tile(
+                // A tall petal between two half-petals: one outline, so overlaps never cut holes.
+                'M0 22 V8 C1 12 4 16 7 17 C11 12 14 6 16 0 C18 6 21 12 25 17 C28 16 31 12 32 8 V22 Z',
+                32,
+                22,
+            );
+        case 'swag':
+            // Each swag sags from a pin; the bead marks the pin.
+            return tile(
+                'M0 20 V2 Q40 30 80 2 V20 Z M-3 3 a3 3 0 1 1 6 0 a3 3 0 1 1 -6 0 M77 3 a3 3 0 1 1 6 0 a3 3 0 1 1 -6 0',
+                80,
+                20,
+            );
+        case 'wave':
+            return tile('M0 18 V9 C20 0 40 0 60 9 C80 18 100 18 120 9 V18 Z', 120, 18);
+        case 'pinking':
+            return tile('M0 9 V8 L8 0 L16 8 V9 Z', 16, 9);
+        case 'cloud':
+            return tile(clouds(seed), 200, 30);
+        case 'deco':
+            return tile('M0 16 V12 H8 V8 H16 V4 H32 V8 H40 V12 H48 V16 Z', 48, 16);
+        case 'slant':
+            return {
+                mask: svgDataUrl(
+                    `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><path d='M0 100 V0 L100 100 Z'/></svg>`,
+                ),
+                size: '100% 100%',
+                height: 'min(7cqw, 56px)',
+            };
+        case 'heartbeat':
+            // The next section's fabric rises to the ECG trace; Heartbeat draws the glowing line on it.
+            // No drift: the line's pulse is the motion, and the trace must stay under it.
+            return still(tile(`M0 40 V26 ${BEAT} V40 Z`, 200, 40));
+        // Processions draw themselves (procession.tsx); no mask.
+        case 'doli':
+        case 'ghodi':
+        case 'car':
         case 'seam':
+        case 'lace':
         case 'none':
             return null;
     }
+}
+
+// An edge that never drifts, because something is drawn exactly along it.
+function still(shape: EdgeShape): EdgeShape {
+    shape.drift = 0;
+    return shape;
+}
+
+// A repeating edge whose tile is drawn at its natural size, so curves never stretch.
+function tile(d: string, width: number, height: number, rule = 'nonzero'): EdgeShape {
+    return {
+        mask: svgDataUrl(
+            `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${String(width)} ${String(height)}'><path fill-rule='${rule}' d='${d}'/></svg>`,
+        ),
+        size: `${String(width)}px ${String(height)}px`,
+        height: `${String(height)}px`,
+        drift: width,
+    };
+}
+
+// Jharokha screen: a band of the section's fabric pierced by cusped windows (cusps point inward,
+// as on a real jharokha), so the section above shows through each opening.
+function cuspedArcade(): string {
+    const cx = 40;
+    const cy = 30;
+    const rx = 27;
+    const ry = 24;
+    const lobes = 7;
+    const points = Array.from({ length: lobes + 1 }, (_, i) => {
+        const a = Math.PI - (Math.PI / lobes) * i;
+        return [cx + rx * Math.cos(a), cy - ry * Math.sin(a)] as const;
+    });
+    const cusps = points
+        .slice(1)
+        .map(([x, y], i) => {
+            const [px, py] = points[i] ?? [x, y];
+            const radius = (Math.hypot(x - px, y - py) / 2) * 1.05;
+            return `A${radius.toFixed(1)} ${radius.toFixed(1)} 0 0 0 ${x.toFixed(1)} ${y.toFixed(1)}`;
+        })
+        .join(' ');
+    const [sx, sy] = points[0] ?? [cx - rx, cy];
+    return `M0 0 H80 V40 H0 Z M${sx.toFixed(1)} 40 V${sy.toFixed(1)} ${cusps} V40 Z`;
+}
+
+// Billowing clouds: overlapping circles of seeded sizes, so no two invitations share a skyline.
+function clouds(seed: number): string {
+    const r = rng(seed * 17 + 3);
+    const circle = (x: number, cy: number, radius: number) =>
+        `M${(x - radius).toFixed(1)} ${cy.toFixed(1)} a${radius.toFixed(1)} ${radius.toFixed(1)} 0 1 1 ${(radius * 2).toFixed(1)} 0 a${radius.toFixed(1)} ${radius.toFixed(1)} 0 1 1 ${(-radius * 2).toFixed(1)} 0`;
+    const puffs: string[] = ['M0 30 V22 H200 V30 Z'];
+    for (let x = 0; x < 200; x += r.range(18, 30)) {
+        const radius = r.range(9, 15);
+        // Tops stay inside the strip: cy - radius >= 1.
+        const cy = Math.max(radius + 1, 30 - radius * r.range(0.55, 0.85));
+        // Drawn again one tile left and right, so puffs crossing the tile edge join seamlessly.
+        puffs.push(circle(x, cy, radius), circle(x - 200, cy, radius), circle(x + 200, cy, radius));
+    }
+    return puffs.join(' ');
 }
 
 interface EdgeProps {
@@ -321,12 +533,14 @@ interface EdgeProps {
     background: string;
     color: string;
     seed: number;
+    animated: boolean;
 }
 
-function Edge({ kind, background, color, seed }: EdgeProps) {
+function Edge({ kind, background, color, seed, animated }: EdgeProps) {
     const shape = useMemo(() => edgeShape(kind, seed), [kind, seed]);
     if (!shape) return null;
-    const style: CSSProperties = {
+    const style: CSSProperties & Record<'--edge-drift', string> = {
+        '--edge-drift': `${String(shape.drift ?? 0)}px`,
         top: `calc(1px - ${shape.height})`,
         height: shape.height,
         backgroundImage: background,
@@ -339,8 +553,15 @@ function Edge({ kind, background, color, seed }: EdgeProps) {
         WebkitMaskSize: shape.size,
         WebkitMaskRepeat: 'repeat-x',
     };
+    // Drifting edges slide their mask one tile at a time; full-width ones (arch, slant) breathe.
+    const motion =
+        !animated || shape.drift === 0 ? '' : shape.drift ? 'edge-drift' : 'edge-breathe';
     return (
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 z-10" style={style} />
+        <div
+            aria-hidden
+            className={`pointer-events-none absolute inset-x-0 z-10 ${motion}`}
+            style={style}
+        />
     );
 }
 
@@ -375,6 +596,8 @@ export function Scene({ block, index, children }: SceneProps) {
         color: 'var(--inv-ink)',
     } as CSSProperties;
     const selected = edit?.selected === block.type;
+    // The section's one "Animate edge" switch; screenshots and the static tier always hold still.
+    const live = block.edgeMotion && tier !== 'static';
     return (
         <div
             className="relative isolate"
@@ -388,11 +611,28 @@ export function Scene({ block, index, children }: SceneProps) {
             onClickCapture={
                 edit
                     ? (e) => {
-                          const card = (e.target as HTMLElement).closest<HTMLElement>(
-                              '[data-event-index]',
-                          );
+                          const target = e.target as HTMLElement;
+                          const card = target.closest<HTMLElement>('[data-event-index]');
                           const event = card ? Number(card.dataset.eventIndex) : undefined;
-                          edit.select(block.type, { event });
+                          // Photos (and their empty placeholders) open the photo controls.
+                          // Overlays (names over a cover photo) sit above it: look under the pointer too.
+                          const pic =
+                              target.closest<HTMLElement>('img, [data-photo]') ??
+                              document
+                                  .elementsFromPoint(e.clientX, e.clientY)
+                                  .find(
+                                      (el): el is HTMLElement =>
+                                          el instanceof HTMLElement &&
+                                          el.matches('img, [data-photo]') &&
+                                          e.currentTarget.contains(el),
+                                  );
+                          edit.select(block.type, {
+                              event,
+                              photo: Boolean(pic),
+                              slot: pic?.dataset.photoSlot,
+                              text: target.closest<HTMLElement>('[data-editable]')?.dataset
+                                  .editable as TextPath | undefined,
+                          });
                       }
                     : undefined
             }
@@ -402,13 +642,19 @@ export function Scene({ block, index, children }: SceneProps) {
                     {edit.label(block.type)}
                 </span>
             )}
-            {index > 0 && block.edge === 'seam' && <Seam />}
+            {index > 0 && block.edge === 'seam' && <Seam animated={live} />}
+            {index > 0 && block.edge === 'lace' && <LaceRibbon />}
+            {index > 0 && isProcession(block.edge) && (
+                <Procession kind={block.edge} seed={seed + index} animated={live} />
+            )}
+            {index > 0 && block.edge === 'heartbeat' && <Heartbeat animated={live} />}
             {index > 0 && (
                 <Edge
                     kind={block.edge}
                     background={scene.background}
                     color={color}
                     seed={seed + index}
+                    animated={live}
                 />
             )}
             {scene.dappled && tier !== 'static' && (

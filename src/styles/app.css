@@ -798,6 +798,217 @@ path.ornament-draw[fill]:not([fill='none']) {
     }
 }
 
+/* Floral tribute: the lamp's flame sways in still air. */
+@keyframes flame-sway {
+    from {
+        transform: rotate(-3deg) scaleY(0.96);
+    }
+    to {
+        transform: rotate(3deg) scaleY(1.05);
+    }
+}
+
+/* Typing entrances (TypeReveal): untyped text is painted out; quill letters are wet gold first. */
+::highlight(inv-untyped) {
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+::highlight(inv-fresh-ink) {
+    color: var(--inv-gold);
+    -webkit-text-fill-color: var(--inv-gold);
+}
+@keyframes caret-blink {
+    50% {
+        opacity: 0;
+    }
+}
+@keyframes caret-out {
+    0%,
+    25%,
+    75% {
+        opacity: 1;
+    }
+    12%,
+    50%,
+    100% {
+        opacity: 0;
+    }
+}
+
+/* Openings: the pull-light bulb sputters on; the temple bell swings and rings. */
+@keyframes bulb-flicker {
+    0% {
+        opacity: 0.3;
+    }
+    15% {
+        opacity: 1;
+    }
+    25% {
+        opacity: 0.2;
+    }
+    45% {
+        opacity: 1;
+    }
+    55% {
+        opacity: 0.5;
+    }
+    70%,
+    100% {
+        opacity: 1;
+    }
+}
+@keyframes bell-swing {
+    0% {
+        transform: rotate(0deg);
+    }
+    15% {
+        transform: rotate(16deg);
+    }
+    35% {
+        transform: rotate(-11deg);
+    }
+    55% {
+        transform: rotate(6deg);
+    }
+    75% {
+        transform: rotate(-3deg);
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+@keyframes bell-ripple {
+    from {
+        transform: translate(-50%, -50%) scale(0.6);
+        opacity: 0.9;
+    }
+    to {
+        transform: translate(-50%, -50%) scale(4);
+        opacity: 0;
+    }
+}
+
+/* The opening still covers the page: every CSS animation inside waits on its first frame. */
+.inv-root main[data-staging] *,
+.inv-root main[data-staging] *::before,
+.inv-root main[data-staging] *::after {
+    animation-play-state: paused !important;
+}
+
+/* Animated edges (procession.tsx): the figure crosses the invitation's width (cqw of .inv-root).
+   Its resting place is part-way across, which is where reduced motion leaves it. */
+.proc-track {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    transform: translateX(calc(62cqw - var(--proc-w) / 2));
+    animation-name: proc-cross;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+.proc-still,
+.proc-still * {
+    animation: none !important;
+}
+.proc-bob {
+    animation: proc-bob calc(var(--proc-stride) / 2) ease-in-out infinite alternate;
+}
+.proc-leg {
+    transform-box: fill-box;
+    transform-origin: top center;
+    animation: proc-step var(--proc-stride) ease-in-out infinite alternate;
+}
+.proc-leg-b {
+    animation-direction: alternate-reverse;
+}
+.proc-sway {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: proc-sway calc(var(--proc-stride) * 2) ease-in-out infinite alternate;
+}
+.proc-wheel {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: proc-spin var(--proc-stride) linear infinite;
+}
+/* Section edges, when the section's "Animate edge" box is ticked. */
+.edge-drift {
+    animation: edge-drift 6s linear infinite;
+}
+.edge-breathe {
+    transform-origin: bottom;
+    animation: edge-breathe 5s ease-in-out infinite alternate;
+}
+.seam-flow {
+    animation: seam-flow 3s linear infinite;
+}
+/* Heart monitor: two beats per sweep at ~70 bpm. */
+.beat-sweep {
+    animation: beat-sweep 1.7s linear infinite;
+}
+@keyframes edge-drift {
+    to {
+        mask-position: var(--edge-drift) 0;
+        -webkit-mask-position: var(--edge-drift) 0;
+    }
+}
+@keyframes edge-breathe {
+    from {
+        transform: scaleY(0.82);
+    }
+    to {
+        transform: scaleY(1);
+    }
+}
+@keyframes seam-flow {
+    to {
+        background-position: 40px 0;
+    }
+}
+@keyframes beat-sweep {
+    from {
+        stroke-dashoffset: var(--beat-from);
+    }
+    to {
+        stroke-dashoffset: var(--beat-to);
+    }
+}
+@keyframes proc-cross {
+    from {
+        transform: translateX(calc(-1 * var(--proc-w)));
+    }
+    to {
+        transform: translateX(100cqw);
+    }
+}
+@keyframes proc-bob {
+    to {
+        transform: translateY(-1.5px);
+    }
+}
+@keyframes proc-step {
+    from {
+        transform: rotate(-17deg);
+    }
+    to {
+        transform: rotate(17deg);
+    }
+}
+@keyframes proc-sway {
+    from {
+        transform: rotate(-0.8deg);
+    }
+    to {
+        transform: rotate(0.8deg);
+    }
+}
+@keyframes proc-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* Chuppah opening: the valance breathes in a breeze; a few petals drift down. */
 @keyframes valance-sway {
     0%,
@@ -1117,4 +1328,152 @@ path.ornament-draw[fill]:not([fill='none']) {
         sans-serif;
     text-align: center;
     letter-spacing: 0;
+}
+
+/* Template preview bar steps aside while the entry ritual is on screen. */
+body:has([data-opening]) [data-preview-bar] {
+    display: none;
+}
+
+/* ── Per-text animations (visual editor's Text panel) ─────────────────────────
+   Entrances wait for the text to scroll into view (data-seen); loops run on their own. */
+.inv-editing [data-editable][data-text-selected] {
+    outline: 2px solid #6366f1;
+    outline-offset: 3px;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .inv-tx-fade:not([data-seen]),
+    .inv-tx-rise:not([data-seen]),
+    .inv-tx-pop:not([data-seen]),
+    .inv-tx-blur:not([data-seen]),
+    .inv-tx-typewriter:not([data-seen]) {
+        opacity: 0;
+    }
+    .inv-tx-fade[data-seen] {
+        animation: inv-tx-fade 0.9s ease-out both;
+    }
+    .inv-tx-rise,
+    .inv-tx-pop,
+    .inv-tx-float {
+        display: inline-block;
+    }
+    .inv-tx-rise[data-seen] {
+        animation: inv-tx-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .inv-tx-pop[data-seen] {
+        animation: inv-tx-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    .inv-tx-blur[data-seen] {
+        animation: inv-tx-blur 1.1s ease-out both;
+    }
+    .inv-tx-typewriter[data-seen] {
+        animation: inv-tx-type 1.6s steps(28, end) both;
+    }
+    .inv-tx-glow {
+        animation: inv-tx-glow 2.8s ease-in-out infinite;
+    }
+    .inv-tx-float {
+        animation: inv-tx-float 3.2s ease-in-out infinite;
+    }
+    .inv-tx-shimmer > span {
+        background-image: linear-gradient(
+            100deg,
+            currentColor 40%,
+            #fff6d8 50%,
+            currentColor 60%
+        ) !important;
+        background-size: 250% 100%;
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: inv-tx-shimmer 3.4s linear infinite;
+    }
+}
+@keyframes inv-tx-fade {
+    from {
+        opacity: 0;
+    }
+}
+@keyframes inv-tx-rise {
+    from {
+        opacity: 0;
+        transform: translateY(0.6em);
+    }
+}
+@keyframes inv-tx-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.6);
+    }
+}
+@keyframes inv-tx-blur {
+    from {
+        opacity: 0;
+        filter: blur(10px);
+        letter-spacing: 0.2em;
+    }
+}
+@keyframes inv-tx-type {
+    from {
+        clip-path: inset(0 100% 0 0);
+    }
+    to {
+        opacity: 1;
+        clip-path: inset(0 0 0 0);
+    }
+}
+@keyframes inv-tx-glow {
+    50% {
+        text-shadow:
+            0 0 0.35em color-mix(in srgb, var(--inv-gold, #d9a441) 80%, transparent),
+            0 0 0.9em color-mix(in srgb, var(--inv-gold, #d9a441) 45%, transparent);
+    }
+}
+@keyframes inv-tx-float {
+    50% {
+        transform: translateY(-0.12em);
+    }
+}
+@keyframes inv-tx-shimmer {
+    from {
+        background-position: 150% 0;
+    }
+    to {
+        background-position: -100% 0;
+    }
+}
+
+/*
+ * Customer shop (landing, collections, try, my invitations): shadcn controls on Toran's ivory and
+ * wine instead of the studio's graphite. `.shop` covers the server-rendered page; `html.shop-ui`
+ * (set once mounted) covers dialogs and menus portalled to <body>.
+ */
+:is(html.shop-ui, .shop) {
+    --background: #fbf7f0;
+    --card: #ffffff;
+    --popover: #ffffff;
+    --secondary: #f3ebdd;
+    --muted: #f6efe3;
+    --muted-foreground: #7a6a64;
+    --accent: #f3ebdd;
+    --border: #eadfce;
+    --input: #ddcdb4;
+    --foreground: #1d1416;
+}
+
+@layer base {
+    :is(html.shop-ui, .shop) *:not(:where(.inv-root, .inv-root *)) {
+        border-color: var(--border);
+        outline-color: color-mix(in oklab, var(--ring) 50%, transparent);
+    }
+    html.shop-ui body,
+    .shop {
+        background: var(--background);
+        color: var(--foreground);
+        font-family: var(--font-sans);
+    }
+    :is(html.shop-ui, .shop)
+        :where(button, a[href], summary, select, label[for], [role='button'], [role='tab'], [role='switch'], [role='checkbox'], [role='option'], [role='menuitem']):where(:not(:disabled, [aria-disabled='true'], [data-disabled])) {
+        cursor: pointer;
+    }
 }

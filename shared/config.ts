@@ -36,7 +36,12 @@ export const configSchema = z.object({
     RESEND_API_KEY: z.string().optional(),
     MAIL_FROM: z.string().default('Toran <hello@therigi.co>'),
     ANTHROPIC_API_KEY: z.string().optional(),
+    // Free stock photos, vectors and videos (pixabay.com/api/docs). Without it, Pixabay search is off.
+    PIXABAY_API_KEY: z.string().optional(),
     ANTHROPIC_MODEL: z.string().default('claude-sonnet-5-5'),
+    // Cloudflare Workers AI, for auto-translate in the editor. Without both, it is off.
+    CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
+    CLOUDFLARE_AI_TOKEN: z.string().optional(),
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
     GOOGLE_REFRESH_TOKEN: z.string().optional(),

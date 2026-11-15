@@ -25,6 +25,13 @@ export interface InvitationCounts {
     pendingWishes: number;
 }
 
+export interface InvitationTemplate {
+    id: string;
+    name: string;
+    status: 'draft' | 'published' | 'archived';
+    isFeatured: boolean;
+}
+
 export interface EditableInvitation {
     invitation: {
         id: string;
@@ -56,6 +63,8 @@ export interface EditableInvitation {
     })[];
     themeSlug: string | null;
     order: InvitationOrder | null;
+    // Set when this invitation is a template's sample (edited under Templates).
+    template: InvitationTemplate | null;
     counts: InvitationCounts;
 }
 
@@ -99,6 +108,13 @@ export function toDraft(data: EditableInvitation): Draft {
     };
 }
 
+// The unsaved music choice: a picked track or uploaded song plays in the preview before saving.
+function previewMusic(draft: Draft, base: EditableInvitation): string | null {
+    const music = draft.extras.music;
+    if (!music?.source) return base.invitation.musicBlobKey;
+    return music.source === 'library' || music.source === 'upload' ? (music.blobKey ?? null) : null;
+}
+
 // The live preview renders the real invitation engine from the unsaved draft.
 export function draftToPreview(draft: Draft, base: EditableInvitation): PublicInvitationData {
     return {
@@ -116,7 +132,7 @@ export function draftToPreview(draft: Draft, base: EditableInvitation): PublicIn
             extras: draft.extras,
             rsvpEnabled: draft.rsvpEnabled,
             status: 'preview',
-            musicBlobKey: base.invitation.musicBlobKey,
+            musicBlobKey: previewMusic(draft, base),
             isDemo: base.invitation.isDemo,
         },
         events: draft.events.map((e, i) => ({

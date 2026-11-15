@@ -30,6 +30,7 @@ import {
     parseGuestLines,
 } from '../repos/guests';
 import { OrderError } from '../repos/orders';
+import { uploadInvitationMusic } from './music';
 
 export const composerApi = new Hono<AdminEnv>();
 
@@ -52,15 +53,22 @@ composerApi.get('/', async (c) => c.json(await listInvitations()));
 
 composerApi.post('/', async (c) => {
     const parsed = z
-        .object({
-            orderId: z.string(),
-            themeSlug: z.string().max(40),
-        })
+        .union([
+            z.object({
+                orderId: z.string(),
+                templateId: z.string().max(40),
+            }),
+            z.object({
+                orderId: z.string(),
+                themeSlug: z.string().max(40),
+            }),
+        ])
         .safeParse(await json(c));
-    if (!parsed.success) return fail(c, 422, 'Pick an order and a theme');
+    if (!parsed.success) return fail(c, 422, 'Pick an order and a template');
+    const { orderId, ...source } = parsed.data;
     return c.json({
         ok: true,
-        id: await createInvitationForOrder(parsed.data.orderId, parsed.data.themeSlug),
+        id: await createInvitationForOrder(orderId, source),
     });
 });
 
@@ -84,6 +92,9 @@ composerApi.put('/:id', async (c) => {
         data: await saveInvitation(c.req.param('id'), parsed.data),
     });
 });
+
+// B: the customer's own song for this invitation (rights confirmed in the same request).
+composerApi.post('/:id/music', uploadInvitationMusic);
 
 composerApi.patch('/:id/slug', async (c) => {
     const parsed = slugInput.safeParse(await json(c));

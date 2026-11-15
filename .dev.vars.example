@@ -1,0 +1,86 @@
+# Every environment variable the app reads (validated in shared/config.ts).
+# Copy to .dev.vars and fill in what you need. Blank = use the default shown in the comment.
+# Production: set the same names as Cloudflare secrets/vars (wrangler secret put NAME).
+
+# ── App ──────────────────────────────────────────────────────────────
+# development | staging | production (default: development)
+ENVIRONMENT=
+# default: therigi.co
+PARENT_DOMAIN=
+# default: toran.therigi.co
+APP_HOST=
+# default: http://localhost:5173
+APP_ORIGIN=
+# path | subdomain (default: path)
+INVITE_URL_MODE=
+INVITE_HOST=
+# default: /media
+MEDIA_BASE_URL=
+# At least 32 characters. Required in production.
+SESSION_SECRET=
+
+# ── Drivers ──────────────────────────────────────────────────────────
+# d1 | libsql (default: d1)
+DB_DRIVER=
+# r2 | s3 | disk (default: r2)
+BLOB_DRIVER=
+# cf | memory (default: cf)
+CACHE_DRIVER=
+# fake | razorpay (default: fake)
+PAYMENTS_DRIVER=
+# console | resend (default: console)
+MAILER_DRIVER=
+# off | google (default: off)
+SHEETS_DRIVER=
+# mock | anthropic (default: mock)
+AI_DRIVER=
+
+# ── Database (libsql driver) ─────────────────────────────────────────
+# default: file:.dev/toran.db
+LIBSQL_URL=
+LIBSQL_AUTH_TOKEN=
+
+# ── File storage (s3 / disk drivers) ─────────────────────────────────
+S3_ENDPOINT=
+S3_BUCKET=
+S3_ACCESS_KEY_ID=
+S3_SECRET_ACCESS_KEY=
+# default: auto
+S3_REGION=
+# default: .dev/blob
+DISK_BLOB_DIR=
+
+# ── Bot protection (Cloudflare Turnstile; test keys are the default) ─
+TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+
+# ── Payments (Razorpay) ──────────────────────────────────────────────
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+
+# ── Email (Resend) ───────────────────────────────────────────────────
+RESEND_API_KEY=
+# default: Toran <hello@therigi.co>
+MAIL_FROM=
+
+# ── AI (Anthropic) ───────────────────────────────────────────────────
+ANTHROPIC_API_KEY=
+# default: claude-sonnet-5-5
+ANTHROPIC_MODEL=
+
+# ── Auto-translate in the editor (Cloudflare Workers AI, free plan) ──
+# Account ID: Cloudflare dashboard → Workers & Pages (right sidebar).
+# Token: My Profile → API Tokens → Create Token → "Workers AI" template.
+# Without both, auto-translate is off.
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_AI_TOKEN=
+
+# ── Stock media (pixabay.com/api/docs). Without it, Pixabay search is off.
+PIXABAY_API_KEY=
+
+# ── Google Sheets export ─────────────────────────────────────────────
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REFRESH_TOKEN=
+GOOGLE_SHEET_TEMPLATE_ID=

@@ -21,7 +21,8 @@ function withJson(headers: HeadersInit | undefined): Headers {
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     const res = await fetch(`/api${path}`, {
         ...init,
-        headers: withJson(init.headers),
+        // Form data sets its own multipart boundary; everything else is JSON.
+        headers: init.body instanceof FormData ? new Headers(init.headers) : withJson(init.headers),
         credentials: 'same-origin',
     });
     if (
@@ -49,4 +50,11 @@ export const patch = <T>(path: string, body: unknown) =>
     api<T>(path, {
         method: 'PATCH',
         body: JSON.stringify(body),
+    });
+
+/** Sends a file (and fields) as multipart form data. */
+export const upload = <T>(path: string, form: FormData) =>
+    api<T>(path, {
+        method: 'POST',
+        body: form,
     });

@@ -47,7 +47,8 @@ async function findOrCreateCustomer(input: CreateOrderInput['customer']) {
     return created;
 }
 
-export async function createOrder(input: CreateOrderInput, userId: string) {
+// userId is null when the customer orders online themselves.
+export async function createOrder(input: CreateOrderInput, userId: string | null) {
     const { db } = getPlatform();
     const pricing = await priceLines(input.packageCode, input.addons, input.currency);
     if (!pricing)

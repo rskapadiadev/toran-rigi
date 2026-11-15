@@ -12,18 +12,25 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as DevMailRouteImport } from './routes/dev-mail'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminBillingRouteImport } from './routes/admin/billing'
 import { Route as AdminLibraryRouteImport } from './routes/admin/library'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
+import { Route as AdminMusicRouteImport } from './routes/admin/music'
+import { Route as MyIndexRouteImport } from './routes/my.index'
+import { Route as MyIdRouteImport } from './routes/my.$id'
 import { Route as PTokenRouteImport } from './routes/p.$token'
+import { Route as TrySlugRouteImport } from './routes/try.$slug'
 import { Route as AdminCustomersIndexRouteImport } from './routes/admin/customers/index'
 import { Route as AdminCustomersIdRouteImport } from './routes/admin/customers/$id'
 import { Route as AdminInvitationsIndexRouteImport } from './routes/admin/invitations/index'
 import { Route as AdminOrdersIndexRouteImport } from './routes/admin/orders/index'
 import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
 import { Route as AdminOrdersNewRouteImport } from './routes/admin/orders/new'
+import { Route as AdminTemplatesIndexRouteImport } from './routes/admin/templates/index'
+import { Route as AdminTemplatesIdRouteImport } from './routes/admin/templates/$id'
 import { Route as AdminInvitationsIdIndexRouteImport } from './routes/admin/invitations/$id.index'
 import { Route as AdminInvitationsIdGuestsRouteImport } from './routes/admin/invitations/$id.guests'
 
@@ -40,6 +47,11 @@ const SlugRoute = SlugRouteImport.update({
 const AdminRouteRoute = AdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollectionsRoute = CollectionsRouteImport.update({
+  id: '/collections',
+  path: '/collections',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevMailRoute = DevMailRouteImport.update({
@@ -67,9 +79,29 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminMusicRoute = AdminMusicRouteImport.update({
+  id: '/music',
+  path: '/music',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const MyIndexRoute = MyIndexRouteImport.update({
+  id: '/my/',
+  path: '/my/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyIdRoute = MyIdRouteImport.update({
+  id: '/my/$id',
+  path: '/my/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PTokenRoute = PTokenRouteImport.update({
   id: '/p/$token',
   path: '/p/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrySlugRoute = TrySlugRouteImport.update({
+  id: '/try/$slug',
+  path: '/try/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminCustomersIndexRoute = AdminCustomersIndexRouteImport.update({
@@ -102,6 +134,16 @@ const AdminOrdersNewRoute = AdminOrdersNewRouteImport.update({
   path: '/orders/new',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminTemplatesIndexRoute = AdminTemplatesIndexRouteImport.update({
+  id: '/templates/',
+  path: '/templates/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminTemplatesIdRoute = AdminTemplatesIdRouteImport.update({
+  id: '/templates/$id',
+  path: '/templates/$id',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminInvitationsIdIndexRoute = AdminInvitationsIdIndexRouteImport.update({
   id: '/invitations/$id/',
   path: '/invitations/$id/',
@@ -118,36 +160,50 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/$slug': typeof SlugRoute
+  '/collections': typeof CollectionsRoute
   '/dev-mail': typeof DevMailRoute
   '/admin/billing': typeof AdminBillingRoute
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/music': typeof AdminMusicRoute
+  '/my/$id': typeof MyIdRoute
   '/p/$token': typeof PTokenRoute
+  '/try/$slug': typeof TrySlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/my/': typeof MyIndexRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
+  '/admin/templates/$id': typeof AdminTemplatesIdRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
+  '/admin/templates/': typeof AdminTemplatesIndexRoute
   '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
   '/admin/invitations/$id/': typeof AdminInvitationsIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
+  '/collections': typeof CollectionsRoute
   '/dev-mail': typeof DevMailRoute
   '/admin/billing': typeof AdminBillingRoute
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/music': typeof AdminMusicRoute
+  '/my/$id': typeof MyIdRoute
   '/p/$token': typeof PTokenRoute
+  '/try/$slug': typeof TrySlugRoute
   '/admin': typeof AdminIndexRoute
+  '/my': typeof MyIndexRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
+  '/admin/templates/$id': typeof AdminTemplatesIdRoute
   '/admin/customers': typeof AdminCustomersIndexRoute
   '/admin/invitations': typeof AdminInvitationsIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
+  '/admin/templates': typeof AdminTemplatesIndexRoute
   '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
   '/admin/invitations/$id': typeof AdminInvitationsIdIndexRoute
 }
@@ -156,18 +212,25 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/$slug': typeof SlugRoute
+  '/collections': typeof CollectionsRoute
   '/dev-mail': typeof DevMailRoute
   '/admin/billing': typeof AdminBillingRoute
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/music': typeof AdminMusicRoute
+  '/my/$id': typeof MyIdRoute
   '/p/$token': typeof PTokenRoute
+  '/try/$slug': typeof TrySlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/my/': typeof MyIndexRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
+  '/admin/templates/$id': typeof AdminTemplatesIdRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
+  '/admin/templates/': typeof AdminTemplatesIndexRoute
   '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
   '/admin/invitations/$id/': typeof AdminInvitationsIdIndexRoute
 }
@@ -177,36 +240,50 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/$slug'
+    | '/collections'
     | '/dev-mail'
     | '/admin/billing'
     | '/admin/library'
     | '/admin/login'
+    | '/admin/music'
+    | '/my/$id'
     | '/p/$token'
+    | '/try/$slug'
     | '/admin/'
+    | '/my/'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
     | '/admin/orders/new'
+    | '/admin/templates/$id'
     | '/admin/customers/'
     | '/admin/invitations/'
     | '/admin/orders/'
+    | '/admin/templates/'
     | '/admin/invitations/$id/guests'
     | '/admin/invitations/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/$slug'
+    | '/collections'
     | '/dev-mail'
     | '/admin/billing'
     | '/admin/library'
     | '/admin/login'
+    | '/admin/music'
+    | '/my/$id'
     | '/p/$token'
+    | '/try/$slug'
     | '/admin'
+    | '/my'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
     | '/admin/orders/new'
+    | '/admin/templates/$id'
     | '/admin/customers'
     | '/admin/invitations'
     | '/admin/orders'
+    | '/admin/templates'
     | '/admin/invitations/$id/guests'
     | '/admin/invitations/$id'
   id:
@@ -214,18 +291,25 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/$slug'
+    | '/collections'
     | '/dev-mail'
     | '/admin/billing'
     | '/admin/library'
     | '/admin/login'
+    | '/admin/music'
+    | '/my/$id'
     | '/p/$token'
+    | '/try/$slug'
     | '/admin/'
+    | '/my/'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
     | '/admin/orders/new'
+    | '/admin/templates/$id'
     | '/admin/customers/'
     | '/admin/invitations/'
     | '/admin/orders/'
+    | '/admin/templates/'
     | '/admin/invitations/$id/guests'
     | '/admin/invitations/$id/'
   fileRoutesById: FileRoutesById
@@ -234,8 +318,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   SlugRoute: typeof SlugRoute
+  CollectionsRoute: typeof CollectionsRoute
   DevMailRoute: typeof DevMailRoute
+  MyIdRoute: typeof MyIdRoute
   PTokenRoute: typeof PTokenRoute
+  TrySlugRoute: typeof TrySlugRoute
+  MyIndexRoute: typeof MyIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -259,6 +347,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collections': {
+      id: '/collections'
+      path: '/collections'
+      fullPath: '/collections'
+      preLoaderRoute: typeof CollectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev-mail': {
@@ -296,11 +391,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/music': {
+      id: '/admin/music'
+      path: '/music'
+      fullPath: '/admin/music'
+      preLoaderRoute: typeof AdminMusicRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/my/': {
+      id: '/my/'
+      path: '/my'
+      fullPath: '/my/'
+      preLoaderRoute: typeof MyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my/$id': {
+      id: '/my/$id'
+      path: '/my/$id'
+      fullPath: '/my/$id'
+      preLoaderRoute: typeof MyIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/p/$token': {
       id: '/p/$token'
       path: '/p/$token'
       fullPath: '/p/$token'
       preLoaderRoute: typeof PTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/try/$slug': {
+      id: '/try/$slug'
+      path: '/try/$slug'
+      fullPath: '/try/$slug'
+      preLoaderRoute: typeof TrySlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/customers/': {
@@ -345,6 +468,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersNewRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/templates/': {
+      id: '/admin/templates/'
+      path: '/templates'
+      fullPath: '/admin/templates/'
+      preLoaderRoute: typeof AdminTemplatesIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/templates/$id': {
+      id: '/admin/templates/$id'
+      path: '/templates/$id'
+      fullPath: '/admin/templates/$id'
+      preLoaderRoute: typeof AdminTemplatesIdRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/invitations/$id/': {
       id: '/admin/invitations/$id/'
       path: '/invitations/$id'
@@ -366,13 +503,16 @@ interface AdminRouteRouteChildren {
   AdminBillingRoute: typeof AdminBillingRoute
   AdminLibraryRoute: typeof AdminLibraryRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminMusicRoute: typeof AdminMusicRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCustomersIdRoute: typeof AdminCustomersIdRoute
   AdminOrdersIdRoute: typeof AdminOrdersIdRoute
   AdminOrdersNewRoute: typeof AdminOrdersNewRoute
+  AdminTemplatesIdRoute: typeof AdminTemplatesIdRoute
   AdminCustomersIndexRoute: typeof AdminCustomersIndexRoute
   AdminInvitationsIndexRoute: typeof AdminInvitationsIndexRoute
   AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
+  AdminTemplatesIndexRoute: typeof AdminTemplatesIndexRoute
   AdminInvitationsIdGuestsRoute: typeof AdminInvitationsIdGuestsRoute
   AdminInvitationsIdIndexRoute: typeof AdminInvitationsIdIndexRoute
 }
@@ -381,13 +521,16 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminBillingRoute: AdminBillingRoute,
   AdminLibraryRoute: AdminLibraryRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminMusicRoute: AdminMusicRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCustomersIdRoute: AdminCustomersIdRoute,
   AdminOrdersIdRoute: AdminOrdersIdRoute,
   AdminOrdersNewRoute: AdminOrdersNewRoute,
+  AdminTemplatesIdRoute: AdminTemplatesIdRoute,
   AdminCustomersIndexRoute: AdminCustomersIndexRoute,
   AdminInvitationsIndexRoute: AdminInvitationsIndexRoute,
   AdminOrdersIndexRoute: AdminOrdersIndexRoute,
+  AdminTemplatesIndexRoute: AdminTemplatesIndexRoute,
   AdminInvitationsIdGuestsRoute: AdminInvitationsIdGuestsRoute,
   AdminInvitationsIdIndexRoute: AdminInvitationsIdIndexRoute,
 }
@@ -400,8 +543,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   SlugRoute: SlugRoute,
+  CollectionsRoute: CollectionsRoute,
   DevMailRoute: DevMailRoute,
+  MyIdRoute: MyIdRoute,
   PTokenRoute: PTokenRoute,
+  TrySlugRoute: TrySlugRoute,
+  MyIndexRoute: MyIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

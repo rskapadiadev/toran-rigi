@@ -19,6 +19,81 @@ function sectionsFor(culture: CultureId, extra: SectionConfig['type'][] = []): S
 
 const rawDemos: DemoInvitation[] = [
     {
+        slug: 'demo-mehfil',
+        themeSlug: 'mehfil',
+        culture: 'hindu',
+        locales: ['en', 'hi'],
+        calendars: [],
+        seed: 5713,
+        content: {
+            people: {
+                one: { name: t('Aanya', 'hi', 'आन्या') },
+                two: { name: t('Kabir', 'hi', 'कबीर') },
+            },
+            greetingKey: 'shree-ganeshay-namah',
+            headline: t(
+                'request the pleasure of your company at the celebration of their marriage',
+                'hi',
+                'अपने विवाह समारोह में आपकी उपस्थिति का अनुरोध करते हैं',
+            ),
+            welcome: t(
+                'Three days of colour, music and family. Come as you are, leave with stories.',
+            ),
+            story: t(
+                'You have watched us grow up, laughed with us and loved us through every chapter. It would mean the world to have you beside us as we begin this one.\n\nCome hungry, come ready to dance, and bring your brightest smile.',
+            ),
+            family: t(
+                'Smt. Meera & Shri Rajesh Malhotra · Smt. Nisha & Shri Vikram Kapoor',
+            ),
+            closing: t('We can’t wait to celebrate with you.'),
+            gallery: [],
+        },
+        events: [
+            {
+                kind: 'mehndi',
+                title: t('Mehendi', 'hi', 'मेहंदी'),
+                startsAt: '2027-02-11T16:00',
+                timezone: 'Asia/Kolkata',
+                venue: 'The Leela Palace',
+                address: 'Old Airport Road, Bengaluru',
+                mapsUrl: maps('The Leela Palace Bengaluru'),
+            },
+            {
+                kind: 'sangeet',
+                title: t('Sangeet', 'hi', 'संगीत'),
+                startsAt: '2027-02-12T19:00',
+                timezone: 'Asia/Kolkata',
+                venue: 'The Leela Palace',
+                address: 'Old Airport Road, Bengaluru',
+                mapsUrl: maps('The Leela Palace Bengaluru'),
+            },
+            {
+                kind: 'pheras',
+                title: t('Wedding', 'hi', 'विवाह'),
+                startsAt: '2027-02-13T19:00',
+                timezone: 'Asia/Kolkata',
+                venue: 'The Leela Palace',
+                address: 'Old Airport Road, Bengaluru',
+                mapsUrl: maps('The Leela Palace Bengaluru'),
+                dressCode: {
+                    note: t('Festive Indian or black tie'),
+                    swatches: ['#8e1f4f', '#c0902f'],
+                },
+            },
+            {
+                kind: 'reception',
+                title: t('Reception', 'hi', 'रिसेप्शन'),
+                startsAt: '2027-02-14T19:30',
+                timezone: 'Asia/Kolkata',
+                venue: 'The Leela Palace',
+                address: 'Old Airport Road, Bengaluru',
+                mapsUrl: maps('The Leela Palace Bengaluru'),
+            },
+        ],
+        extras: { wishes: { enabled: true } },
+        sections: sectionsFor('hindu', ['story', 'family']),
+    },
+    {
         slug: 'demo-rajwada',
         themeSlug: 'rajwada',
         culture: 'hindu.gujarati',

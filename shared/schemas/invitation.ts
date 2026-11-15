@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
+import { musicSources, musicStyles } from '../music';
 import { occasionIds } from '../occasions';
+import { stockKinds, stockProviders } from '../stock';
+import { textStylesSchema } from '../text-style';
 
 export const localizedText = z.record(z.string(), z.string());
 
@@ -26,6 +29,15 @@ export const openingKinds = [
     'origami',
     'warp',
     'fireworks',
+    'light-pull',
+    'chain',
+    'zipper',
+    'ribbon',
+    'veil',
+    'bell',
+    'polaroid',
+    'tribute',
+    'book',
 ] as const;
 
 export const generativeKinds = [
@@ -36,6 +48,14 @@ export const generativeKinds = [
     'phulkari',
     'lotus',
     'bandhani',
+    'squares',
+    'bauhaus',
+    'truchet',
+    'orbits',
+    'sunburst',
+    'spirograph',
+    'opart',
+    'constellation',
 ] as const;
 
 export const sectionTypes = [
@@ -128,6 +148,14 @@ export const contentSchema = z.preprocess(
         hashtag: z.string().optional(),
         coverPhotoKey: z.string().optional(),
         gallery: z.array(z.string()).default([]),
+        // Photos placed in a section's own frames (slot id → key); see `photoSlots`. The cover's main
+        // photo stays in coverPhotoKey. Never shared with the gallery.
+        photoSlots: z.record(z.string(), z.string()).optional(),
+        // Styling picked per text in the visual editor (path → style); see shared/text-style.
+        textStyles: textStylesSchema.optional(),
+        // Text path ("headline", "event:3:title") → languages typed by hand. Auto-translate fills
+        // every other language of that text and never overwrites these.
+        handWritten: z.record(z.string(), z.array(z.string())).optional(),
     }),
 );
 
@@ -141,6 +169,19 @@ export const enterPresets = [
     'wipe',
     'drift',
     'tilt',
+    'iris',
+    'sweep',
+    'zoom',
+    'flip',
+    'petal',
+    'stamp',
+    'drop',
+    'glow',
+    'swing',
+    'pop',
+    'typewriter',
+    'words',
+    'quill',
     'none',
 ] as const;
 
@@ -151,10 +192,35 @@ export const sceneKinds = [
     'blush',
     'velvet',
     'night',
+    'terrazzo',
+    'watercolor',
+    'leheriya',
+    'aurora',
+    'confetti',
     'plain',
 ] as const;
 
-export const edgeKinds = ['seam', 'torn', 'scallop', 'arch', 'none'] as const;
+export const edgeKinds = [
+    'seam',
+    'lace',
+    'torn',
+    'scallop',
+    'arch',
+    'cusped',
+    'ogee',
+    'lotus',
+    'swag',
+    'wave',
+    'pinking',
+    'cloud',
+    'deco',
+    'slant',
+    'heartbeat',
+    'doli',
+    'ghodi',
+    'car',
+    'none',
+] as const;
 
 export const motifIds = [
     'paisley',
@@ -172,6 +238,18 @@ export const motifIds = [
     'kalash',
     'confetti',
     'spark',
+    'peacock',
+    'elephant',
+    'bell',
+    'kite',
+    'tulip',
+    'hexagram',
+    'hamsa',
+    'dove',
+    'heart',
+    'rings',
+    'butterfly',
+    'balloons',
 ] as const;
 
 export const sectionConfigSchema = z.object({
@@ -182,6 +260,8 @@ export const sectionConfigSchema = z.object({
     scene: z.enum(sceneKinds).optional(),
     edge: z.enum(edgeKinds).optional(),
     motif: z.enum(motifIds).optional(),
+    // One switch for every edge: drift, breathe, walk or pulse. Off = still.
+    edgeMotion: z.boolean().optional(),
 });
 
 export const extrasSchema = z.object({
@@ -209,7 +289,38 @@ export const extrasSchema = z.object({
         })
         .optional(),
     wishes: z.object({ enabled: z.boolean() }).optional(),
-    music: z.object({ allowAutoOffer: z.boolean() }).optional(),
+    // Credits for free stock media (Pixabay / Openverse). CC BY-style licences require them on the page.
+    credits: z
+        .array(
+            z.object({
+                blobKey: z.string().max(300),
+                kind: z.enum(stockKinds),
+                provider: z.enum(stockProviders),
+                title: z.string().max(300),
+                creator: z.string().max(200),
+                creatorUrl: z.url().max(600).optional(),
+                sourceUrl: z.url().max(600),
+                license: z.string().max(120),
+                licenseUrl: z.url().max(600),
+            }),
+        )
+        .max(200)
+        .optional(),
+    // The source of background music (shared/music.ts). The server resolves the file to play.
+    music: z
+        .object({
+            allowAutoOffer: z.boolean().optional(),
+            source: z.enum(musicSources).optional(),
+            // Library: the chosen track. Upload: the stored file and its display title.
+            trackId: z.string().max(40).optional(),
+            blobKey: z.string().max(200).optional(),
+            title: z.string().max(160).optional(),
+            // Upload: when someone confirmed the right to use the song in a shared invitation.
+            rightsConfirmedAt: z.string().max(40).optional(),
+            // Generated: the style of music played in the browser.
+            style: z.enum(musicStyles).optional(),
+        })
+        .optional(),
 });
 
 export const packageLimitsSchema = z.object({

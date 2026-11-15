@@ -25,10 +25,32 @@ export function createApp() {
         if (!key.startsWith('public/')) return c.notFound();
         const object = await c.env.blob.get(key);
         if (!object) return c.notFound();
-        return new Response(object.body, {
+        const headers = {
+            'content-type': object.contentType,
+            'cache-control': 'public, max-age=31536000, immutable',
+            'accept-ranges': 'bytes',
+        };
+        // Safari will not play audio without byte ranges. Media files are small (≤15 MB), so a
+        // requested range is cut from the whole object rather than from every storage driver.
+        const range = /^bytes=(\d*)-(\d*)$/.exec(c.req.header('range') ?? '');
+        if (!range) return new Response(object.body, { headers });
+        const bytes = new Uint8Array(await new Response(object.body).arrayBuffer());
+        const size = bytes.length;
+        const [, from = '', to = ''] = range;
+        // "bytes=-500" asks for the last 500 bytes.
+        const start = from === '' ? Math.max(0, size - Number(to)) : Number(from);
+        const end = from === '' || to === '' ? size - 1 : Math.min(Number(to), size - 1);
+        if (start >= size || start > end)
+            return new Response(null, {
+                status: 416,
+                headers: { 'content-range': `bytes */${String(size)}` },
+            });
+        return new Response(bytes.slice(start, end + 1), {
+            status: 206,
             headers: {
-                'content-type': object.contentType,
-                'cache-control': 'public, max-age=31536000, immutable',
+                ...headers,
+                'content-range': `bytes ${String(start)}-${String(end)}/${String(size)}`,
+                'content-length': String(end - start + 1),
             },
         });
     });

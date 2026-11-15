@@ -5,6 +5,7 @@ import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable, useEditing } from '../editing';
 import type { StringKey } from '../strings';
+import { BlessingsCard, LetterChapter, RangoliClosing } from './story';
 
 function Divider() {
     const { data } = useInvite();
@@ -44,6 +45,8 @@ function Chapter({ field, title, text, large = false, variant }: ChapterProps) {
             <p className="text-xs tracking-[0.4em] text-(--inv-gold) uppercase">{copy(title)}</p>
         </Reveal>
     );
+    if (variant === 'letter') return <LetterChapter text={raw} />;
+    if (variant === 'blessings') return <BlessingsCard text={raw} />;
     const bodyClass = large
         ? 'inv-display text-[clamp(1.5rem,4.5cqw,2.6rem)]'
         : 'text-lg @2xl:text-xl';
@@ -153,6 +156,7 @@ export const Family = ({ variant }: VariantProps) => {
 export function Closing({ variant }: VariantProps) {
     const { data, t, copy, names } = useInvite();
     const { content } = data.invitation;
+    if (variant === 'rangoli') return <RangoliClosing closing={t(content.closing)} />;
     const share = async () => {
         const url = window.location.href.split('?')[0] ?? window.location.href;
         const title = names.title;

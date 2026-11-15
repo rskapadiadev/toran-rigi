@@ -57,6 +57,7 @@ export interface OrderDetail {
         addons: string[];
         totalMinor: number;
         culture: string;
+        eventKind: string;
         weddingDate: string | null;
         contentCompletedAt: string | null;
         deliveryDueAt: string | null;

@@ -21,7 +21,6 @@ interface InvitationRow {
     status: string;
     culture: string;
     eventKind: string;
-    isDemo: boolean;
     content: InvitationContent;
     updatedAt: string;
     expiresAt: string | null;
@@ -34,7 +33,7 @@ export const Route = createFileRoute('/admin/invitations/')({ component: Invitat
 const couple = (inv: InvitationRow) => titleOf(inv.content, 'en');
 const family = (inv: InvitationRow) => occasionOf(inv.eventKind).category;
 const tradition = (inv: InvitationRow) => inv.culture.split('.')[0] ?? inv.culture;
-const displayStatus = (inv: InvitationRow) => (inv.isDemo ? 'demo' : inv.status);
+const displayStatus = (inv: InvitationRow) => inv.status;
 
 const columns: ColumnDef<InvitationRow>[] = [
     {
@@ -136,8 +135,7 @@ const columns: ColumnDef<InvitationRow>[] = [
 ];
 
 const TITLE = 'Invitations';
-const SUBTITLE =
-    'Open any invitation in the visual editor. New invitations are created from an order.';
+const SUBTITLE = 'Customers’ invitations. Each is created from an order, starting from a template.';
 
 function InvitationsPage() {
     const navigate = useNavigate();
@@ -187,12 +185,10 @@ function InvitationsPage() {
                         {
                             columnId: 'status',
                             title: 'Status',
-                            options: ['draft', 'preview', 'published', 'archived', 'demo'].map(
-                                (s) => ({
-                                    value: s,
-                                    label: s.charAt(0).toUpperCase() + s.slice(1),
-                                }),
-                            ),
+                            options: ['draft', 'preview', 'published', 'archived'].map((s) => ({
+                                value: s,
+                                label: s.charAt(0).toUpperCase() + s.slice(1),
+                            })),
                         },
                         {
                             columnId: 'tradition',

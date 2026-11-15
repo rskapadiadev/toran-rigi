@@ -6,15 +6,17 @@ import {
     openingChoices,
     sceneInfo,
 } from '@shared/blocks';
-import { motifs } from '@shared/motifs';
+import { generateOrnament, generativeInfo, seedFrom, type StrokeRole } from '@shared/generative';
+import { motifLabel, motifs } from '@shared/motifs';
 import { categoryInfo } from '@shared/occasions';
-import { motifIds } from '@shared/schemas/invitation';
+import { generativeKinds, motifIds } from '@shared/schemas/invitation';
 import { themeCatalog, themeLayouts } from '@shared/themes';
 import type { EdgeKind, EnterPreset, SceneKind, SectionConfig, SectionType } from '@shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import {
     Brush,
+    Dices,
     DoorOpen,
     Layers,
     LayoutTemplate,
@@ -33,6 +35,8 @@ import { sectionNames } from '@/admin/composer/panels';
 import { PageHeader } from '@/admin/kit/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
@@ -54,6 +58,7 @@ const categoryIds = [
     'backdrops',
     'edges',
     'motifs',
+    'generative',
     'themes',
 ] as const;
 type CategoryId = (typeof categoryIds)[number];
@@ -65,6 +70,10 @@ export const Route = createFileRoute('/admin/library')({
         // Sub-group within a category (e.g. "Cover" inside Section layouts).
         g: z.string().max(40).optional(),
         s: z.string().max(40).optional(),
+        // Section edges: play their animation in the preview.
+        a: z.boolean().optional(),
+        // Generative art: a shuffled seed, so a design worth keeping can be shared by link.
+        r: z.number().int().nonnegative().optional(),
     }),
     component: LibraryPage,
 });
@@ -117,6 +126,40 @@ const samples = [
         label: 'Corporate · Summit',
     },
 ];
+
+const roleColor: Record<StrokeRole, string> = {
+    gold: 'var(--color-gold-deep)',
+    primary: 'var(--primary)',
+    accent: 'var(--color-gold)',
+    ink: 'var(--foreground)',
+};
+
+// The same seeded ornament the invitation draws, in admin colours; follows the shuffled seed.
+function GenerativeThumb({ kind }: { kind: (typeof generativeKinds)[number] }) {
+    const { r } = Route.useSearch();
+    const ornament = generateOrnament(kind, r ?? DEFAULT_SEED);
+    return (
+        <svg
+            viewBox={`0 0 ${String(ornament.size)} ${String(ornament.size)}`}
+            className="size-16"
+            aria-hidden
+        >
+            {ornament.paths.map((p, i) => (
+                <path
+                    key={i}
+                    d={p.d}
+                    fill={p.fill ? roleColor[p.role] : 'none'}
+                    stroke={p.fill ? 'none' : roleColor[p.role]}
+                    strokeWidth={p.width * 2.6}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+            ))}
+        </svg>
+    );
+}
+
+const DEFAULT_SEED = 1021;
 
 function MotifThumb({ id }: { id: (typeof motifIds)[number] }) {
     return (
@@ -210,9 +253,22 @@ const catalogue: Category[] = [
         icon: Brush,
         items: motifIds.map((id) => ({
             key: id,
-            label: id.charAt(0).toUpperCase() + id.slice(1),
+            label: motifLabel(id),
             hint: 'Tap to see it woven into a backdrop',
             thumb: <MotifThumb id={id} />,
+        })),
+    },
+    {
+        id: 'generative',
+        label: 'Generative art',
+        hint: 'One-of-a-kind ornaments seeded from each couple — shuffle for new ones',
+        icon: Dices,
+        items: generativeKinds.map((kind) => ({
+            key: kind,
+            label: generativeInfo[kind].label,
+            hint: generativeInfo[kind].hint,
+            group: generativeInfo[kind].modern ? 'Modern' : 'Traditional',
+            thumb: <GenerativeThumb kind={kind} />,
         })),
     },
     {
@@ -251,7 +307,13 @@ interface Preview {
 }
 
 // Turns the sample invitation into a focused demo of one library item.
-function previewFor(base: PublicInvitationData, category: CategoryId, key: string): Preview {
+function previewFor(
+    base: PublicInvitationData,
+    category: CategoryId,
+    key: string,
+    animate = false,
+    seed = DEFAULT_SEED,
+): Preview {
     const invitation = base.invitation;
     const withSections = (sections: SectionConfig[]): Preview => ({
         data: {
@@ -308,6 +370,7 @@ function previewFor(base: PublicInvitationData, category: CategoryId, key: strin
                 section('events', {
                     scene: 'velvet',
                     edge: key as EdgeKind,
+                    edgeMotion: animate,
                     enter: 'none',
                 }),
             ]);
@@ -324,6 +387,32 @@ function previewFor(base: PublicInvitationData, category: CategoryId, key: strin
                     edge: 'seam',
                 }),
             ]);
+        case 'generative':
+            return {
+                data: {
+                    ...base,
+                    invitation: {
+                        ...invitation,
+                        seed,
+                        design: {
+                            ...invitation.design,
+                            generative: {
+                                ...invitation.design.generative,
+                                kind: key as (typeof generativeKinds)[number],
+                            },
+                        },
+                        // The arch cover draws the ornament full strength in its doorway.
+                        sections: [
+                            section('cover', {
+                                variant: 'arch',
+                                enter: 'none',
+                            }),
+                            section('events', { edge: 'none' }),
+                        ],
+                    },
+                },
+                opening: false,
+            };
         case 'themes': {
             const theme = themeCatalog.find((t) => t.slug === key);
             if (!theme) return withSections(invitation.sections);
@@ -350,7 +439,13 @@ function useSample(slug: string) {
     });
 }
 
-function ItemCard({ item, on, onPick }: { item: Item; on: boolean; onPick: () => void }) {
+interface ItemCardProps {
+    item: Item;
+    on: boolean;
+    onPick: () => void;
+}
+
+function ItemCard({ item, on, onPick }: ItemCardProps) {
     return (
         <button
             type="button"
@@ -398,7 +493,11 @@ function LibraryPage() {
     const allGroups = [...new Set(category.items.map((i) => i.group ?? ''))];
     const group = search.g && allGroups.includes(search.g) ? search.g : undefined;
     const groups = group ? [group] : allGroups;
-    const preview = sample.data && active ? previewFor(sample.data, category.id, active.key) : null;
+    const animate = search.a ?? false;
+    const preview =
+        sample.data && active
+            ? previewFor(sample.data, category.id, active.key, animate, search.r ?? DEFAULT_SEED)
+            : null;
 
     return (
         <>
@@ -553,6 +652,29 @@ function LibraryPage() {
                                 </SelectContent>
                             </Select>
                         )}
+                        {category.id === 'generative' && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="shrink-0"
+                                onClick={() => {
+                                    go({ r: seedFrom(String(Date.now()), String(Math.random())) });
+                                }}
+                            >
+                                <Dices /> Shuffle
+                            </Button>
+                        )}
+                        {category.id === 'edges' && (
+                            <Label className="flex shrink-0 items-center gap-2 text-sm font-normal">
+                                <Checkbox
+                                    checked={animate}
+                                    onCheckedChange={(checked) => {
+                                        go({ a: checked === true ? true : undefined });
+                                    }}
+                                />
+                                Animate
+                            </Label>
+                        )}
                         <Button
                             size="sm"
                             variant="outline"
@@ -569,7 +691,7 @@ function LibraryPage() {
                         <div className="relative h-[min(760px,calc(100svh-12rem))] [transform:translateZ(0)] overflow-y-auto overscroll-contain rounded-[2.2rem] bg-background">
                             {preview ? (
                                 <InvitationView
-                                    key={`${category.id}-${active?.key ?? ''}-${sampleSlug}-${String(replay)}`}
+                                    key={`${category.id}-${active?.key ?? ''}-${sampleSlug}-${String(animate)}-${String(search.r ?? '')}-${String(replay)}`}
                                     data={preview.data}
                                     embedded
                                     skipOpening={!preview.opening}

@@ -20,6 +20,7 @@ export default defineConfig({
             '@og-assets': here(`./server/og/assets.${platform}.ts`),
         },
     },
+    server: { allowedHosts: ['.trycloudflare.com'] },
     plugins: [
         ...(platform === 'cloudflare' ? [cloudflare({ viteEnvironment: { name: 'ssr' } })] : []),
         paraglideVitePlugin({

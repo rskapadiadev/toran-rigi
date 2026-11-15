@@ -756,6 +756,40 @@ export const themeCatalog: ThemeDefinition[] = [
             motion: 'rich',
         },
     },
+    {
+        slug: 'mehfil',
+        name: 'Mehfil',
+        culture: 'hindu',
+        category: 'luxury',
+        description:
+            'Plum velvet, zari gold and blush paper: your photo story, a card drawn from its envelope, stacked arches and a marigold rangoli seal.',
+        suits: ['celebrations'],
+        fromPackage: 'premium',
+        featured: true,
+        design: {
+            palette: {
+                bg: '#f3e2dc',
+                surface: '#fbf4ec',
+                ink: '#3b1f24',
+                muted: '#7a5b5e',
+                primary: '#8e1f4f',
+                accent: '#b3263e',
+                gold: '#c0902f',
+            },
+            fonts: {
+                display: 'cormorant',
+                body: 'cormorant',
+                script: 'pinyon',
+            },
+            opening: 'envelope',
+            generative: {
+                kind: 'mandala',
+                density: 0.6,
+            },
+            texture: 'silk',
+            motion: 'cinematic',
+        },
+    },
 ];
 
 export const themeBySlug = (slug: string) => themeCatalog.find((t) => t.slug === slug);
@@ -1477,6 +1511,47 @@ export const themeLayouts: Record<string, BlockPreset> = {
             variant: 'blessing',
             scene: 'night',
             motif: 'spark',
+        },
+    },
+    mehfil: {
+        cover: {
+            variant: 'photo',
+            scene: 'velvet',
+        },
+        card: {
+            variant: 'envelope',
+            scene: 'velvet',
+        },
+        countdown: {
+            variant: 'line',
+            scene: 'blush',
+        },
+        welcome: {
+            variant: 'centered',
+            enter: 'ink',
+            scene: 'blush',
+        },
+        events: {
+            variant: 'stack',
+            scene: 'blush',
+            edge: 'lace',
+        },
+        story: {
+            variant: 'letter',
+            scene: 'blush',
+            edge: 'lace',
+        },
+        family: {
+            variant: 'blessings',
+            scene: 'blush',
+        },
+        gallery: {
+            variant: 'polaroid',
+            scene: 'blush',
+        },
+        closing: {
+            variant: 'rangoli',
+            scene: 'blush',
         },
     },
 };

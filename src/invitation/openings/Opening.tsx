@@ -1,7 +1,10 @@
 import type { InvitationDesign } from '@shared/types';
 import type { ComponentType } from 'react';
 
+import { BellOpening } from './BellOpening';
 import { BloomOpening } from './BloomOpening';
+import { BookOpening } from './BookOpening';
+import { ChainOpening } from './ChainOpening';
 import { ChuppahOpening } from './ChuppahOpening';
 import { CurtainOpening } from './CurtainOpening';
 import { DiyaOpening } from './DiyaOpening';
@@ -10,11 +13,17 @@ import { EnvelopeOpening } from './EnvelopeOpening';
 import { FireworksOpening } from './FireworksOpening';
 import { InkOpening } from './InkOpening';
 import { LanternOpening } from './LanternOpening';
+import { LightPullOpening } from './LightPullOpening';
 import { LiquidGoldOpening } from './LiquidGoldOpening';
 import { OrigamiOpening } from './OrigamiOpening';
+import { PolaroidOpening } from './PolaroidOpening';
+import { RibbonOpening } from './RibbonOpening';
 import { ScratchOpening } from './ScratchOpening';
+import { TributeOpening } from './TributeOpening';
 import type { OpeningProps } from './types';
+import { VeilOpening } from './VeilOpening';
 import { WarpOpening } from './WarpOpening';
+import { ZipperOpening } from './ZipperOpening';
 
 const registry: Record<InvitationDesign['opening'], ComponentType<OpeningProps>> = {
     doors: DoorsOpening,
@@ -35,6 +44,15 @@ const registry: Record<InvitationDesign['opening'], ComponentType<OpeningProps>>
     origami: OrigamiOpening,
     warp: WarpOpening,
     fireworks: FireworksOpening,
+    'light-pull': LightPullOpening,
+    chain: ChainOpening,
+    zipper: ZipperOpening,
+    ribbon: RibbonOpening,
+    veil: VeilOpening,
+    bell: BellOpening,
+    polaroid: PolaroidOpening,
+    tribute: TributeOpening,
+    book: BookOpening,
 };
 
 type Props = OpeningProps & { kind: InvitationDesign['opening'] };

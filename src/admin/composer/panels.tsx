@@ -1,7 +1,7 @@
-import { openingChoiceFor, openingChoices } from '@shared/blocks';
+import { applyLayout, openingChoiceFor, openingChoices } from '@shared/blocks';
 import { cultureIds, cultureOf, eventLabel } from '@shared/cultures';
 import { type FontKey, fonts, fontStack } from '@shared/fonts';
-import { seedFrom } from '@shared/generative';
+import { generativeInfo, seedFrom } from '@shared/generative';
 import { contentLocales, localeNames } from '@shared/locales';
 import {
     allowedSection,
@@ -17,7 +17,7 @@ import {
 } from '@shared/occasions';
 import { generatePalette } from '@shared/palette';
 import { generativeKinds } from '@shared/schemas/invitation';
-import { themeCatalog, type ThemeDefinition } from '@shared/themes';
+import { themeCatalog, type ThemeDefinition, themeLayouts } from '@shared/themes';
 import type { LocalizedText, Palette, SectionType } from '@shared/types';
 import {
     ArrowDown,
@@ -35,6 +35,8 @@ import {
     Grid3x3,
     Heart,
     Lamp,
+    Languages,
+    Loader2,
     type LucideIcon,
     Mail,
     MapPin,
@@ -58,6 +60,17 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from '@/components/ui/accordion';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,8 +92,10 @@ import { cn } from '@/lib/utils';
 import { FormField } from '../kit/form';
 import { OccasionSelect } from '../kit/occasion';
 import { cultureLabel } from '../labels';
+import { useAutoTranslateStatus } from './autoTranslate';
 import type { Draft } from './draft';
 import { timezones } from './draft';
+import { MusicPanel } from './MusicPanel';
 
 export interface PanelProps {
     draft: Draft;
@@ -486,6 +501,8 @@ export function DesignPanel({ draft, set }: PanelProps) {
                 ...theme.design,
                 motion: cappedMotion(theme.design.motion, occasion),
             },
+            // A theme is a full layout, not just a palette: restyle every section too.
+            sections: applyLayout(d.sections, themeLayouts[theme.slug]),
         }));
     };
     const fontOptions = (Object.keys(fonts) as FontKey[]).map((f) => ({
@@ -554,7 +571,8 @@ export function DesignPanel({ draft, set }: PanelProps) {
                                     size="sm"
                                     variant="gold"
                                     onClick={() => {
-                                        setDesign({palette: generatePalette(colors, { mode: 'light' }),});
+                                        const palette = generatePalette(colors, { mode: 'light' });
+                                        setDesign({ palette });
                                     }}
                                 >
                                     Light palette
@@ -563,7 +581,8 @@ export function DesignPanel({ draft, set }: PanelProps) {
                                     size="sm"
                                     variant="outline"
                                     onClick={() => {
-                                        setDesign({palette: generatePalette(colors, { mode: 'dark' }),});
+                                        const palette = generatePalette(colors, { mode: 'dark' });
+                                        setDesign({ palette });
                                     }}
                                 >
                                     Dark palette
@@ -699,7 +718,7 @@ export function DesignPanel({ draft, set }: PanelProps) {
                         value={draft.design.generative.kind}
                         options={generativeKinds.map((k) => ({
                             value: k,
-                            label: titleCase(k),
+                            label: generativeInfo[k].label,
                         }))}
                         onChange={(v) => {
                             const kind = generativeKinds.find((k) => k === v);
@@ -815,7 +834,8 @@ function PeopleFields({ occasion, people, locale, onChange }: PeopleFieldsProps)
                                 placeholder="Late Shri / Smt. / Dr."
                                 value={person?.honorific?.[locale]}
                                 onChange={(v) => {
-                                    update(slot, {honorific: setText(person?.honorific, locale, v),});
+                                    const honorific = setText(person?.honorific, locale, v);
+                                    update(slot, { honorific });
                                 }}
                             />
                         )}
@@ -866,7 +886,80 @@ function PeopleFields({ occasion, people, locale, onChange }: PeopleFieldsProps)
     );
 }
 
-export function ContentPanel({ draft, set }: PanelProps) {
+// Under the language switch: what auto-translate is doing, and a way to redo every language.
+function TranslateNote({ locale }: { locale: string }) {
+    const status = useAutoTranslateStatus();
+    if (!status) return null;
+    const name = localeNames[locale as keyof typeof localeNames];
+    if (!status.enabled)
+        return (
+            <p className="flex items-start gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+                <Languages className="mt-px size-3.5 shrink-0" />
+                Auto-translate is off. Until it is on, a language with no text of its own shows the
+                first language’s text.
+            </p>
+        );
+    return (
+        <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs text-muted-foreground">
+            {status.busy ? (
+                <Loader2 className="size-3.5 shrink-0 animate-spin" />
+            ) : (
+                <Languages className="size-3.5 shrink-0" />
+            )}
+            <p className="flex-1">
+                {status.error ??
+                    (status.busy
+                        ? 'Translating…'
+                        : 'Other languages update as you type. Lines you write yourself in a language are kept.')}
+            </p>
+            <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="xs" disabled={status.busy}>
+                        Re-translate all
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Re-translate everything from {name}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Every other language is rewritten from the {name} text, including lines
+                            you typed by hand.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => {
+                                status.retranslateAll(locale);
+                            }}
+                        >
+                            Re-translate
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    );
+}
+
+export type ContentPart =
+    | 'setup'
+    | 'greeting'
+    | 'people'
+    | 'headline'
+    | 'welcome'
+    | 'closing'
+    | 'story'
+    | 'family'
+    | 'hashtag';
+
+interface ContentPanelProps extends PanelProps {
+    // Only these fields (the editor's "this section" view); everything when omitted.
+    only?: readonly ContentPart[];
+}
+
+export function ContentPanel({ draft, set, only }: ContentPanelProps) {
+    const show = (part: ContentPart) => !only || only.includes(part);
     const [picked, setLocale] = useState(draft.locales[0] ?? 'en');
     const locale = draft.locales.includes(picked) ? picked : (draft.locales[0] ?? 'en');
     const culture = cultureOf(draft.culture);
@@ -883,92 +976,104 @@ export function ContentPanel({ draft, set }: PanelProps) {
     };
     return (
         <div className="space-y-5">
-            <div className="grid gap-4 @md:grid-cols-3">
-                <FormField label="Occasion">
-                    {(id) => (
-                        <OccasionSelect
-                            id={id}
-                            value={occasion.id}
-                            onChange={(next) => {
-                                set((d) => switchOccasion(d, next));
+            {(show('setup') || show('greeting')) && (
+                <div className="grid gap-4 @md:grid-cols-3">
+                    {show('setup') && (
+                        <FormField label="Occasion">
+                            {(id) => (
+                                <OccasionSelect
+                                    id={id}
+                                    value={occasion.id}
+                                    onChange={(next) => {
+                                        set((d) => switchOccasion(d, next));
+                                    }}
+                                />
+                            )}
+                        </FormField>
+                    )}
+                    {show('setup') && (
+                        <SelectField
+                            label="Tradition"
+                            value={draft.culture.split('.')[0] ?? draft.culture}
+                            options={cultureIds.map((id) => ({
+                                value: id,
+                                label: cultureLabel[id],
+                            }))}
+                            onChange={(value) => {
+                                const next = cultureOf(value);
+                                set((d) => ({
+                                    ...d,
+                                    culture: value,
+                                    calendars: next.calendars.filter(
+                                        (x): x is 'islamic-umalqura' | 'hebrew' =>
+                                            x !== 'gregorian',
+                                    ),
+                                    content: {
+                                        ...d.content,
+                                        greetingKey: greetingsFor(next, occasionOf(d.occasion))[0]
+                                            ?.key,
+                                    },
+                                }));
                             }}
                         />
                     )}
-                </FormField>
-                <SelectField
-                    label="Tradition"
-                    value={draft.culture.split('.')[0] ?? draft.culture}
-                    options={cultureIds.map((id) => ({
-                        value: id,
-                        label: cultureLabel[id],
-                    }))}
-                    onChange={(value) => {
-                        const next = cultureOf(value);
-                        set((d) => ({
-                            ...d,
-                            culture: value,
-                            calendars: next.calendars.filter(
-                                (x): x is 'islamic-umalqura' | 'hebrew' => x !== 'gregorian',
-                            ),
-                            content: {
-                                ...d.content,
-                                greetingKey: greetingsFor(next, occasionOf(d.occasion))[0]?.key,
-                            },
-                        }));
-                    }}
-                />
-                <SelectField
-                    label="Sacred greeting (vetted)"
-                    value={c.greetingKey ?? NONE}
-                    options={[
-                        {
-                            value: NONE,
-                            label: 'None',
-                        },
-                        ...greetingsFor(culture, occasion).map((g) => ({
-                            value: g.key,
-                            label: g.transliteration ?? g.text.en ?? g.key,
-                        })),
-                    ]}
-                    onChange={(v) => {
-                        setContent({ greetingKey: v === NONE ? undefined : v });
-                    }}
-                />
-            </div>
-            <div className="space-y-2">
-                <p className="text-[13px] font-medium text-foreground/80">
-                    Languages on the invitation
-                </p>
-                <ToggleGroup
-                    type="multiple"
-                    variant="outline"
-                    size="sm"
-                    spacing={2}
-                    aria-label="Languages on the invitation"
-                    className="flex-wrap"
-                    value={draft.locales}
-                    onValueChange={(next) => {
-                        if (next.length === 0) return;
-                        set((d) => ({
-                            ...d,
-                            locales: [
-                                ...d.locales.filter((l) => next.includes(l)),
-                                ...next.filter((l) => !d.locales.includes(l)),
-                            ],
-                        }));
-                    }}
-                >
-                    {contentLocales.map((l) => (
-                        <ToggleGroupItem
-                            key={l}
-                            value={l}
-                            className="rounded-full bg-card px-3 text-xs data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-                        >
-                            {localeNames[l]}
-                        </ToggleGroupItem>
-                    ))}
-                </ToggleGroup>
-            </div>
+                    {show('greeting') && (
+                        <SelectField
+                            label="Sacred greeting (vetted)"
+                            value={c.greetingKey ?? NONE}
+                            options={[
+                                {
+                                    value: NONE,
+                                    label: 'None',
+                                },
+                                ...greetingsFor(culture, occasion).map((g) => ({
+                                    value: g.key,
+                                    label: g.transliteration ?? g.text.en ?? g.key,
+                                })),
+                            ]}
+                            onChange={(v) => {
+                                setContent({ greetingKey: v === NONE ? undefined : v });
+                            }}
+                        />
+                    )}
+                </div>
+            )}
+            {show('setup') && (
+                <div className="space-y-2">
+                    <p className="text-[13px] font-medium text-foreground/80">
+                        Languages on the invitation
+                    </p>
+                    <ToggleGroup
+                        type="multiple"
+                        variant="outline"
+                        size="sm"
+                        spacing={2}
+                        aria-label="Languages on the invitation"
+                        className="flex-wrap"
+                        value={draft.locales}
+                        onValueChange={(next) => {
+                            if (next.length === 0) return;
+                            set((d) => ({
+                                ...d,
+                                locales: [
+                                    ...d.locales.filter((l) => next.includes(l)),
+                                    ...next.filter((l) => !d.locales.includes(l)),
+                                ],
+                            }));
+                        }}
+                    >
+                        {contentLocales.map((l) => (
+                            <ToggleGroupItem
+                                key={l}
+                                value={l}
+                                className="rounded-full bg-card px-3 text-xs data-[state=on]:border-primary data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                            >
+                                {localeNames[l]}
+                            </ToggleGroupItem>
+                        ))}
+                    </ToggleGroup>
+                </div>
+            )}
             {draft.locales.length > 1 && (
                 <div className="flex items-center gap-3 rounded-lg bg-muted/60 p-1 ps-3">
                     <span className="text-xs text-muted-foreground">Editing</span>
@@ -994,81 +1099,105 @@ export function ContentPanel({ draft, set }: PanelProps) {
                     </ToggleGroup>
                 </div>
             )}
-            <Accordion type="multiple" defaultValue={['people', 'messages']}>
-                <AccordionItem value="people">
-                    <AccordionTrigger className={sectionTrigger}>
-                        {isCouple(occasion) ? 'The couple' : `Who it’s for · ${occasion.name.en}`}
-                    </AccordionTrigger>
-                    <AccordionContent>
-                        <PeopleFields
-                            occasion={occasion}
-                            people={c.people}
-                            locale={locale}
-                            onChange={(people) => {
-                                setContent({ people });
-                            }}
-                        />
-                    </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="messages">
-                    <AccordionTrigger className={sectionTrigger}>Messages</AccordionTrigger>
-                    <AccordionContent className="space-y-4">
-                        <TextField
-                            label="Headline"
-                            value={c.headline[locale]}
-                            onChange={(v) => {
-                                setContent({ headline: setText(c.headline, locale, v) });
-                            }}
-                        />
-                        <TextField
-                            label="Welcome message"
-                            long
-                            value={c.welcome[locale]}
-                            onChange={(v) => {
-                                setContent({ welcome: setText(c.welcome, locale, v) });
-                            }}
-                        />
-                        <TextField
-                            label="Closing"
-                            long
-                            value={c.closing[locale]}
-                            onChange={(v) => {
-                                setContent({ closing: setText(c.closing, locale, v) });
-                            }}
-                        />
-                    </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="story">
-                    <AccordionTrigger className={sectionTrigger}>
-                        Story, family & hashtag
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-4">
-                        <TextField
-                            label="Our story"
-                            long
-                            value={c.story?.[locale]}
-                            onChange={(v) => {
-                                setContent({ story: setText(c.story, locale, v) });
-                            }}
-                        />
-                        <TextField
-                            label="Family"
-                            value={c.family?.[locale]}
-                            onChange={(v) => {
-                                setContent({ family: setText(c.family, locale, v) });
-                            }}
-                        />
-                        <TextField
-                            label="Hashtag"
-                            value={c.hashtag}
-                            dir="ltr"
-                            placeholder="#RiyaWedsKabir"
-                            onChange={(v) => {
-                                setContent({ hashtag: v || undefined });
-                            }}
-                        />
-                    </AccordionContent>
-                </AccordionItem>
+            {draft.locales.length > 1 && <TranslateNote locale={locale} />}
+            <Accordion
+                type="multiple"
+                defaultValue={only ? ['people', 'messages', 'story'] : ['people', 'messages']}
+            >
+                {show('people') && (
+                    <AccordionItem value="people">
+                        <AccordionTrigger className={sectionTrigger}>
+                            {isCouple(occasion)
+                                ? 'The couple'
+                                : `Who it’s for · ${occasion.name.en}`}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <PeopleFields
+                                occasion={occasion}
+                                people={c.people}
+                                locale={locale}
+                                onChange={(people) => {
+                                    setContent({ people });
+                                }}
+                            />
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
+                {(show('headline') || show('welcome') || show('closing')) && (
+                    <AccordionItem value="messages">
+                        <AccordionTrigger className={sectionTrigger}>Messages</AccordionTrigger>
+                        <AccordionContent className="space-y-4">
+                            {show('headline') && (
+                                <TextField
+                                    label="Headline"
+                                    value={c.headline[locale]}
+                                    onChange={(v) => {
+                                        setContent({ headline: setText(c.headline, locale, v) });
+                                    }}
+                                />
+                            )}
+                            {show('welcome') && (
+                                <TextField
+                                    label="Welcome message"
+                                    long
+                                    value={c.welcome[locale]}
+                                    onChange={(v) => {
+                                        setContent({ welcome: setText(c.welcome, locale, v) });
+                                    }}
+                                />
+                            )}
+                            {show('closing') && (
+                                <TextField
+                                    label="Closing"
+                                    long
+                                    value={c.closing[locale]}
+                                    onChange={(v) => {
+                                        setContent({ closing: setText(c.closing, locale, v) });
+                                    }}
+                                />
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
+                {(show('story') || show('family') || show('hashtag')) && (
+                    <AccordionItem value="story">
+                        <AccordionTrigger className={sectionTrigger}>
+                            {only ? 'Text' : 'Story, family & hashtag'}
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-4">
+                            {show('story') && (
+                                <TextField
+                                    label="Our story"
+                                    long
+                                    value={c.story?.[locale]}
+                                    onChange={(v) => {
+                                        setContent({ story: setText(c.story, locale, v) });
+                                    }}
+                                />
+                            )}
+                            {show('family') && (
+                                <TextField
+                                    label="Family"
+                                    value={c.family?.[locale]}
+                                    onChange={(v) => {
+                                        setContent({ family: setText(c.family, locale, v) });
+                                    }}
+                                />
+                            )}
+                            {show('hashtag') && (
+                                <TextField
+                                    label="Hashtag"
+                                    value={c.hashtag}
+                                    dir="ltr"
+                                    placeholder="#RiyaWedsKabir"
+                                    onChange={(v) => {
+                                        setContent({ hashtag: v || undefined });
+                                    }}
+                                />
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
             </Accordion>
         </div>
     );
@@ -1092,9 +1221,12 @@ const formatWhen = (iso: string) => {
 interface EventsPanelProps extends PanelProps {
     // Opens and scrolls to this ceremony (e.g. after clicking its card on the canvas).
     focus?: number;
+    // Ceremonies the order's package allows; undefined for demos.
+    limit?: number;
 }
 
-export function EventsPanel({ draft, set, focus }: EventsPanelProps) {
+export function EventsPanel({ draft, set, focus, limit }: EventsPanelProps) {
+    const full = limit !== undefined && draft.events.length >= limit;
     const culture = cultureOf(draft.culture);
     // Ceremony names for this occasion in this tradition (besnu, aqiqah, pheras…).
     const vocab = eventVocabFor(occasionOf(draft.occasion), culture);
@@ -1354,7 +1486,14 @@ export function EventsPanel({ draft, set, focus }: EventsPanelProps) {
                     </AccordionItem>
                 ))}
             </Accordion>
+            {limit !== undefined && (
+                <p className="text-center text-xs text-muted-foreground">
+                    {draft.events.length} of {limit} ceremonies in this package
+                    {full && ' · add the “Extra ceremony” add-on for more'}
+                </p>
+            )}
             <Button
+                disabled={full}
                 variant="outline"
                 className="w-full border-dashed"
                 onClick={() => {
@@ -1386,8 +1525,18 @@ export function EventsPanel({ draft, set, focus }: EventsPanelProps) {
 
 // ── Extras ───────────────────────────────────────────────────────────────────
 
-export function ExtrasPanel({ draft, set }: PanelProps) {
+export type ExtraPart = 'music' | 'rsvp' | 'wishes' | 'gifts' | 'live' | 'travel';
+
+interface ExtrasPanelProps extends PanelProps {
+    invitationId: string;
+    // Only these groups (the editor's "this section" view); everything when omitted.
+    only?: readonly ExtraPart[];
+}
+
+export function ExtrasPanel({ draft, set, invitationId, only }: ExtrasPanelProps) {
+    const show = (part: ExtraPart) => !only || only.includes(part);
     const x = draft.extras;
+    const locale = draft.locales[0] ?? 'en';
     const setExtras = (patch: Partial<Draft['extras']>) => {
         set((d) => ({
             ...d,
@@ -1398,107 +1547,210 @@ export function ExtrasPanel({ draft, set }: PanelProps) {
         }));
     };
     return (
-        <Accordion type="multiple" defaultValue={['guests', 'gifts', 'live']}>
-            <AccordionItem value="guests">
-                <AccordionTrigger className={sectionTrigger}>Guest interactions</AccordionTrigger>
-                <AccordionContent className="space-y-2">
-                    <SwitchRow
-                        id="rsvp-enabled"
-                        icon={<Check />}
-                        label="RSVP form"
-                        description="Guests confirm attendance per ceremony."
-                        checked={draft.rsvpEnabled}
-                        onChange={(rsvpEnabled) => {
-                            set((d) => ({
-                                ...d,
-                                rsvpEnabled,
-                            }));
-                        }}
-                    />
-                    <SwitchRow
-                        id="wishes-enabled"
-                        icon={<Heart />}
-                        label="Wishes wall"
-                        description="Blessings appear after you approve them."
-                        checked={x.wishes?.enabled !== false}
-                        onChange={(enabled) => {
-                            setExtras({ wishes: { enabled } });
-                        }}
-                    />
-                    <SwitchRow
-                        id="music-offer"
-                        icon={<Music />}
-                        label="Offer background music"
-                        description="Guests are invited to play the chosen track."
-                        checked={x.music?.allowAutoOffer ?? false}
-                        onChange={(allowAutoOffer) => {
-                            setExtras({ music: { allowAutoOffer } });
-                        }}
-                    />
-                </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="gifts">
-                <AccordionTrigger className={sectionTrigger}>
-                    <span className="flex items-center gap-2">
-                        Shagun via UPI
-                        {x.shagun && (
-                            <Badge variant="success" className="font-normal">
-                                On
-                            </Badge>
+        <Accordion type="multiple" defaultValue={['music', 'guests', 'gifts', 'live', 'travel']}>
+            {show('music') && (
+                <AccordionItem value="music">
+                    <AccordionTrigger className={sectionTrigger}>
+                        <span className="flex items-center gap-2">
+                            <Music className="size-4" />
+                            Music
+                        </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                        <MusicPanel
+                            invitationId={invitationId}
+                            draft={draft}
+                            setMusic={(music) => {
+                                setExtras({ music });
+                            }}
+                        />
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            {(show('rsvp') || show('wishes')) && (
+                <AccordionItem value="guests">
+                    <AccordionTrigger className={sectionTrigger}>
+                        Guest interactions
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-2">
+                        {show('rsvp') && (
+                            <SwitchRow
+                                id="rsvp-enabled"
+                                icon={<Check />}
+                                label="RSVP form"
+                                description="Guests confirm attendance per ceremony."
+                                checked={draft.rsvpEnabled}
+                                onChange={(rsvpEnabled) => {
+                                    set((d) => ({
+                                        ...d,
+                                        rsvpEnabled,
+                                    }));
+                                }}
+                            />
                         )}
-                    </span>
-                </AccordionTrigger>
-                <AccordionContent className="grid gap-4 @md:grid-cols-2">
-                    <TextField
-                        label="UPI ID"
-                        value={x.shagun?.upiId}
-                        placeholder="name@bank"
-                        dir="ltr"
-                        onChange={(v) => {
-                            setExtras({
-                                shagun: v
-                                    ? {
-                                          upiId: v,
-                                          payeeName: x.shagun?.payeeName ?? '',
-                                      }
-                                    : undefined,
-                            });
-                        }}
-                    />
-                    <TextField
-                        label="Payee name"
-                        value={x.shagun?.payeeName}
-                        disabled={!x.shagun}
-                        onChange={(v) => {
-                            if (x.shagun)
+                        {show('wishes') && (
+                            <SwitchRow
+                                id="wishes-enabled"
+                                icon={<Heart />}
+                                label="Wishes wall"
+                                description="Blessings appear after you approve them."
+                                checked={x.wishes?.enabled !== false}
+                                onChange={(enabled) => {
+                                    setExtras({ wishes: { enabled } });
+                                }}
+                            />
+                        )}
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            {show('gifts') && (
+                <AccordionItem value="gifts">
+                    <AccordionTrigger className={sectionTrigger}>
+                        <span className="flex items-center gap-2">
+                            Shagun via UPI
+                            {x.shagun && (
+                                <Badge variant="success" className="font-normal">
+                                    On
+                                </Badge>
+                            )}
+                        </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="grid gap-4 @md:grid-cols-2">
+                        <TextField
+                            label="UPI ID"
+                            value={x.shagun?.upiId}
+                            placeholder="name@bank"
+                            dir="ltr"
+                            onChange={(v) => {
                                 setExtras({
-                                    shagun: {
-                                        ...x.shagun,
-                                        payeeName: v,
-                                    },
+                                    shagun: v
+                                        ? {
+                                              upiId: v,
+                                              payeeName: x.shagun?.payeeName ?? '',
+                                          }
+                                        : undefined,
                                 });
-                        }}
-                    />
-                </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="live">
-                <AccordionTrigger className={sectionTrigger}>
-                    <span className="flex items-center gap-2">
-                        <Radio className="size-4 text-muted-foreground" /> Live stream
-                    </span>
-                </AccordionTrigger>
-                <AccordionContent>
-                    <TextField
-                        label="YouTube live link (event-day live mode)"
-                        value={x.live?.youtubeUrl}
-                        dir="ltr"
-                        placeholder="https://youtube.com/live/…"
-                        onChange={(v) => {
-                            setExtras({ live: v ? { youtubeUrl: v } : undefined });
-                        }}
-                    />
-                </AccordionContent>
-            </AccordionItem>
+                            }}
+                        />
+                        <TextField
+                            label="Payee name"
+                            value={x.shagun?.payeeName}
+                            disabled={!x.shagun}
+                            onChange={(v) => {
+                                if (x.shagun)
+                                    setExtras({
+                                        shagun: {
+                                            ...x.shagun,
+                                            payeeName: v,
+                                        },
+                                    });
+                            }}
+                        />
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            {show('live') && (
+                <AccordionItem value="live">
+                    <AccordionTrigger className={sectionTrigger}>
+                        <span className="flex items-center gap-2">
+                            <Radio className="size-4 text-muted-foreground" /> Live stream
+                        </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                        <TextField
+                            label="YouTube live link (event-day live mode)"
+                            value={x.live?.youtubeUrl}
+                            dir="ltr"
+                            placeholder="https://youtube.com/live/…"
+                            onChange={(v) => {
+                                setExtras({ live: v ? { youtubeUrl: v } : undefined });
+                            }}
+                        />
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            {show('travel') && (
+                <AccordionItem value="travel">
+                    <AccordionTrigger className={sectionTrigger}>Travel & stay</AccordionTrigger>
+                    <AccordionContent className="space-y-3">
+                        <p className="text-xs text-muted-foreground">
+                            Hotels, pickups, parking: one card each.
+                        </p>
+                        {(x.travel ?? []).map((b, i) => {
+                            const update = (patch: Partial<typeof b>) => {
+                                setExtras({
+                                    travel: (x.travel ?? []).map((t, j) =>
+                                        j === i
+                                            ? {
+                                                  ...t,
+                                                  ...patch,
+                                              }
+                                            : t,
+                                    ),
+                                });
+                            };
+                            return (
+                                <div key={i} className="space-y-3 rounded-lg border p-3">
+                                    <TextField
+                                        label="Title"
+                                        value={b.title[locale]}
+                                        placeholder="Stay at Taj Lake Palace"
+                                        onChange={(v) => {
+                                            update({ title: setText(b.title, locale, v) });
+                                        }}
+                                    />
+                                    <TextField
+                                        label="Details"
+                                        long
+                                        value={b.body[locale]}
+                                        onChange={(v) => {
+                                            update({ body: setText(b.body, locale, v) });
+                                        }}
+                                    />
+                                    <TextField
+                                        label="Link (optional)"
+                                        value={b.link}
+                                        dir="ltr"
+                                        placeholder="https://"
+                                        onChange={(v) => {
+                                            update({ link: v || undefined });
+                                        }}
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive"
+                                        onClick={() => {
+                                            const rest = (x.travel ?? []).filter((_, j) => j !== i);
+                                            setExtras({ travel: rest });
+                                        }}
+                                    >
+                                        Remove card
+                                    </Button>
+                                </div>
+                            );
+                        })}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full border-dashed"
+                            onClick={() => {
+                                setExtras({
+                                    travel: [
+                                        ...(x.travel ?? []),
+                                        {
+                                            title: { [locale]: '' },
+                                            body: { [locale]: '' },
+                                        },
+                                    ],
+                                });
+                            }}
+                        >
+                            Add travel card
+                        </Button>
+                    </AccordionContent>
+                </AccordionItem>
+            )}
         </Accordion>
     );
 }

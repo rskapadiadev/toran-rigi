@@ -44,6 +44,66 @@ const strings = {
         ar: 'يُقاس مستوى الصوت فقط على هاتفك. لا يُسجَّل أو يُرسَل أي شيء.',
         ur: 'صرف آپ کے فون پر آواز کی شدت ناپی جاتی ہے۔ کچھ ریکارڈ یا بھیجا نہیں جاتا۔',
     },
+    pullTheLight: {
+        en: 'Pull the cord to switch on the light',
+        hi: 'रोशनी जलाने के लिए डोरी खींचें',
+        gu: 'લાઇટ ચાલુ કરવા દોરી ખેંચો',
+    },
+    pullTheChain: {
+        en: 'Pull the chain to open the doors',
+        hi: 'द्वार खोलने के लिए ज़ंजीर खींचें',
+        gu: 'દરવાજા ખોલવા સાંકળ ખેંચો',
+    },
+    unzip: {
+        en: 'Pull the zip down',
+        hi: 'ज़िप नीचे खींचें',
+        gu: 'ઝિપ નીચે ખેંચો',
+    },
+    untieRibbon: {
+        en: 'Pull the ribbon to untie',
+        hi: 'रिबन खोलने के लिए खींचें',
+        gu: 'રિબન ખોલવા ખેંચો',
+    },
+    liftVeil: {
+        en: 'Swipe up to lift the veil',
+        hi: 'घूंघट उठाने के लिए ऊपर स्वाइप करें',
+        gu: 'ઘૂંઘટ ઉઠાવવા ઉપર સ્વાઇપ કરો',
+    },
+    ringBell: {
+        en: 'Ring the bell three times',
+        hi: 'घंटी तीन बार बजाएँ',
+        gu: 'ઘંટ ત્રણ વાર વગાડો',
+    },
+    developPhoto: {
+        en: 'Rub or tap to develop the photo',
+        hi: 'फ़ोटो देखने के लिए रगड़ें या टैप करें',
+        gu: 'ફોટો જોવા ઘસો અથવા ટેપ કરો',
+    },
+    offerFlowers: {
+        en: 'Tap to offer flowers',
+        hi: 'पुष्प अर्पित करने के लिए टैप करें',
+        gu: 'પુષ્પ અર્પણ કરવા ટેપ કરો',
+    },
+    blowFlowers: {
+        en: 'Or blow the flowers',
+        hi: 'या फूलों पर फूँक मारें',
+        gu: 'અથવા ફૂલો પર ફૂંક મારો',
+    },
+    tributeOffered: {
+        en: 'Your tribute has been offered',
+        hi: 'आपकी श्रद्धांजलि अर्पित हुई',
+        gu: 'આપની શ્રદ્ધાંજલિ અર્પણ થઈ',
+    },
+    turnPage: {
+        en: 'Turn the page',
+        hi: 'पन्ना पलटें',
+        gu: 'પાનું ફેરવો',
+    },
+    enterInvitation: {
+        en: 'Enter the invitation',
+        hi: 'निमंत्रण खोलें',
+        gu: 'આમંત્રણ ખોલો',
+    },
     lightLanterns: {
         en: 'Tap each lantern to light it',
         ar: 'اضغط على كل فانوس لإضاءته',
@@ -434,6 +494,41 @@ const strings = {
         ur: 'محبت کے ساتھ',
         he: 'באהבה',
         pa: 'ਪਿਆਰ ਸਹਿਤ',
+    },
+    keepScrolling: {
+        en: 'Keep scrolling',
+        hi: 'आगे देखें',
+        gu: 'આગળ જુઓ',
+        ar: 'تابع التمرير',
+        ur: 'آگے دیکھیں',
+    },
+    theWeddingOf: {
+        en: 'The wedding of',
+        hi: 'शुभ विवाह',
+        gu: 'શુભ લગ્ન',
+        ar: 'حفل زفاف',
+        ur: 'شادی',
+    },
+    noteFromUs: {
+        en: 'A note from us',
+        hi: 'हमारी ओर से',
+        gu: 'અમારા તરફથી',
+        ar: 'كلمة منا',
+        ur: 'ہماری طرف سے',
+    },
+    blessingsOf: {
+        en: 'With the blessings of',
+        hi: 'आशीर्वाद सहित',
+        gu: 'આશીર્વાદ સહ',
+        ar: 'بمباركة',
+        ur: 'دعاؤں کے ساتھ',
+    },
+    sealAgain: {
+        en: 'Seal the envelope again',
+        hi: 'लिफ़ाफ़ा फिर से बंद करें',
+        gu: 'કવર ફરી બંધ કરો',
+        ar: 'أغلق الظرف من جديد',
+        ur: 'لفافہ دوبارہ بند کریں',
     },
 } as const;
 

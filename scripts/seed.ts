@@ -186,6 +186,26 @@ for (const demo of demoInvitations) {
             'id',
         ),
     );
+    // Each demo is a published template. Insert-only, so names and status edited in the admin survive a re-seed.
+    const key = demo.slug.replace(/^demo-/, '');
+    const templateRow = {
+        id: `tpl_${key}`,
+        slug: key,
+        name: theme.name,
+        description: theme.description,
+        event_kind: demo.occasion,
+        culture: demo.culture,
+        theme_id: `thm_${theme.slug}`,
+        invitation_id: id,
+        from_package: theme.fromPackage,
+        status: 'published',
+        is_featured: theme.featured,
+        sort: demoInvitations.indexOf(demo),
+    };
+    const cols = Object.keys(templateRow);
+    sql.push(
+        `INSERT INTO templates (${cols.join(',')}) VALUES (${Object.values(templateRow).map(q).join(',')}) ON CONFLICT DO NOTHING;`,
+    );
     demo.events.forEach((event, sort) => {
         sql.push(
             upsert(

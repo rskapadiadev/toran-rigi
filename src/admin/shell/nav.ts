@@ -1,8 +1,10 @@
 import type { Permission } from '@shared/permissions';
 import {
     LayoutDashboard,
+    LayoutTemplate,
     Library,
     type LucideIcon,
+    Music,
     Receipt,
     ShoppingBag,
     Sparkles,
@@ -14,7 +16,9 @@ export type NavPath =
     | '/admin/orders'
     | '/admin/orders/new'
     | '/admin/invitations'
+    | '/admin/templates'
     | '/admin/library'
+    | '/admin/music'
     | '/admin/customers'
     | '/admin/billing';
 
@@ -96,11 +100,25 @@ export const navGroups: NavGroup[] = [
                 keywords: ['invoices', 'payments', 'money'],
             },
             {
+                to: '/admin/templates',
+                label: 'Templates',
+                icon: LayoutTemplate,
+                permission: 'orders.view',
+                keywords: ['designs', 'catalogue', 'starting point', 'samples', 'demos'],
+            },
+            {
+                to: '/admin/music',
+                label: 'Music',
+                icon: Music,
+                permission: 'orders.view',
+                keywords: ['songs', 'tracks', 'audio', 'background music'],
+            },
+            {
                 to: '/admin/library',
                 label: 'Library',
                 icon: Library,
                 permission: 'orders.view',
-                keywords: ['components', 'openings', 'blocks', 'templates'],
+                keywords: ['components', 'openings', 'blocks', 'themes'],
             },
         ],
     },

@@ -38,7 +38,7 @@ interface SealProps {
     motif: string[];
 }
 
-function WaxSeal({ seed, initials, motif }: SealProps) {
+export function WaxSeal({ seed, initials, motif }: SealProps) {
     const outline = useMemo(() => sealOutline(seed), [seed]);
     const id = `seal-${String(seed)}`;
     return (

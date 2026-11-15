@@ -2,7 +2,7 @@ import { eventLabel } from '@shared/cultures';
 import { buildIcs, googleCalendarUrl } from '@shared/ics';
 import { formatEventDate, formatEventTime, sameOffset, zonedToUtc, zoneLabel } from '@shared/time';
 import { m, useScroll, useSpring } from 'motion/react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
 import { useGuestTimeZone, useNow } from '../../motion/hooks';
@@ -10,6 +10,7 @@ import { Reveal } from '../../motion/Reveal';
 import { useScrollProgress } from '../../motion/useScrollProgress';
 import { useInvite } from '../context';
 import { Editable, eventPath } from '../editing';
+import { CeremonyProp, propFor } from '../props';
 import type { PublicInvitationEvent } from '../types';
 
 const DEFAULT_DURATION = 3 * 3600_000;
@@ -80,6 +81,8 @@ function useEventFacts(event: PublicInvitationEvent) {
 function EventActions({ event }: { event: PublicInvitationEvent }) {
     const { data, copy } = useInvite();
     const facts = useEventFacts(event);
+    const [picking, setPicking] = useState(false);
+    const pill = 'rounded-full border border-(--inv-gold) px-4 py-2 tracking-[0.18em]';
     return (
         <div className="mt-4 flex flex-wrap justify-center gap-2 text-[11px] tracking-[0.18em] uppercase">
             {event.mapsUrl && (
@@ -92,21 +95,36 @@ function EventActions({ event }: { event: PublicInvitationEvent }) {
                     {copy('directions')}
                 </a>
             )}
-            <a
-                href={googleCalendarUrl(facts.calendarEvent)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-full border border-(--inv-gold) px-4 py-2"
-            >
-                Google
-            </a>
-            <a
-                href={facts.icsHref}
-                download={`${data.invitation.slug}-${event.kind}.ics`}
-                className="rounded-full border border-(--inv-gold) px-4 py-2"
-            >
-                {copy('addToCalendar')}
-            </a>
+            {/* One button; the calendar app is chosen after, so guests see a single clear action. */}
+            {picking ? (
+                <span className="flex flex-wrap justify-center gap-2">
+                    <a
+                        href={googleCalendarUrl(facts.calendarEvent)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={pill}
+                    >
+                        Google Calendar
+                    </a>
+                    <a
+                        href={facts.icsHref}
+                        download={`${data.invitation.slug}-${event.kind}.ics`}
+                        className={pill}
+                    >
+                        Apple · Outlook
+                    </a>
+                </span>
+            ) : (
+                <button
+                    type="button"
+                    onClick={() => {
+                        setPicking(true);
+                    }}
+                    className={pill}
+                >
+                    {copy('addToCalendar')}
+                </button>
+            )}
         </div>
     );
 }
@@ -274,6 +292,129 @@ function TimelineItem({ event, index }: EventCardProps) {
 }
 
 // Admit-with-love tickets: a swipeable row on phones, a centred wrap once there is room.
+// Onion-dome (Mughal) arch, normalised to the card's box.
+const DOME =
+    'M0 1 V0.36 C0 0.26 0.14 0.21 0.27 0.16 C0.39 0.12 0.46 0.07 0.5 0 C0.54 0.07 0.61 0.12 0.73 0.16 C0.86 0.21 1 0.26 1 0.36 V1 Z';
+
+// Card colours cycle through the palette; dark fills switch the text to the light ink.
+interface ArchTone {
+    fill: string;
+    dark: boolean;
+}
+
+function archTone(i: number): ArchTone {
+    const tones = [
+        {
+            fill: 'var(--inv-surface)',
+            dark: false,
+        },
+        {
+            fill: 'var(--inv-primary)',
+            dark: true,
+        },
+        {
+            fill: 'color-mix(in oklab, var(--inv-primary) 22%, var(--inv-bg))',
+            dark: false,
+        },
+        {
+            fill: 'color-mix(in oklab, var(--inv-primary) 70%, black)',
+            dark: true,
+        },
+    ];
+    return (
+        tones[i % tones.length] ?? {
+            fill: 'var(--inv-surface)',
+            dark: false,
+        }
+    );
+}
+
+// Stacked arches: every ceremony is a domed card that sticks as you scroll, so the next one
+// slides up over it like a deck being dealt. Each carries the prop guests associate with it.
+function StackedArches() {
+    const { data } = useInvite();
+    const id = `dome-${String(data.invitation.seed)}`;
+    return (
+        <div className="relative mx-auto max-w-md pb-[14svh]">
+            <svg width="0" height="0" className="absolute" aria-hidden>
+                <clipPath id={id} clipPathUnits="objectBoundingBox">
+                    <path d={DOME} />
+                </clipPath>
+            </svg>
+            {data.events.map((event, i) => (
+                <StackedArch key={event.id} event={event} index={i} clipId={id} />
+            ))}
+        </div>
+    );
+}
+
+interface StackedArchProps extends EventCardProps {
+    clipId: string;
+}
+
+function StackedArch({ event, index, clipId }: StackedArchProps) {
+    const facts = useEventFacts(event);
+    const tone = archTone(index);
+    return (
+        <div
+            data-event-index={index}
+            className="sticky mb-[22svh] last:mb-0"
+            // Each card stops a little lower than the last, so the stack's edges stay visible.
+            style={{ top: `calc(9svh + ${String(index * 14)}px)` }}
+        >
+            <div
+                className="relative"
+                style={{ filter: 'drop-shadow(0 18px 30px rgba(0,0,0,0.28))' }}
+            >
+                <div
+                    className="relative flex aspect-[4/5] flex-col items-center px-[12%] pt-[40%] pb-[10%] text-center"
+                    style={{
+                        clipPath: `url(#${clipId})`,
+                        background: tone.fill,
+                        color: tone.dark ? 'var(--inv-bg)' : 'var(--inv-ink)',
+                    }}
+                >
+                    {/* Hairline gold arch inside the edge. */}
+                    <svg
+                        viewBox="0 0 1 1"
+                        preserveAspectRatio="none"
+                        className="pointer-events-none absolute inset-[4%] size-[92%]"
+                        aria-hidden
+                    >
+                        <path
+                            d={DOME}
+                            fill="none"
+                            stroke="var(--inv-gold)"
+                            strokeWidth="0.006"
+                            vectorEffect="non-scaling-stroke"
+                            style={{ strokeWidth: 1.2 }}
+                        />
+                    </svg>
+                    <h3 className="inv-script text-[clamp(2.2rem,10cqw,3.2rem)] leading-tight text-(--inv-gold)">
+                        <Editable path={eventPath(index, 'title')}>{facts.title}</Editable>
+                    </h3>
+                    {facts.live && <LiveBadge />}
+                    <p className="mt-4 text-[11px] tracking-[0.3em] uppercase">{facts.date}</p>
+                    <p className="text-[11px] tracking-[0.3em] uppercase opacity-80">
+                        {facts.time}
+                    </p>
+                    <p className="mt-3 text-[15px]">
+                        <Editable path={eventPath(index, 'venue')}>{event.venue}</Editable>
+                    </p>
+                    <DressCode event={event} />
+                    <div className="mt-auto">
+                        <EventActions event={event} />
+                    </div>
+                </div>
+                <CeremonyProp
+                    kind={propFor(event.kind)}
+                    className={`absolute bottom-[4%] w-[26%] ${index % 2 ? 'start-[-6%]' : 'end-[-6%]'}`}
+                />
+            </div>
+        </div>
+    );
+}
+
 function Tickets() {
     const { data } = useInvite();
     return (
@@ -350,7 +491,8 @@ export function Events({ variant }: { variant: string }) {
             </Reveal>
             {variant === 'timeline' && <Timeline />}
             {variant === 'tickets' && <Tickets />}
-            {variant !== 'timeline' && variant !== 'tickets' && (
+            {variant === 'stack' && <StackedArches />}
+            {variant !== 'timeline' && variant !== 'tickets' && variant !== 'stack' && (
                 <div className="mx-auto grid max-w-5xl gap-20 @3xl:grid-cols-2">
                     {data.events.map((event, i) => (
                         <EventCard key={event.id} event={event} index={i} />

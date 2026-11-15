@@ -6,6 +6,7 @@ import { type CSSProperties, type ReactNode, useMemo } from 'react';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable } from '../editing';
+import { EnvelopeCard } from './EnvelopeCard';
 
 function PhotoCorner({ className }: { className: string }) {
     return (
@@ -170,6 +171,16 @@ export function InvitationCard({ variant }: { variant: string }) {
             )}
         </>
     );
+
+    // The card is drawn out of its envelope as guests scroll.
+    if (variant === 'envelope')
+        return (
+            <EnvelopeCard>
+                <PaperCard tilt={0} corners>
+                    {details}
+                </PaperCard>
+            </EnvelopeCard>
+        );
 
     if (variant === 'single')
         return (

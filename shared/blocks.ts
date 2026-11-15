@@ -63,6 +63,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             label: 'Editorial',
             hint: 'Huge stacked type, date on the spine',
         },
+        {
+            id: 'photo',
+            label: 'Photo story',
+            hint: 'Your photo fills the screen, then settles into a torn-paper frame as you scroll',
+        },
     ],
     card: [
         {
@@ -74,6 +79,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             id: 'single',
             label: 'Single card',
             hint: 'One deckle-edge card with every detail',
+        },
+        {
+            id: 'envelope',
+            label: 'From the envelope',
+            hint: 'The card slides out of a silk envelope as guests scroll',
         },
     ],
     countdown: [
@@ -94,8 +104,22 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
         },
     ],
     welcome: textVariants,
-    story: textVariants,
-    family: textVariants,
+    story: [
+        ...textVariants,
+        {
+            id: 'letter',
+            label: 'A note from us',
+            hint: 'Handwritten letter on torn paper, with polaroids and pressed flowers',
+        },
+    ],
+    family: [
+        ...textVariants,
+        {
+            id: 'blessings',
+            label: 'Blessings card',
+            hint: '“With the blessings of”, set on gold-cornered stationery',
+        },
+    ],
     events: [
         {
             id: 'arches',
@@ -111,6 +135,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             id: 'tickets',
             label: 'Tickets',
             hint: 'Swipeable admit-one tickets',
+        },
+        {
+            id: 'stack',
+            label: 'Stacked arches',
+            hint: 'Arch cards that stick and stack as guests scroll, each with its own prop',
         },
     ],
     gallery: [
@@ -141,6 +170,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             label: 'Monogram seal',
             hint: 'Ends on the couple’s wax-seal monogram',
         },
+        {
+            id: 'rangoli',
+            label: 'Rangoli seal',
+            hint: 'A marigold rangoli around the wax seal, and “seal the envelope again”',
+        },
     ],
 };
 
@@ -154,6 +188,69 @@ export interface OpeningInfo extends VariantInfo {
 }
 
 export const openingChoices: OpeningInfo[] = [
+    {
+        id: 'book',
+        label: 'Storybook',
+        hint: 'A leather-bound book: guests turn real curling pages to the names and date',
+        gesture: 'Turn pages',
+        gentle: true,
+    },
+    {
+        id: 'tribute',
+        label: 'Floral tribute',
+        hint: 'Guests tap or blow to offer flowers before the photo; the lamp is lit, incense rises',
+        gesture: 'Tap or blow',
+        gentle: true,
+    },
+    {
+        id: 'light-pull',
+        label: 'Pull the light',
+        hint: 'A dark room: pull the lamp’s cord — click — warm light floods in',
+        gesture: 'Pull down',
+        gentle: true,
+    },
+    {
+        id: 'chain',
+        label: 'Pull the chain',
+        hint: 'Carved doors part as the guest pulls the gold chain between them',
+        gesture: 'Pull down',
+        gentle: false,
+    },
+    {
+        id: 'zipper',
+        label: 'Zip open',
+        hint: 'A gold zip down the silk: the halves part and the invitation shows through',
+        gesture: 'Drag down',
+        gentle: false,
+    },
+    {
+        id: 'ribbon',
+        label: 'Untie the ribbon',
+        hint: 'Gift-wrapped: the bow unties, ribbons slide off, the paper flies open',
+        gesture: 'Pull',
+        gentle: false,
+    },
+    {
+        id: 'veil',
+        label: 'Lift the veil',
+        hint: 'A sheer gota-edged dupatta floats away and the names come into focus',
+        gesture: 'Swipe up',
+        gentle: false,
+    },
+    {
+        id: 'bell',
+        label: 'Temple bell',
+        hint: 'Ring the ghanti three times; a golden wave carries guests in',
+        gesture: 'Tap ×3',
+        gentle: true,
+    },
+    {
+        id: 'polaroid',
+        label: 'Develop the polaroid',
+        hint: 'A blank instant photo develops into the names in warm sepia',
+        gesture: 'Rub or tap',
+        gentle: false,
+    },
     {
         id: 'scratch',
         label: 'Gold-foil scratch card',
@@ -306,6 +403,71 @@ export const enterInfo: Record<EnterPreset, VariantInfo> = {
         label: 'Card tilt',
         hint: 'Turns towards you in 3D',
     },
+    iris: {
+        id: 'iris',
+        label: 'Iris',
+        hint: 'Opens from the centre as a growing circle',
+    },
+    sweep: {
+        id: 'sweep',
+        label: 'Diagonal sweep',
+        hint: 'Revealed from the top corner on a diagonal',
+    },
+    zoom: {
+        id: 'zoom',
+        label: 'Zoom',
+        hint: 'A slow camera push-in',
+    },
+    flip: {
+        id: 'flip',
+        label: 'Card flip',
+        hint: 'Turns over like a playing card',
+    },
+    petal: {
+        id: 'petal',
+        label: 'Petal fall',
+        hint: 'Floats down with a little sway',
+    },
+    stamp: {
+        id: 'stamp',
+        label: 'Seal stamp',
+        hint: 'Pressed down like a wax seal',
+    },
+    drop: {
+        id: 'drop',
+        label: 'Drop',
+        hint: 'Revealed top to bottom',
+    },
+    glow: {
+        id: 'glow',
+        label: 'Diya glow',
+        hint: 'Shimmers in like candlelight',
+    },
+    swing: {
+        id: 'swing',
+        label: 'Toran swing',
+        hint: 'Swings into place from a top hinge',
+    },
+    pop: {
+        id: 'pop',
+        label: 'Pop',
+        hint: 'A bouncy pop, for birthdays',
+    },
+    typewriter: {
+        id: 'typewriter',
+        label: 'Typewriter',
+        hint: 'Typed letter by letter, with a blinking caret',
+    },
+    words: {
+        id: 'words',
+        label: 'Word by word',
+        hint: 'Each word appears in turn, like a letter read aloud',
+    },
+    quill: {
+        id: 'quill',
+        label: 'Quill ink',
+        hint: 'Written in wet gold ink that dries as it goes',
+    },
     none: {
         id: 'none',
         label: 'Still',
@@ -344,6 +506,31 @@ export const sceneInfo: Record<SceneKind, VariantInfo> = {
         label: 'Night sky',
         hint: 'Midnight with twinkling stars',
     },
+    terrazzo: {
+        id: 'terrazzo',
+        label: 'Terrazzo',
+        hint: 'Stone chips in your palette on a speckled ground',
+    },
+    watercolor: {
+        id: 'watercolor',
+        label: 'Watercolour wash',
+        hint: 'Soft blooms of colour bleeding into paper',
+    },
+    leheriya: {
+        id: 'leheriya',
+        label: 'Leheriya',
+        hint: 'Rajasthani tie-dye waves, for mehndi and sangeet',
+    },
+    aurora: {
+        id: 'aurora',
+        label: 'Aurora',
+        hint: 'Glowing mesh gradient on a deep ground',
+    },
+    confetti: {
+        id: 'confetti',
+        label: 'Confetti',
+        hint: 'Scattered dots, strips and squiggles',
+    },
     plain: {
         id: 'plain',
         label: 'Plain',
@@ -356,6 +543,11 @@ export const edgeInfo: Record<EdgeKind, VariantInfo> = {
         id: 'seam',
         label: 'Brocade seam',
         hint: 'Gold ribbon sewn between fabrics',
+    },
+    lace: {
+        id: 'lace',
+        label: 'Gold lace',
+        hint: 'A zari lace ribbon with scalloped, pierced edges',
     },
     torn: {
         id: 'torn',
@@ -371,6 +563,71 @@ export const edgeInfo: Record<EdgeKind, VariantInfo> = {
         id: 'arch',
         label: 'Arch',
         hint: 'Section rises as a soft arch',
+    },
+    cusped: {
+        id: 'cusped',
+        label: 'Jharokha arcade',
+        hint: 'A row of cusped Rajasthani arches',
+    },
+    ogee: {
+        id: 'ogee',
+        label: 'Mihrab arcade',
+        hint: 'Onion-domed arches, as in a courtyard',
+    },
+    lotus: {
+        id: 'lotus',
+        label: 'Lotus',
+        hint: 'A row of pointed lotus petals',
+    },
+    swag: {
+        id: 'swag',
+        label: 'Swag',
+        hint: 'Fabric draped between pins, like a mandap valance',
+    },
+    wave: {
+        id: 'wave',
+        label: 'Wave',
+        hint: 'A soft rolling wave',
+    },
+    pinking: {
+        id: 'pinking',
+        label: 'Pinking',
+        hint: 'The zigzag cut of pinking shears',
+    },
+    cloud: {
+        id: 'cloud',
+        label: 'Clouds',
+        hint: 'Billowy clouds, for little ones',
+    },
+    deco: {
+        id: 'deco',
+        label: 'Art deco',
+        hint: 'Stepped ziggurat, Gatsby-era',
+    },
+    slant: {
+        id: 'slant',
+        label: 'Slant',
+        hint: 'One clean diagonal across the width',
+    },
+    doli: {
+        id: 'doli',
+        label: 'Doli',
+        hint: 'The bride’s palanquin carried along the edge by two bearers',
+    },
+    ghodi: {
+        id: 'ghodi',
+        label: 'Baraat ghodi',
+        hint: 'The groom in sehra and safa trotting along on a decorated mare',
+    },
+    car: {
+        id: 'car',
+        label: 'Vidaai car',
+        hint: 'A garlanded vintage car along the edge, wheels turning when animated',
+    },
+    heartbeat: {
+        id: 'heartbeat',
+        label: 'Heartbeat',
+        hint: 'A heart-monitor trace — for anniversaries, love stories, doctors',
     },
     none: {
         id: 'none',
@@ -464,11 +721,12 @@ export interface ResolvedBlock {
     enter: EnterPreset;
     scene: SceneKind;
     edge: EdgeKind;
+    edgeMotion: boolean;
     motif?: SectionConfig['motif'];
 }
 
 // Calm motion keeps only gentle entrances; theatrical ones settle into a soft ink fade.
-export const calmEntrances: readonly EnterPreset[] = ['rise', 'ink', 'none'];
+export const calmEntrances: readonly EnterPreset[] = ['rise', 'ink', 'glow', 'words', 'none'];
 export const settleEnter = (preset: EnterPreset, calm: boolean): EnterPreset =>
     calm && !calmEntrances.includes(preset) ? 'ink' : preset;
 
@@ -497,7 +755,9 @@ export const isRendered = (type: SectionType): type is RenderedSection =>
 
 // Identity of a block's look; the renderer remounts on change so the entrance replays.
 export const blockKey = (b: ResolvedBlock) =>
-    [b.type, b.variant, b.enter, b.scene, b.edge, b.motif ?? ''].join(':');
+    [b.type, b.variant, b.enter, b.scene, b.edge, b.edgeMotion ? 'live' : '', b.motif ?? ''].join(
+        ':',
+    );
 
 export function resolveBlock(config: SectionConfig, previousScene?: SceneKind): ResolvedBlock {
     const defaults = sectionDefaults[config.type] ?? fallback;
@@ -510,6 +770,7 @@ export function resolveBlock(config: SectionConfig, previousScene?: SceneKind): 
         scene,
         // Edges only make sense where the backdrop changes.
         edge: config.edge ?? (previousScene && previousScene !== scene ? 'seam' : 'none'),
+        edgeMotion: config.edgeMotion ?? false,
         motif: config.motif,
     };
 }

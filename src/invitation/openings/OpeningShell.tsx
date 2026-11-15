@@ -25,7 +25,12 @@ export function OpeningShell({
 }: OpeningShellProps) {
     const { guest, copy, names } = useInvite();
     return (
-        <div className="inv-root fixed inset-0 z-50 overflow-hidden" data-opening>
+        // Openings are touched, dragged and rubbed: never select their text, never pop the long-press
+        // callout or the tap flash.
+        <div
+            className="inv-root fixed inset-0 z-50 touch-manipulation overflow-hidden select-none [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]"
+            data-opening
+        >
             {children}
             {!hideTitle && (
                 <div

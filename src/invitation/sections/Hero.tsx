@@ -14,6 +14,7 @@ import {
     MonogramCover,
     useCoverFacts,
 } from './covers';
+import { PhotoCover } from './story';
 
 const calendarLabel: Record<string, string> = {
     'islamic-umalqura': 'islamic-umalqura',
@@ -24,6 +25,7 @@ export function Hero({ variant }: { variant: string }) {
     if (variant === 'arch') return <ArchCover />;
     if (variant === 'monogram') return <MonogramCover />;
     if (variant === 'editorial') return <EditorialCover />;
+    if (variant === 'photo') return <PhotoCover />;
     return <SpotlightCover />;
 }
 

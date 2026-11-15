@@ -73,3 +73,33 @@ export function applyText(d: Draft, path: TextPath, value: string, locale: strin
         }),
     };
 }
+
+// The same path in the draft's own terms, as auto-translate and content.handWritten key it.
+export const draftPath = (path: TextPath): string =>
+    path.startsWith('events.') ? path : `content.${path}`;
+
+// Venue and address are one plain string for every language.
+export const isLocalized = (path: TextPath) => !/\.(venue|address)$/.test(path);
+
+// A text's value: every language of it, or the single shared string for venue/address.
+export function readText(d: Draft, path: TextPath): LocalizedText | string | undefined {
+    const c = d.content;
+    switch (path) {
+        case 'headline':
+        case 'welcome':
+        case 'closing':
+        case 'story':
+        case 'family':
+            return c[path];
+        case 'people.one.name':
+            return c.people.one.name;
+        case 'people.two.name':
+            return c.people.two?.name;
+    }
+    const [, index, field] = path.split('.');
+    const event = d.events[Number(index)];
+    if (!event) return undefined;
+    if (field === 'title') return event.title;
+    if (field === 'venue') return event.venue;
+    return event.address ?? '';
+}

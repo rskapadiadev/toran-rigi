@@ -372,6 +372,511 @@ function ketubah(seed: number): Ornament {
     };
 }
 
+// ── Modern ───────────────────────────────────────────────────────────────────
+
+const pt = ([x, y]: readonly [number, number]) => `${f(x)} ${f(y)}`;
+
+// Squares spiralling inward, each a few degrees turned from the last (Josef Albers, op-art).
+function squares(seed: number): Ornament {
+    const r = rng(seed);
+    const paths: OrnamentPath[] = [];
+    const count = r.int(9, 14);
+    const turn = r.range(4, 11) * (r.next() > 0.5 ? 1 : -1);
+    const shrink = r.range(0.85, 0.9);
+    let R = 182;
+    for (let i = 0; i < count; i++) {
+        const rot = i * turn;
+        const corners = [0, 1, 2, 3].map((k) => polar(R, rot + 45 + 90 * k));
+        paths.push({
+            d: `M ${corners.map(pt).join(' L ')} Z`,
+            role: i % 3 === 0 ? 'gold' : i % 3 === 1 ? 'primary' : 'accent',
+            width: i === 0 ? 1.8 : 1.2,
+            layer: Math.floor(i / 3),
+        });
+        R *= shrink;
+    }
+    paths.push({
+        d: dot(C, C, 4),
+        role: 'gold',
+        width: 0,
+        fill: true,
+        layer: Math.ceil(count / 3),
+    });
+    return {
+        size: SIZE,
+        paths,
+        layers: Math.ceil(count / 3) + 1,
+    };
+}
+
+// A Bauhaus tile grid: every square holds a quarter circle, half circle, dot, diagonal or nothing.
+function bauhaus(seed: number): Ornament {
+    const r = rng(seed);
+    const paths: OrnamentPath[] = [];
+    const n = r.pick([4, 5] as const);
+    const t = 300 / n;
+    const x0 = C - 150;
+    const roles: StrokeRole[] = ['primary', 'gold', 'accent'];
+    const fills: Record<StrokeRole, string[]> = {
+        gold: [],
+        primary: [],
+        accent: [],
+        ink: [],
+    };
+    const lines: string[] = [];
+    for (let row = 0; row < n; row++) {
+        for (let col = 0; col < n; col++) {
+            const x = x0 + col * t;
+            const y = x0 + row * t;
+            const role = r.pick(roles);
+            const shape = r.int(0, 5);
+            const corner = r.int(0, 3);
+            // Corner the quarter circle grows from, and its two neighbours.
+            const cs = [
+                [x, y],
+                [x + t, y],
+                [x + t, y + t],
+                [x, y + t],
+            ] as const;
+            const c0 = cs[corner] ?? cs[0];
+            const c1 = cs[(corner + 1) % 4] ?? cs[1];
+            const c3 = cs[(corner + 3) % 4] ?? cs[3];
+            if (shape === 0)
+                fills[role].push(`M ${pt(c0)} L ${pt(c1)} A ${f(t)} ${f(t)} 0 0 1 ${pt(c3)} Z`);
+            // Half moon on one side, bulging into the tile (sweep 0 curves toward the interior).
+            else if (shape === 1)
+                fills[role].push(`M ${pt(c0)} A ${f(t / 2)} ${f(t / 2)} 0 0 0 ${pt(c1)} Z`);
+            else if (shape === 2) fills[role].push(dot(x + t / 2, y + t / 2, t * 0.3));
+            else if (shape === 3) lines.push(`M ${pt(c0)} L ${pt(cs[(corner + 2) % 4] ?? cs[2])}`);
+            else if (shape === 4) fills[role].push(`M ${pt(c0)} L ${pt(c1)} L ${pt(c3)} Z`);
+        }
+    }
+    const grid = Array.from({ length: n + 1 }, (_, i) => {
+        const v = x0 + i * t;
+        return `M ${f(v)} ${f(x0)} V ${f(x0 + 300)} M ${f(x0)} ${f(v)} H ${f(x0 + 300)}`;
+    }).join(' ');
+    paths.push({
+        d: grid,
+        role: 'ink',
+        width: 1,
+        layer: 0,
+    });
+    roles.forEach((role, i) => {
+        if (fills[role].length)
+            paths.push({
+                d: fills[role].join(' '),
+                role,
+                width: 0,
+                fill: true,
+                layer: i + 1,
+            });
+    });
+    if (lines.length)
+        paths.push({
+            d: lines.join(' '),
+            role: 'ink',
+            width: 1.6,
+            layer: 4,
+        });
+    return {
+        size: SIZE,
+        paths,
+        layers: 5,
+    };
+}
+
+// Truchet tiles: two quarter arcs per square, turned at random, so the arcs join into one maze-like line.
+function truchet(seed: number): Ornament {
+    const r = rng(seed);
+    const n = r.pick([6, 7, 8] as const);
+    const t = 300 / n;
+    const h = t / 2;
+    const x0 = C - 150;
+    const arcs: string[] = [];
+    for (let row = 0; row < n; row++) {
+        for (let col = 0; col < n; col++) {
+            const x = x0 + col * t;
+            const y = x0 + row * t;
+            if (r.next() > 0.5)
+                arcs.push(
+                    `M ${f(x + h)} ${f(y)} A ${f(h)} ${f(h)} 0 0 1 ${f(x)} ${f(y + h)}`,
+                    `M ${f(x + t)} ${f(y + h)} A ${f(h)} ${f(h)} 0 0 0 ${f(x + h)} ${f(y + t)}`,
+                );
+            else
+                arcs.push(
+                    `M ${f(x + h)} ${f(y)} A ${f(h)} ${f(h)} 0 0 0 ${f(x + t)} ${f(y + h)}`,
+                    `M ${f(x)} ${f(y + h)} A ${f(h)} ${f(h)} 0 0 1 ${f(x + h)} ${f(y + t)}`,
+                );
+        }
+    }
+    const half = Math.ceil(arcs.length / 2);
+    return {
+        size: SIZE,
+        paths: [
+            {
+                d: `M ${f(x0)} ${f(x0)} h 300 v 300 h -300 Z`,
+                role: 'gold',
+                width: 1.4,
+                layer: 0,
+            },
+            {
+                d: arcs.slice(0, half).join(' '),
+                role: 'primary',
+                width: 2,
+                layer: 1,
+            },
+            {
+                d: arcs.slice(half).join(' '),
+                role: 'accent',
+                width: 2,
+                layer: 2,
+            },
+        ],
+        layers: 3,
+    };
+}
+
+// Concentric broken rings with planets riding them: a quiet, modern orrery.
+function orbits(seed: number): Ornament {
+    const r = rng(seed);
+    const paths: OrnamentPath[] = [];
+    const rings = r.int(5, 8);
+    for (let i = 0; i < rings; i++) {
+        const R = 34 + i * (150 / rings);
+        const start = r.range(0, 360);
+        const sweep = r.range(200, 320);
+        const a = polar(R, start);
+        const b = polar(R, start + sweep);
+        const role: StrokeRole = i % 3 === 0 ? 'gold' : i % 3 === 1 ? 'primary' : 'accent';
+        paths.push({
+            d: `M ${pt(a)} A ${f(R)} ${f(R)} 0 ${sweep > 180 ? 1 : 0} 1 ${pt(b)}`,
+            role,
+            width: i % 2 ? 1 : 1.8,
+            layer: i,
+        });
+        const planet = polar(R, start + sweep * r.range(0.2, 0.9));
+        paths.push({
+            d: dot(planet[0], planet[1], r.range(3, 7)),
+            role: i % 2 ? 'gold' : 'primary',
+            width: 0,
+            fill: true,
+            layer: i,
+        });
+    }
+    paths.push({
+        d: dot(C, C, 12),
+        role: 'gold',
+        width: 0,
+        fill: true,
+        layer: 0,
+    });
+    return {
+        size: SIZE,
+        paths,
+        layers: rings,
+    };
+}
+
+// Art-deco sunburst: rays of alternating length around a stepped core.
+function sunburst(seed: number): Ornament {
+    const r = rng(seed);
+    const rays = r.pick([36, 48, 60] as const);
+    const inner = r.range(40, 56);
+    const long = r.range(165, 185);
+    const short = long * r.range(0.62, 0.78);
+    const longRays: string[] = [];
+    const shortRays: string[] = [];
+    for (let i = 0; i < rays; i++) {
+        const a = (360 / rays) * i;
+        const end = i % 2 ? short : long;
+        (i % 2 ? shortRays : longRays).push(`M ${pt(polar(inner, a))} L ${pt(polar(end, a))}`);
+    }
+    return {
+        size: SIZE,
+        paths: [
+            {
+                d: circle(inner - 6),
+                role: 'gold',
+                width: 1.6,
+                layer: 0,
+            },
+            {
+                d: circle(inner - 16),
+                role: 'primary',
+                width: 1,
+                layer: 0,
+            },
+            {
+                d: longRays.join(' '),
+                role: 'gold',
+                width: 1.4,
+                layer: 1,
+            },
+            {
+                d: shortRays.join(' '),
+                role: 'primary',
+                width: 1,
+                layer: 2,
+            },
+            {
+                d: circle(short + 10),
+                role: 'accent',
+                width: 0.7,
+                layer: 3,
+            },
+        ],
+        layers: 4,
+    };
+}
+
+// Spirograph: two hypotrochoids (the drawing toy's loops), closed by choosing whole-number gears.
+function spirograph(seed: number): Ornament {
+    const r = rng(seed);
+    const curve = (big: number, small: number, pen: number) => {
+        const k = big - small;
+        // The pattern closes after small / gcd(big, small) turns.
+        const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+        const turns = small / gcd(big, small);
+        const steps = Math.min(1400, Math.round(turns * 120));
+        const raw = Array.from({ length: steps + 1 }, (_, i) => {
+            const th = (i / steps) * turns * 2 * Math.PI;
+            return [
+                k * Math.cos(th) + pen * Math.cos((k / small) * th),
+                k * Math.sin(th) - pen * Math.sin((k / small) * th),
+            ] as const;
+        });
+        const extent = Math.max(...raw.map(([x, y]) => Math.hypot(x, y)));
+        const scale = 172 / extent;
+        return `M ${raw.map(([x, y]) => `${f(C + x * scale)} ${f(C + y * scale)}`).join(' L ')}`;
+    };
+    const big = r.int(9, 15);
+    const small = r.int(3, big - 2);
+    const big2 = r.int(7, 12);
+    const small2 = r.int(2, big2 - 3);
+    return {
+        size: SIZE,
+        paths: [
+            {
+                d: curve(big, small, small * r.range(0.6, 1.1)),
+                role: 'gold',
+                width: 0.9,
+                layer: 0,
+            },
+            {
+                d: curve(big2, small2, small2 * r.range(0.4, 0.9)),
+                role: 'primary',
+                width: 0.8,
+                layer: 1,
+            },
+        ],
+        layers: 2,
+    };
+}
+
+// Op-art: parallel lines inside a circle that swell outward over a hidden sphere.
+function opart(seed: number): Ornament {
+    const r = rng(seed);
+    const R = 176;
+    const gap = r.range(9, 13);
+    const bulge = r.range(18, 30);
+    const spread = r.range(70, 110);
+    const angle = r.range(-25, 25);
+    const rad = (angle * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const rows: string[][] = [[], []];
+    let row = 0;
+    for (let y = -R + gap; y < R; y += gap) {
+        const half = Math.sqrt(R * R - y * y);
+        const pts = Array.from({ length: 41 }, (_, i) => {
+            const x = -half + (2 * half * i) / 40;
+            const lift = bulge * Math.exp(-(x * x + y * y) / (spread * spread));
+            // Pushed away from the centre line, so the rows part over a sphere.
+            const yy = y + lift * (y < 0 ? -1 : 1);
+            return [C + x * cos - yy * sin, C + x * sin + yy * cos] as const;
+        });
+        rows[row % 2]?.push(`M ${pts.map(pt).join(' L ')}`);
+        row++;
+    }
+    return {
+        size: SIZE,
+        paths: [
+            {
+                d: rows[0]?.join(' ') ?? '',
+                role: 'primary',
+                width: 1.4,
+                layer: 0,
+            },
+            {
+                d: rows[1]?.join(' ') ?? '',
+                role: 'gold',
+                width: 1.4,
+                layer: 1,
+            },
+            {
+                d: circle(R + 6),
+                role: 'gold',
+                width: 1,
+                layer: 2,
+            },
+        ],
+        layers: 3,
+    };
+}
+
+// A constellation: seeded stars joined to their nearest neighbours — "the stars aligned".
+function constellation(seed: number): Ornament {
+    const r = rng(seed);
+    const count = r.int(14, 22);
+    const stars: [number, number][] = [];
+    while (stars.length < count) {
+        const [x, y] = polar(r.range(20, 170), r.range(0, 360));
+        // Keep stars apart, so the figure reads as points, not a cluster.
+        if (stars.every(([sx, sy]) => Math.hypot(sx - x, sy - y) > 34)) stars.push([x, y]);
+        if (stars.length === 0) stars.push([x, y]);
+    }
+    const links = new Set<string>();
+    const lines: string[] = [];
+    stars.forEach((a, i) => {
+        const near = stars
+            .map((b, j) => ({
+                j,
+                d: Math.hypot(a[0] - b[0], a[1] - b[1]),
+            }))
+            .filter((o) => o.j !== i)
+            .sort((p, q) => p.d - q.d)
+            .slice(0, r.int(1, 2));
+        for (const { j } of near) {
+            const key = i < j ? `${String(i)}-${String(j)}` : `${String(j)}-${String(i)}`;
+            const b = stars[j];
+            if (!links.has(key) && b) {
+                links.add(key);
+                lines.push(`M ${pt(a)} L ${pt(b)}`);
+            }
+        }
+    });
+    const sparkle = (x: number, y: number, s: number) =>
+        `M ${f(x)} ${f(y - s)} Q ${f(x)} ${f(y)} ${f(x + s)} ${f(y)} Q ${f(x)} ${f(y)} ${f(x)} ${f(y + s)} Q ${f(x)} ${f(y)} ${f(x - s)} ${f(y)} Q ${f(x)} ${f(y)} ${f(x)} ${f(y - s)} Z`;
+    const bright = stars.filter(() => r.next() > 0.7);
+    return {
+        size: SIZE,
+        paths: [
+            {
+                d: circle(182),
+                role: 'gold',
+                width: 0.8,
+                layer: 0,
+            },
+            {
+                d: lines.join(' '),
+                role: 'primary',
+                width: 1,
+                layer: 1,
+            },
+            {
+                d: stars.map(([x, y]) => dot(x, y, r.range(2.2, 4))).join(' '),
+                role: 'gold',
+                width: 0,
+                fill: true,
+                layer: 2,
+            },
+            {
+                d: bright.map(([x, y]) => sparkle(x, y, r.range(9, 14))).join(' '),
+                role: 'accent',
+                width: 0,
+                fill: true,
+                layer: 3,
+            },
+        ],
+        layers: 4,
+    };
+}
+
+/** Names and one-line descriptions, shared by the Composer and the Library. */
+export interface GenerativeInfo {
+    label: string;
+    hint: string;
+    modern: boolean;
+}
+
+export const generativeInfo: Record<GenerativeKind, GenerativeInfo> = {
+    mandala: {
+        label: 'Mandala',
+        hint: 'Rounded petals in rings, folding 8, 12 or 16 ways',
+        modern: false,
+    },
+    lotus: {
+        label: 'Lotus mandala',
+        hint: 'Pointed petals opening layer by layer',
+        modern: false,
+    },
+    girih: {
+        label: 'Girih star',
+        hint: 'Interlaced Islamic star geometry',
+        modern: false,
+    },
+    botanical: {
+        label: 'Botanical',
+        hint: 'A wreath of seeded leaves and buds',
+        modern: false,
+    },
+    ketubah: {
+        label: 'Ketubah',
+        hint: 'Papercut-style frame from Jewish marriage contracts',
+        modern: false,
+    },
+    phulkari: {
+        label: 'Phulkari',
+        hint: 'Punjabi embroidery: stitched geometric blooms',
+        modern: false,
+    },
+    bandhani: {
+        label: 'Bandhani',
+        hint: 'Tie-dye dots in concentric rings',
+        modern: false,
+    },
+    squares: {
+        label: 'Nested squares',
+        hint: 'Squares spiralling inward, each turned a little',
+        modern: true,
+    },
+    bauhaus: {
+        label: 'Bauhaus grid',
+        hint: 'Bold tiles of quarter circles, half moons and dots',
+        modern: true,
+    },
+    truchet: {
+        label: 'Truchet maze',
+        hint: 'Quarter arcs that join into one flowing line',
+        modern: true,
+    },
+    orbits: {
+        label: 'Orbits',
+        hint: 'Broken rings with planets riding them',
+        modern: true,
+    },
+    sunburst: {
+        label: 'Sunburst',
+        hint: 'Art-deco rays of alternating length',
+        modern: true,
+    },
+    spirograph: {
+        label: 'Spirograph',
+        hint: 'Looping curves, like the drawing toy',
+        modern: true,
+    },
+    opart: {
+        label: 'Op-art bulge',
+        hint: 'Parallel lines swelling over a hidden sphere',
+        modern: true,
+    },
+    constellation: {
+        label: 'Constellation',
+        hint: 'Seeded stars joined — the stars aligned',
+        modern: true,
+    },
+};
+
 export function generateOrnament(kind: GenerativeKind, seed: number): Ornament {
     switch (kind) {
         case 'mandala':
@@ -388,5 +893,21 @@ export function generateOrnament(kind: GenerativeKind, seed: number): Ornament {
             return botanical(seed);
         case 'ketubah':
             return ketubah(seed);
+        case 'squares':
+            return squares(seed);
+        case 'bauhaus':
+            return bauhaus(seed);
+        case 'truchet':
+            return truchet(seed);
+        case 'orbits':
+            return orbits(seed);
+        case 'sunburst':
+            return sunburst(seed);
+        case 'spirograph':
+            return spirograph(seed);
+        case 'opart':
+            return opart(seed);
+        case 'constellation':
+            return constellation(seed);
     }
 }

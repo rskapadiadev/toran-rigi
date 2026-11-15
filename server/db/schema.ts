@@ -527,6 +527,36 @@ export const invitations = sqliteTable(
     ],
 );
 
+// ── Templates ───────────────────────────────────────────────────────────────
+// A ready-made invitation a new order can start from. Its design, sample text, sections and
+// ceremonies live in a sample invitation row (is_demo = 1), so the visual editor edits it as is.
+export const templateStatuses = ['draft', 'published', 'archived'] as const;
+export type TemplateStatus = (typeof templateStatuses)[number];
+
+export const templates = sqliteTable(
+    'templates',
+    {
+        id: id(),
+        slug: text('slug').notNull().unique(),
+        name: text('name').notNull(),
+        description: text('description').notNull().default(''),
+        eventKind: text('event_kind').$type<EventKind>().notNull(),
+        culture: text('culture').notNull().default('universal'),
+        themeId: text('theme_id').references(() => themes.id),
+        invitationId: text('invitation_id')
+            .notNull()
+            .unique()
+            .references(() => invitations.id),
+        fromPackage: text('from_package').notNull().default('signature'),
+        status: text('status', { enum: templateStatuses }).notNull().default('draft'),
+        isFeatured: bool('is_featured').notNull().default(false),
+        sort: integer('sort').notNull().default(0),
+        createdAt: createdAt(),
+        updatedAt: updatedAt(),
+    },
+    (t) => [index('templates_kind_idx').on(t.eventKind, t.status)],
+);
+
 export const invitationEvents = sqliteTable(
     'invitation_events',
     {

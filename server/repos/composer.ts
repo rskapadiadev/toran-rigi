@@ -1,13 +1,13 @@
 import { applyLayout } from '@shared/blocks';
-import { reservedSlugList } from '@shared/catalog';
 import { cultureOf } from '@shared/cultures';
 import { seedFrom } from '@shared/generative';
 import { newToken } from '@shared/ids';
-import { defaultSectionsFor, greetingsFor, isCouple, occasionOf } from '@shared/occasions';
+import { defaultSectionsFor, occasionOf } from '@shared/occasions';
+import { photosInUse } from '@shared/photos';
 import type { SaveInvitationInput } from '@shared/schemas/composer';
 import { themeBySlug, themeLayouts } from '@shared/themes';
 import type { PackageLimits } from '@shared/types';
-import { and, asc, desc, eq, ne, sql } from 'drizzle-orm';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 
 import {
     customers,
@@ -16,7 +16,6 @@ import {
     invitations,
     orders,
     packages,
-    reservedSlugs,
     rsvps,
     themes,
     wishes,
@@ -24,46 +23,23 @@ import {
 import { getPlatform } from '../platform/context';
 import { invoicesForOrder } from './billing';
 import { invalidateInvitationCache } from './invitations';
+import { resolveMusic } from './music';
 import { OrderError } from './orders';
+import { isSlugFree, starterContent, uniqueSlug } from './slugs';
+import {
+    copyInvitation,
+    getTemplate,
+    syncTemplateFromInvitation,
+    templateForInvitation,
+} from './templates';
 
-const slugify = (text: string) =>
-    text
-        .normalize('NFKD')
-        .replace(/[̀-ͯ]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
-        .slice(0, 50);
+export { isSlugFree };
 
-export async function isSlugFree(slug: string, exceptId?: string) {
-    const { db } = getPlatform();
-    if (reservedSlugList.includes(slug)) return false;
-    const [reserved, taken] = await Promise.all([
-        db.select().from(reservedSlugs).where(eq(reservedSlugs.slug, slug)).get(),
-        db
-            .select({ id: invitations.id })
-            .from(invitations)
-            .where(
-                exceptId
-                    ? and(eq(invitations.slug, slug), ne(invitations.id, exceptId))
-                    : eq(invitations.slug, slug),
-            )
-            .get(),
-    ]);
-    return !reserved && !taken;
-}
+export type InvitationSource = { templateId: string } | { themeSlug: string };
 
-async function uniqueSlug(base: string) {
-    const root = slugify(base) || 'celebration';
-    for (let i = 0; i < 50; i++) {
-        const candidate = i === 0 ? root : `${root}-${i + 1}`;
-        if (await isSlugFree(candidate)) return candidate;
-    }
-    return `${root}-${newToken().slice(0, 6).toLowerCase()}`;
-}
-
-// Starts an invitation from the order's occasion, culture and theme; the designer personalises it next.
-export async function createInvitationForOrder(orderId: string, themeSlug: string) {
+// Starts an invitation for an order, from a template (its design, sample text, sections and
+// ceremonies) or from a bare theme. The designer personalises it next.
+export async function createInvitationForOrder(orderId: string, source: InvitationSource) {
     const { db } = getPlatform();
     const order = await db.select().from(orders).where(eq(orders.id, orderId)).get();
     if (!order) throw new OrderError('Order not found');
@@ -73,8 +49,6 @@ export async function createInvitationForOrder(orderId: string, themeSlug: strin
         .where(eq(invitations.orderId, orderId))
         .get();
     if (existing) return existing.id;
-    const theme = themeBySlug(themeSlug) ?? themeBySlug('editorial');
-    if (!theme) throw new OrderError('Theme not found');
     const customer = await db
         .select()
         .from(customers)
@@ -82,35 +56,46 @@ export async function createInvitationForOrder(orderId: string, themeSlug: strin
         .get();
     const culture = cultureOf(order.culture);
     const occasion = occasionOf(order.eventKind);
+    const slug = await uniqueSlug(customer?.name ?? order.number);
+    const personal = {
+        orderId,
+        slug,
+        culture: order.culture,
+        eventKind: occasion.id,
+        locales: [customer?.locale ?? 'en'],
+        seed: seedFrom(customer?.name ?? slug, order.weddingDate ?? ''),
+        isDemo: false,
+    };
+
+    if ('templateId' in source) {
+        const template = await getTemplate(source.templateId);
+        if (!template || template.status === 'archived') throw new OrderError('Template not found');
+        // A wedding template's sections (couple, families…) do not fit a birthday or a prayer meet.
+        if (occasionOf(template.eventKind).category !== occasion.category)
+            throw new OrderError(
+                `“${template.name}” is made for ${occasionOf(template.eventKind).name.en}; pick a template for ${occasion.name.en}`,
+            );
+        return copyInvitation(template.invitationId, {
+            keepPeople: false,
+            overrides: personal,
+        });
+    }
+
+    const theme = themeBySlug(source.themeSlug) ?? themeBySlug('editorial');
+    if (!theme) throw new OrderError('Theme not found');
     const themeRow = await db
         .select({ id: themes.id })
         .from(themes)
         .where(eq(themes.slug, theme.slug))
         .get();
-    const slug = await uniqueSlug(customer?.name ?? order.number);
     const [row] = await db
         .insert(invitations)
         .values({
-            orderId,
-            slug,
+            ...personal,
             themeId: themeRow?.id,
-            culture: order.culture,
-            eventKind: occasion.id,
-            locales: [customer?.locale ?? 'en'],
             calendars: culture.calendars.filter((c) => c !== 'gregorian'),
-            seed: seedFrom(customer?.name ?? slug, order.weddingDate ?? ''),
             design: theme.design,
-            content: {
-                people: {
-                    one: { name: { en: occasion.people.one.label } },
-                    ...(isCouple(occasion) && occasion.people.two
-                        ? { two: { name: { en: occasion.people.two.label } } }
-                        : {}),
-                },
-                greetingKey: greetingsFor(culture, occasion)[0]?.key,
-                ...occasion.starter,
-                gallery: [],
-            },
+            content: starterContent(occasion, culture),
             // Remembrance notices take no RSVP by default; the family can still switch it on.
             rsvpEnabled: !occasion.sections.forbidden.includes('rsvp'),
             sections: applyLayout(
@@ -133,7 +118,7 @@ export async function invitationForEdit(id: string) {
     const { db } = getPlatform();
     const invitation = await db.select().from(invitations).where(eq(invitations.id, id)).get();
     if (!invitation) return null;
-    const [events, theme, order, counts] = await Promise.all([
+    const [events, theme, order, counts, template] = await Promise.all([
         db
             .select()
             .from(invitationEvents)
@@ -168,12 +153,14 @@ export async function invitationForEdit(id: string) {
             .from(invitations)
             .where(eq(invitations.id, id))
             .get(),
+        invitation.isDemo ? templateForInvitation(id) : undefined,
     ]);
     return {
         invitation,
         events,
         themeSlug: theme?.slug ?? null,
         order: order ?? null,
+        template: template ?? null,
         counts: counts ?? {
             guests: 0,
             rsvps: 0,
@@ -190,7 +177,7 @@ function enforceLimits(input: SaveInvitationInput, limits: PackageLimits | undef
         );
     if (input.locales.length > limits.languages)
         throw new OrderError(`This package allows ${limits.languages} language(s)`);
-    if (input.content.gallery.length > limits.photos)
+    if (photosInUse(input.content).length > limits.photos)
         throw new OrderError(`This package allows ${limits.photos} photos`);
 }
 
@@ -224,6 +211,8 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
                 content: input.content,
                 sections: input.sections,
                 extras: input.extras,
+                // The server picks the file to play (see resolveMusic): never a key the browser sent.
+                ...(await resolveMusic(id, input.extras.music)),
                 rsvpEnabled: input.rsvpEnabled,
                 version,
                 updatedAt: new Date().toISOString(),
@@ -250,6 +239,7 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
     ]);
     if (wasLive)
         await invalidateInvitationCache(current.invitation.slug, current.invitation.version);
+    if (current.template) await syncTemplateFromInvitation(id);
     return invitationForEdit(id);
 }
 
@@ -307,23 +297,27 @@ export async function setInvitationStatus(
 
 export async function listInvitations() {
     const { db } = getPlatform();
-    return db
-        .select({
-            id: invitations.id,
-            slug: invitations.slug,
-            status: invitations.status,
-            culture: invitations.culture,
-            eventKind: invitations.eventKind,
-            isDemo: invitations.isDemo,
-            content: invitations.content,
-            updatedAt: invitations.updatedAt,
-            expiresAt: invitations.expiresAt,
-            orderNumber: orders.number,
-            customerName: customers.name,
-        })
-        .from(invitations)
-        .leftJoin(orders, eq(orders.id, invitations.orderId))
-        .leftJoin(customers, eq(customers.id, orders.customerId))
-        .orderBy(asc(invitations.isDemo), desc(invitations.updatedAt))
-        .limit(300);
+    return (
+        db
+            .select({
+                id: invitations.id,
+                slug: invitations.slug,
+                status: invitations.status,
+                culture: invitations.culture,
+                eventKind: invitations.eventKind,
+                isDemo: invitations.isDemo,
+                content: invitations.content,
+                updatedAt: invitations.updatedAt,
+                expiresAt: invitations.expiresAt,
+                orderNumber: orders.number,
+                customerName: customers.name,
+            })
+            .from(invitations)
+            .leftJoin(orders, eq(orders.id, invitations.orderId))
+            .leftJoin(customers, eq(customers.id, orders.customerId))
+            // Template samples live under Templates, not with real customers' invitations.
+            .where(eq(invitations.isDemo, false))
+            .orderBy(desc(invitations.updatedAt))
+            .limit(300)
+    );
 }

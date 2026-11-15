@@ -2,10 +2,10 @@ import { archPath } from '@shared/arches';
 import { greetingFits } from '@shared/occasions';
 import { formatEventDate, zonedToUtc } from '@shared/time';
 import { m } from 'motion/react';
-import { use } from 'react';
+import { use, useRef } from 'react';
 
 import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
-import { EnterContext, Reveal } from '../../motion/Reveal';
+import { EnterContext, Reveal, useEntrance } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable } from '../editing';
 
@@ -57,6 +57,9 @@ interface DrawnPathProps {
 
 function DrawnPath({ d, width, opacity = 1 }: DrawnPathProps) {
     const { tier } = use(EnterContext);
+    const ref = useRef<SVGPathElement>(null);
+    // Waits for the opening to lift, like every entrance (see useEntrance).
+    const play = useEntrance(ref);
     if (tier === 'static')
         return (
             <path
@@ -69,14 +72,14 @@ function DrawnPath({ d, width, opacity = 1 }: DrawnPathProps) {
         );
     return (
         <m.path
+            ref={ref}
             d={d}
             fill="none"
             stroke="var(--inv-gold)"
             strokeWidth={width}
             opacity={opacity}
             initial={{ pathLength: 0 }}
-            whileInView={{ pathLength: 1 }}
-            viewport={{ once: true }}
+            animate={{ pathLength: play ? 1 : 0 }}
             transition={{
                 duration: 2.6,
                 ease: [0.65, 0, 0.35, 1],
