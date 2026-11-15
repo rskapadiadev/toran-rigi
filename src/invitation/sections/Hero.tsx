@@ -14,6 +14,7 @@ import {
     MonogramCover,
     useCoverFacts,
 } from './covers';
+import { GardenCover } from './phoolwari';
 import { PhotoCover } from './story';
 
 const calendarLabel: Record<string, string> = {
@@ -26,6 +27,7 @@ export function Hero({ variant }: { variant: string }) {
     if (variant === 'monogram') return <MonogramCover />;
     if (variant === 'editorial') return <EditorialCover />;
     if (variant === 'photo') return <PhotoCover />;
+    if (variant === 'garden') return <GardenCover />;
     return <SpotlightCover />;
 }
 

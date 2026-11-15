@@ -20,6 +20,7 @@ import {
     recordPayment,
 } from '../repos/billing';
 import { listCatalog } from '../repos/catalog';
+import { createInvitationForOrder } from '../repos/composer';
 import {
     addOrderNote,
     assignOrder,
@@ -32,6 +33,7 @@ import {
     OrderError,
     updateOrderStatus,
 } from '../repos/orders';
+import { templateOffer } from '../repos/templates';
 import { refreshUsdRates, usdRates } from '../services/fx';
 
 export const adminApi = new Hono<AdminEnv>();
@@ -104,7 +106,26 @@ adminApi.get('/orders', requirePermission('orders.view'), async (c) => {
 adminApi.post('/orders', requirePermission('orders.create'), async (c) => {
     const parsed = await body(c, createOrderInput);
     if (!parsed.success) return fail(c, 422, parsed.error.issues[0]?.message ?? 'Invalid order');
-    const order = await createOrder(parsed.data, c.get('user').id);
+    const { templateId } = parsed.data;
+    // Ordered from a design: charge that design's own price, and start the invitation from it.
+    const offer = templateId ? await templateOffer(templateId, parsed.data.currency) : null;
+    const order = await createOrder(
+        offer
+            ? {
+                  ...parsed.data,
+                  packageCode: offer.template.fromPackage,
+                  addons: [],
+              }
+            : parsed.data,
+        c.get('user').id,
+        offer
+            ? {
+                  packagePrice: offer.price,
+                  packageLine: `${offer.template.name} invitation`,
+              }
+            : {},
+    );
+    if (offer) await createInvitationForOrder(order.id, { templateId: offer.template.id });
     return c.json({
         ok: true,
         id: order.id,

@@ -11,6 +11,7 @@ import { DiyaOpening } from './DiyaOpening';
 import { DoorsOpening } from './DoorsOpening';
 import { EnvelopeOpening } from './EnvelopeOpening';
 import { FireworksOpening } from './FireworksOpening';
+import { GardenOpening } from './GardenOpening';
 import { InkOpening } from './InkOpening';
 import { LanternOpening } from './LanternOpening';
 import { LightPullOpening } from './LightPullOpening';
@@ -53,6 +54,7 @@ const registry: Record<InvitationDesign['opening'], ComponentType<OpeningProps>>
     polaroid: PolaroidOpening,
     tribute: TributeOpening,
     book: BookOpening,
+    garden: GardenOpening,
 };
 
 type Props = OpeningProps & { kind: InvitationDesign['opening'] };

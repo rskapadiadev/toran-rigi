@@ -20,7 +20,9 @@ export const photoExtension = (mime: PhotoMime) => extension[mime];
 
 // Stored keys become public URLs through the /media route (long-cached, immutable).
 // A "blob:" key is a photo picked while trying a template: shown from the browser, never uploaded.
-export const photoUrl = (key: string) => (key.startsWith('blob:') ? key : `/media/${key}`);
+// "blob:" = picked while trying a template (in the browser only); "/kits/…" = artwork shipped with a theme.
+export const photoUrl = (key: string) =>
+    key.startsWith('blob:') || key.startsWith('/') ? key : `/media/${key}`;
 
 // ── Section photo frames ───────────────────────────────────────────────────────
 // Sections that show photos have their own named frames, so a photo sits exactly where it was put
@@ -52,6 +54,13 @@ export const photoSlots: Record<string, Record<string, readonly PhotoSlot[]>> = 
                 id: 'cover.right',
                 label: 'Right polaroid',
                 hint: 'Slides in from the right',
+            },
+        ],
+        garden: [
+            {
+                id: 'cover.monogram',
+                label: 'Monogram',
+                hint: 'Your gold monogram under Ganesha (a transparent PNG or WebP looks best)',
             },
         ],
     },

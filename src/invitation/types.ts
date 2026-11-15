@@ -8,7 +8,10 @@ import type {
 
 // Client-side mirror of server/repos/invitations PublicInvitation (kept structural to respect layering).
 export interface PublicDressCode {
+    title?: LocalizedText;
     note?: LocalizedText;
+    ladies?: LocalizedText;
+    gentlemen?: LocalizedText;
     swatches: string[];
 }
 

@@ -64,6 +64,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             hint: 'Huge stacked type, date on the spine',
         },
         {
+            id: 'garden',
+            label: 'Wildflower garden',
+            hint: 'Illustrated paper page: Ganesha, a gold monogram, the letter, and a meadow that grows as guests scroll',
+        },
+        {
             id: 'photo',
             label: 'Photo story',
             hint: 'Your photo fills the screen, then settles into a torn-paper frame as you scroll',
@@ -127,6 +132,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             hint: 'Each ceremony unfolds like a paper diorama',
         },
         {
+            id: 'wardrobe',
+            label: 'Wardrobe edit',
+            hint: 'One illustrated page per ceremony: its theme, dress code and guests stepping onto the stage',
+        },
+        {
             id: 'timeline',
             label: 'Thread timeline',
             hint: 'A golden thread stitches through the day',
@@ -188,6 +198,13 @@ export interface OpeningInfo extends VariantInfo {
 }
 
 export const openingChoices: OpeningInfo[] = [
+    {
+        id: 'garden',
+        label: 'Wildflower garden',
+        hint: 'Ganesha glows in, the gold monogram draws itself and a meadow grows; on the tap it rises and parts',
+        gesture: 'Tap',
+        gentle: true,
+    },
     {
         id: 'book',
         label: 'Storybook',

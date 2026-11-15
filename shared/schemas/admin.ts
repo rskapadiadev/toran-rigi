@@ -20,8 +20,11 @@ export const createOrderInput = z.object({
         city: z.string().max(80).optional(),
     }),
     packageCode: z.string().min(1).max(40),
+    // The design ordered: its own price is charged and the invitation starts from it.
+    templateId: z.string().max(64).optional(),
     addons: z.array(z.string().max(40)).max(20).default([]),
-    currency: z.enum(currencies),
+    // Rupees in India, dollars elsewhere (templates are priced in both); dirhams for older orders.
+    currency: z.enum([...currencies, 'USD']),
     occasion: z.enum(occasionIds).default('wedding'),
     culture: z.enum(cultureIds),
     // Date of the main event (column kept as wedding_date for compatibility).

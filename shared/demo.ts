@@ -17,7 +17,143 @@ function sectionsFor(culture: CultureId, extra: SectionConfig['type'][] = []): S
     }));
 }
 
+const surat = (q: string) => maps(`${q}, Surat`);
+
 const rawDemos: DemoInvitation[] = [
+    {
+        // Smit & Dhruvi's own wardrobe planner, rebuilt as a living invitation (art: public/kits/phoolwari).
+        slug: 'demo-phoolwari',
+        themeSlug: 'phoolwari',
+        culture: 'hindu.gujarati',
+        locales: ['en'],
+        calendars: [],
+        seed: 2701,
+        content: {
+            people: {
+                one: { name: t('Smit') },
+                two: { name: t('Dhruvi') },
+            },
+            greetingKey: 'shree-ganeshay-namah',
+            headline: t('The Wedding Wardrobe Edit'),
+            welcome: t('Six celebrations. A hundred memories. One beautiful story.'),
+            story: t(
+                'Dear Friends & Family,\nThe countdown to Smit & Dhruvi’s forever has begun, and we can’t wait to celebrate with you!\nFrom dreamy hues to sangeet sparkle and timeless traditional attire, every celebration has its own vibe. Our Wedding Wardrobe Edit is here to inspire your looks for each occasion.\n\nThink of it as inspiration, not rules. Add your personal touch, wear what makes you feel wonderful, and come ready to dance, laugh and make memories! Dress for the moments, stay for the memories.',
+            ),
+            closing: t('Dress for the moments, stay for the memories.'),
+            photoSlots: { 'cover.monogram': '/kits/phoolwari/monogram-ds.webp' },
+            gallery: [],
+        },
+        events: [
+            {
+                kind: 'haldi',
+                title: t('Haldi'),
+                startsAt: '2027-01-27T10:00',
+                timezone: 'Asia/Kolkata',
+                venue: 'Patel Street, Magdalla',
+                address: 'Behind VR Mall, Magdalla, Surat',
+                mapsUrl: surat('Patel Street Magdalla behind VR Mall'),
+                description: t(
+                    'A little something blue, a little sunshine, and a thousand reasons to smile. Let’s colour this celebration in love, laughter and all things blue.',
+                ),
+                dressCode: {
+                    title: t('Blue Reverie'),
+                    note: t(
+                        'Shades of blue, from soft powder blue and dreamy pastels to serene sky blue and delicate hues of azure.',
+                    ),
+                    ladies: t(
+                        'Blue shararas, salwar suits, anarkalis, Indo-western sets, flowy skirts or playful fusion ensembles.',
+                    ),
+                    gentlemen: t(
+                        'Kurtas in shades of blue, paired with ivory or white if you like.',
+                    ),
+                    swatches: ['#b9d3ee', '#7fa6d8', '#4a6fa5', '#1f3a6e'],
+                },
+            },
+            {
+                kind: 'sangeet',
+                title: t('Sangeet'),
+                startsAt: '2027-01-27T19:30',
+                timezone: 'Asia/Kolkata',
+                venue: 'Tahuko Farm',
+                address: 'Silent Zone, Dumas Road, Surat',
+                mapsUrl: surat('Tahuko Farm Silent Zone Dumas Road'),
+                description: t(
+                    'Bring your sparkle, bring your moves and bring all the love to the dance floor tonight as we celebrate Dhruvi & Smit in the language of music, madness and memories.',
+                ),
+                dressCode: {
+                    title: t('The Moonlit Affair'),
+                    note: t('If it glitters, shimmers or catches the light, it belongs here.'),
+                    ladies: t(
+                        'Glamorous gowns, sequinned dresses, glittery sarees, statement lehengas or metallic ensembles.',
+                    ),
+                    gentlemen: t(
+                        'Statement blazers, tux-inspired looks or contemporary Indo-western outfits.',
+                    ),
+                    swatches: ['#111111', '#e7c3c6', '#1d2c5e', '#c0c4cc'],
+                },
+            },
+            {
+                kind: 'grah-shanti',
+                title: t('Grah Shanti'),
+                startsAt: '2027-01-28T18:00',
+                timezone: 'Asia/Kolkata',
+                venue: 'Rio Greens',
+                address: 'Valentine Theatre Lane, New Magdalla, Surat',
+                mapsUrl: surat('Rio Greens Valentine Theatre Lane New Magdalla'),
+                description: t(
+                    'With prayers in our hearts and faith in our journey, we seek divine grace for a lifetime of harmony, prosperity and love.',
+                ),
+                dressCode: {
+                    title: t('Sacred & Serene'),
+                    note: t('Traditional Indian attire.'),
+                    ladies: t(
+                        'Sarees, lehengas, anarkalis, elegant suits and other traditional Indian ensembles.',
+                    ),
+                    gentlemen: t(
+                        'Traditional kurtas, kurta-pyjama sets, bandhgala suits and other elegant Indian attire.',
+                    ),
+                    swatches: ['#f2d36b', '#8cbf3f', '#f4a7b9', '#b7a6d9'],
+                },
+            },
+            {
+                kind: 'pheras',
+                title: t('Wedding'),
+                startsAt: '2027-01-29T18:30',
+                timezone: 'Asia/Kolkata',
+                venue: 'Swarnbhumi Party Plot',
+                address: 'Near DPS School, near Avadh Utopia, Dumas, Surat',
+                mapsUrl: surat('Swarnbhumi Party Plot near DPS School Dumas'),
+                description: t(
+                    'Like Shiv and Parvati, may love be our strength, devotion our foundation and our greatest blessing. Join us as Dhruvi & Smit begin their forever, hand in hand and heart to heart.',
+                ),
+                dressCode: {
+                    title: t('Shiv Shakti — The Sacred Union'),
+                    note: t('Indian cultural elegance, timeless, regal and rooted in tradition.'),
+                    ladies: t(
+                        'Traditional lehengas, rich sarees or elegant Indo-western ensembles with a traditional soul.',
+                    ),
+                    gentlemen: t(
+                        'Sherwanis, bandhgalas, classic Indo-western attire or embroidered jackets.',
+                    ),
+                    swatches: ['#8c1530', '#e9a6b8', '#c39a3c', '#efe4d2'],
+                },
+            },
+        ],
+        extras: { wishes: { enabled: true } },
+        sections: [
+            'cover',
+            'story',
+            'card',
+            'countdown',
+            'events',
+            'family',
+            'gallery',
+            'wishes',
+        ].map((type) => ({
+            type: type as SectionConfig['type'],
+            enabled: true,
+        })),
+    },
     {
         slug: 'demo-mehfil',
         themeSlug: 'mehfil',
@@ -42,9 +178,7 @@ const rawDemos: DemoInvitation[] = [
             story: t(
                 'You have watched us grow up, laughed with us and loved us through every chapter. It would mean the world to have you beside us as we begin this one.\n\nCome hungry, come ready to dance, and bring your brightest smile.',
             ),
-            family: t(
-                'Smt. Meera & Shri Rajesh Malhotra · Smt. Nisha & Shri Vikram Kapoor',
-            ),
+            family: t('Smt. Meera & Shri Rajesh Malhotra · Smt. Nisha & Shri Vikram Kapoor'),
             closing: t('We can’t wait to celebrate with you.'),
             gallery: [],
         },

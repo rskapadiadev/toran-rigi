@@ -197,6 +197,14 @@ export const cultures: Record<CultureId, CulturePack> = {
                 },
             },
             {
+                kind: 'grah-shanti',
+                label: {
+                    en: 'Grah Shanti',
+                    hi: 'ग्रह शांति',
+                    gu: 'ગ્રહશાંતિ',
+                },
+            },
+            {
                 kind: 'garba',
                 label: {
                     en: 'Garba / Raas',
@@ -795,7 +803,7 @@ export const cultures: Record<CultureId, CulturePack> = {
             },
             {
                 key: 'blessed-mourn',
-                text: {en: 'Blessed are those who mourn, for they shall be comforted.',},
+                text: { en: 'Blessed are those who mourn, for they shall be comforted.' },
                 meaning: 'Matthew 5:4',
                 sacred: true,
                 tone: 'solemn',
@@ -836,29 +844,29 @@ export const cultures: Record<CultureId, CulturePack> = {
                 },
                 {
                     kind: 'christening-lunch',
-                    label: {en: 'Christening lunch',},
+                    label: { en: 'Christening lunch' },
                 },
             ],
             demise_notice: [
                 {
                     kind: 'funeral-mass',
-                    label: {en: 'Funeral mass',},
+                    label: { en: 'Funeral mass' },
                 },
                 {
                     kind: 'burial',
-                    label: {en: 'Burial',},
+                    label: { en: 'Burial' },
                 },
             ],
             prayer_meet: [
                 {
                     kind: 'memorial-service',
-                    label: {en: 'Memorial service',},
+                    label: { en: 'Memorial service' },
                 },
             ],
             death_anniversary: [
                 {
                     kind: 'memorial-mass',
-                    label: {en: 'Memorial mass',},
+                    label: { en: 'Memorial mass' },
                 },
             ],
         },

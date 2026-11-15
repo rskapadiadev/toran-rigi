@@ -12,6 +12,7 @@ import { useInvite } from '../context';
 import { Editable, eventPath } from '../editing';
 import { CeremonyProp, propFor } from '../props';
 import type { PublicInvitationEvent } from '../types';
+import { WardrobeEvents } from './phoolwari';
 
 const DEFAULT_DURATION = 3 * 3600_000;
 
@@ -78,7 +79,7 @@ function useEventFacts(event: PublicInvitationEvent) {
     };
 }
 
-function EventActions({ event }: { event: PublicInvitationEvent }) {
+export function EventActions({ event }: { event: PublicInvitationEvent }) {
     const { data, copy } = useInvite();
     const facts = useEventFacts(event);
     const [picking, setPicking] = useState(false);
@@ -482,6 +483,8 @@ function Ticket({ event, index }: EventCardProps) {
 export function Events({ variant }: { variant: string }) {
     const { data, copy } = useInvite();
     if (data.events.length === 0) return null;
+    // Illustrated kit: each ceremony is a full printed page of its own, no shared heading.
+    if (variant === 'wardrobe') return <WardrobeEvents />;
     return (
         <section className="px-5 py-24">
             <Reveal className="mb-14 text-center">

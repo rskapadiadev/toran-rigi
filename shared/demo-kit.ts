@@ -3,7 +3,10 @@ import type { OccasionId } from './occasions';
 import type { InvitationContent, InvitationExtras, LocalizedText, SectionConfig } from './types';
 
 export interface DemoDressCode {
+    title?: LocalizedText;
     note?: LocalizedText;
+    ladies?: LocalizedText;
+    gentlemen?: LocalizedText;
     swatches: string[];
 }
 

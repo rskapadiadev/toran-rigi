@@ -160,15 +160,17 @@ export function InvitationCard({ variant }: { variant: string }) {
                     );
                 })}
             </ul>
-            {data.invitation.rsvpEnabled && (
-                <a
-                    href="#rsvp"
-                    className="mt-8 inline-block rounded-full px-7 py-3 text-xs tracking-[0.3em] text-white uppercase"
-                    style={{ background: buttonBg }}
-                >
-                    {copy('rsvpTitle')}
-                </a>
-            )}
+            {/* Only when there is an RSVP section on the page to jump to. */}
+            {data.invitation.rsvpEnabled &&
+                data.invitation.sections.some((x) => x.type === 'rsvp' && x.enabled) && (
+                    <a
+                        href="#rsvp"
+                        className="mt-8 inline-block rounded-full px-7 py-3 text-xs tracking-[0.3em] text-white uppercase"
+                        style={{ background: buttonBg }}
+                    >
+                        {copy('rsvpTitle')}
+                    </a>
+                )}
         </>
     );
 

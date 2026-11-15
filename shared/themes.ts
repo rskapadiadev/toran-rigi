@@ -790,6 +790,40 @@ export const themeCatalog: ThemeDefinition[] = [
             motion: 'cinematic',
         },
     },
+    {
+        slug: 'phoolwari',
+        name: 'Phoolwari',
+        culture: 'hindu',
+        category: 'floral',
+        description:
+            'A hand-illustrated wildflower garden: Ganesha and a gold monogram, then one painted page per ceremony with its theme, dress code and guests stepping onto the stage.',
+        suits: ['celebrations'],
+        fromPackage: 'premium',
+        featured: true,
+        design: {
+            palette: {
+                bg: '#f4ece0',
+                surface: '#fdf6ec',
+                ink: '#4a1830',
+                muted: '#7d5a66',
+                primary: '#a3164f',
+                accent: '#8f7cc2',
+                gold: '#c39a3c',
+            },
+            fonts: {
+                display: 'marcellus',
+                body: 'cormorant',
+                script: 'pinyon',
+            },
+            opening: 'garden',
+            generative: {
+                kind: 'botanical',
+                density: 0.5,
+            },
+            texture: 'paper',
+            motion: 'cinematic',
+        },
+    },
 ];
 
 export const themeBySlug = (slug: string) => themeCatalog.find((t) => t.slug === slug);
@@ -1506,11 +1540,65 @@ export const themeLayouts: Record<string, BlockPreset> = {
             edge: 'none',
             motif: 'spark',
         },
-        rsvp: {scene: 'plain',},
+        rsvp: { scene: 'plain' },
         closing: {
             variant: 'blessing',
             scene: 'night',
             motif: 'spark',
+        },
+    },
+    // Illustrated pages animate themselves, so they take no extra entrance and meet edge to edge.
+    phoolwari: {
+        cover: {
+            variant: 'garden',
+            enter: 'none',
+            scene: 'plain',
+            edge: 'none',
+        },
+        // The Library's "A note from us": the letter on torn paper with polaroids.
+        story: {
+            variant: 'letter',
+            scene: 'paper',
+            edge: 'none',
+        },
+        // The card comes out of its envelope under a night sky, the baraat ghodi trotting along the top.
+        card: {
+            variant: 'envelope',
+            scene: 'night',
+            edge: 'ghodi',
+            edgeMotion: true,
+        },
+        countdown: {
+            variant: 'line',
+            scene: 'silk',
+            motif: 'paisley',
+            edge: 'scallop',
+        },
+        family: {
+            variant: 'blessings',
+            scene: 'blush',
+            edge: 'none',
+        },
+        gallery: {
+            variant: 'polaroid',
+            scene: 'blush',
+            edge: 'none',
+        },
+        // The vidaai car drives along the foot of the countdown, into the ceremonies.
+        events: {
+            variant: 'wardrobe',
+            enter: 'none',
+            scene: 'plain',
+            edge: 'car',
+            edgeMotion: true,
+        },
+        rsvp: {
+            scene: 'blush',
+            edge: 'none',
+        },
+        wishes: {
+            scene: 'plain',
+            edge: 'none',
         },
     },
     mehfil: {

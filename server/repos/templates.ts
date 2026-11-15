@@ -6,7 +6,12 @@ import { seedFrom } from '@shared/generative';
 import { newToken } from '@shared/ids';
 import { defaultSectionsFor, occasionOf } from '@shared/occasions';
 import type { PhotoMime } from '@shared/photos';
-import { cleanPrices, DEFAULT_TEMPLATE_PRICE, DEFAULT_TEMPLATE_WAS_PRICE } from '@shared/pricing';
+import {
+    cleanPrices,
+    DEFAULT_TEMPLATE_PRICE,
+    DEFAULT_TEMPLATE_WAS_PRICE,
+    shopPrice,
+} from '@shared/pricing';
 import type { CreateTemplateInput, UpdateTemplateInput } from '@shared/schemas/templates';
 import { themeBySlug, themeLayouts } from '@shared/themes';
 import type { InvitationExtras } from '@shared/types';
@@ -14,6 +19,7 @@ import { and, asc, desc, eq, ne } from 'drizzle-orm';
 
 import { invitationEvents, invitations, templates, themes } from '../db/schema';
 import { getPlatform } from '../platform/context';
+import { usdRates } from '../services/fx';
 import { invalidateInvitationCache } from './invitations';
 import { resolveMusic } from './music';
 import { OrderError } from './orders';
@@ -161,6 +167,9 @@ export async function createTemplate(input: CreateTemplateInput) {
     return row;
 }
 
+const withoutMonogram = (slots: Record<string, string> | undefined) =>
+    slots && Object.fromEntries(Object.entries(slots).filter(([id]) => id !== 'cover.monogram'));
+
 interface CopyOptions {
     // Fields the copy changes; everything else (design, sections, extras, ceremonies) is carried over.
     overrides: Partial<typeof invitations.$inferInsert>;
@@ -192,6 +201,8 @@ export async function copyInvitation(sourceId: string, options: CopyOptions) {
               ...source.content,
               people: starterContent(occasion, culture).people,
               gallery: [],
+              // A monogram is the sample couple's own initials; a new couple gets theirs drawn.
+              photoSlots: withoutMonogram(source.content.photoSlots),
           };
     const [row] = await db
         .insert(invitations)
@@ -327,6 +338,19 @@ export async function syncTemplateFromInvitation(invitationId: string) {
             updatedAt: new Date().toISOString(),
         })
         .where(eq(templates.invitationId, invitationId));
+}
+
+// A template's price for a studio-made order, in the order's currency.
+export async function templateOffer(id: string, currency: string) {
+    const template = await getTemplate(id);
+    if (!template) throw new OrderError('Template not found');
+    const rates = currency === 'INR' || currency === 'USD' ? null : await usdRates();
+    const price = shopPrice(template.prices, template.comparePrices, currency, rates)?.price;
+    if (price === undefined) throw new OrderError(`“${template.name}” has no ${currency} price`);
+    return {
+        template,
+        price,
+    };
 }
 
 // The shop shows this picture instead of running the design live. Replaces (and removes) the old one.

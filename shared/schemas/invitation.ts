@@ -38,6 +38,7 @@ export const openingKinds = [
     'polaroid',
     'tribute',
     'book',
+    'garden',
 ] as const;
 
 export const generativeKinds = [

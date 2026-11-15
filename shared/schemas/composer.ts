@@ -25,7 +25,11 @@ export const eventInput = z.object({
     description: localizedText.optional(),
     dressCode: z
         .object({
+            // A theme for the look ("Blue Reverie"), and who wears what; illustrated themes show them.
+            title: localizedText.optional(),
             note: localizedText.optional(),
+            ladies: localizedText.optional(),
+            gentlemen: localizedText.optional(),
             swatches: z.array(z.string().regex(/^#[0-9a-f]{6}$/i)).max(6),
         })
         .optional(),

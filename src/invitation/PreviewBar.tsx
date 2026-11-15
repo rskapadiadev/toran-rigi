@@ -1,7 +1,5 @@
 // Demo ("template preview") mode: a floating bar to try a design with your own names, then start
 // an order. Shown only on demo invitations; never on a couple's real invitation.
-import { packageCatalog } from '@shared/catalog';
-import { formatMoney } from '@shared/money';
 import { themeBySlug } from '@shared/themes';
 import { type SyntheticEvent, useState } from 'react';
 
@@ -82,8 +80,6 @@ export function PreviewBar({ data, trial, onTrial }: PreviewBarProps) {
     const [sent, setSent] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const theme = data.themeSlug ? themeBySlug(data.themeSlug) : undefined;
-    const pkg = packageCatalog.find((p) => p.code === (theme?.fromPackage ?? 'signature'));
-    const price = pkg ? formatMoney(pkg.prices.INR, 'INR') : '';
     const couple = Boolean(data.invitation.content.people.two);
 
     const tryIt = (e: SyntheticEvent<HTMLFormElement>) => {
@@ -130,7 +126,6 @@ export function PreviewBar({ data, trial, onTrial }: PreviewBarProps) {
                     <span className="block truncate text-sm font-semibold">
                         {theme?.name ?? 'Toran design'}
                     </span>
-                    {price && <span className="block text-[11px] opacity-75">from {price}</span>}
                 </span>
                 <button
                     type="button"
@@ -228,8 +223,7 @@ export function PreviewBar({ data, trial, onTrial }: PreviewBarProps) {
                                     Start with {theme?.name ?? 'this design'}
                                 </h2>
                                 <p className="text-sm text-neutral-600">
-                                    Leave your details and we’ll set it up for you
-                                    {price && `, from ${price}`}.
+                                    Leave your details and we’ll set it up for you.
                                 </p>
                                 <input
                                     name="name"
