@@ -641,6 +641,51 @@ export const edgeInfo: Record<EdgeKind, VariantInfo> = {
         label: 'Vidaai car',
         hint: 'A garlanded vintage car along the edge, wheels turning when animated',
     },
+    elephant: {
+        id: 'elephant',
+        label: 'Gaj yatra',
+        hint: 'A caparisoned elephant with a gold howdah, for palace weddings',
+    },
+    bagghi: {
+        id: 'bagghi',
+        label: 'Bagghi',
+        hint: 'A horse-drawn wedding carriage, wheels rolling, the couple inside',
+    },
+    dhol: {
+        id: 'dhol',
+        label: 'Dhol & bhangra',
+        hint: 'A dholi drumming and a dancer, arms up, for the baraat, sangeet and lohri',
+    },
+    rickshaw: {
+        id: 'rickshaw',
+        label: 'Just-married auto',
+        hint: 'A garlanded auto-rickshaw puttering along, for fun, modern couples',
+    },
+    doves: {
+        id: 'doves',
+        label: 'Doves',
+        hint: 'Two doves carrying a ribbon with a ring between them',
+    },
+    stork: {
+        id: 'stork',
+        label: 'Stork',
+        hint: 'A stork carrying a bundle of joy, for baby showers and naming days',
+    },
+    lanterns: {
+        id: 'lanterns',
+        label: 'Lanterns',
+        hint: 'Glowing fanoos lanterns drifting by, for nikah, Eid and Diwali nights',
+    },
+    balloons: {
+        id: 'balloons',
+        label: 'Balloons',
+        hint: 'A bunch of balloons floating across, for birthdays and little ones',
+    },
+    kites: {
+        id: 'kites',
+        label: 'Patang',
+        hint: 'Kites tugging on their strings, for Uttarayan and Sankranti',
+    },
     heartbeat: {
         id: 'heartbeat',
         label: 'Heartbeat',

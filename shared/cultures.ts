@@ -340,11 +340,13 @@ export const cultures: Record<CultureId, CulturePack> = {
         },
         dietary: ['vegetarian', 'jain', 'vegan', 'non-vegetarian'],
         calendars: ['gregorian'],
+        // Shagun sits before the closing so the invitation always ends on its blessing.
         defaultSections: [
             ...commonSections.slice(0, 5),
             'family',
-            ...commonSections.slice(5),
+            ...commonSections.slice(5, -1),
             'shagun',
+            'closing',
         ],
         sensitivity: {
             musicDefault: 'on',

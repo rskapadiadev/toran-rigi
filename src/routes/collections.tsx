@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { cn } from '@/lib/utils';
 import { Rise, SectionHeading, TemplateTile } from '@/shop/landing';
 import { ShopShell } from '@/shop/ShopShell';
+import { TemplateDeck } from '@/shop/TemplateDeck';
 
 import { fetchCatalogue } from '../server-fns/store';
 
@@ -72,13 +73,22 @@ function Collections() {
                         </Rise>
                     )}
                     {shown.length > 0 ? (
-                        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                            {shown.map((t, i) => (
-                                <Rise key={t.slug} delay={(i % 3) * 90}>
-                                    <TemplateTile template={t} currency={currency} />
-                                </Rise>
-                            ))}
-                        </div>
+                        <>
+                            <div className="mt-10 sm:hidden">
+                                <TemplateDeck
+                                    key={occasion ?? 'all'}
+                                    templates={shown}
+                                    currency={currency}
+                                />
+                            </div>
+                            <div className="mt-10 hidden gap-5 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+                                {shown.map((t, i) => (
+                                    <Rise key={t.slug} delay={(i % 3) * 90}>
+                                        <TemplateTile template={t} currency={currency} />
+                                    </Rise>
+                                ))}
+                            </div>
+                        </>
                     ) : (
                         <p className="mt-10 rounded-3xl border border-dashed border-white/15 p-10 text-center text-ivory/60">
                             New designs are on their way. Check back soon.

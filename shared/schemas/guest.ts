@@ -21,3 +21,8 @@ export const wishInput = z.object({
     turnstileToken: z.string().max(4096).optional(),
 });
 export type WishInput = z.infer<typeof wishInput>;
+
+// A guest's double-tap heart: on an approved wish or on one of the invitation's gallery photos.
+export const heartInput = z.object({ target: z.string().regex(/^(wish|photo):[\w./-]{1,200}$/) });
+export type HeartInput = z.infer<typeof heartInput>;
+export type HeartCounts = Record<string, number>;

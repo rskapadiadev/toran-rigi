@@ -6,6 +6,13 @@ import { PromptPill, useFinish, usePull } from './gesture';
 import { OpeningShell } from './OpeningShell';
 import type { OpeningProps } from './types';
 
+const shade = 'color-mix(in oklab, var(--inv-gold) 55%, black)';
+const sheen = 'color-mix(in oklab, var(--inv-gold) 45%, white)';
+// Where the pull tail leaves the knot.
+const tailAnchor = {
+    left: 'calc(50% - 4px)',
+    top: 'calc(50% - 2px)',
+};
 const satin =
     'linear-gradient(90deg, color-mix(in oklab, var(--inv-gold) 55%, black), var(--inv-gold) 30%, color-mix(in oklab, var(--inv-gold) 40%, white) 50%, var(--inv-gold) 70%, color-mix(in oklab, var(--inv-gold) 55%, black))';
 
@@ -100,38 +107,56 @@ export function RibbonOpening({ onBegin, onOpened }: OpeningProps) {
                 }}
             >
                 <svg
-                    viewBox="0 0 200 120"
+                    viewBox="0 0 200 140"
                     className="w-full overflow-visible drop-shadow-[0_8px_14px_rgba(0,0,0,0.4)]"
                 >
                     <defs>
                         <linearGradient id="rb-satin" x1="0" x2="1" y1="0" y2="1">
-                            <stop
-                                offset="0"
-                                stopColor="color-mix(in oklab, var(--inv-gold) 55%, black)"
-                            />
-                            <stop
-                                offset="0.45"
-                                stopColor="color-mix(in oklab, var(--inv-gold) 50%, white)"
-                            />
-                            <stop
-                                offset="1"
-                                stopColor="color-mix(in oklab, var(--inv-gold) 60%, black)"
-                            />
+                            <stop offset="0" stopColor={shade} />
+                            <stop offset="0.45" stopColor={sheen} />
+                            <stop offset="1" stopColor={shade} />
                         </linearGradient>
                     </defs>
+                    {/* Left tail, behind the loops, ending in a V-cut. */}
                     <path
-                        d="M100 60 C70 20 22 18 18 44 C14 70 64 74 100 60 Z"
+                        d="M93 66 C87 86 79 106 70 130 L79 124 L86 134 C93 110 100 88 105 68 Z"
                         fill="url(#rb-satin)"
                     />
+                    {/* Two loops, mirrored: the satin face, the shadowed inside of the fold and a sheen along the top. */}
+                    {[false, true].map((mirror) => (
+                        <g
+                            key={String(mirror)}
+                            transform={mirror ? 'matrix(-1 0 0 1 200 0)' : undefined}
+                        >
+                            <path
+                                d="M100 58 C84 38 58 12 32 17 C12 21 8 46 22 61 C36 76 68 72 100 63 Z"
+                                fill="url(#rb-satin)"
+                            />
+                            <path
+                                d="M93 57 C78 45 58 32 42 34 C31 36 30 49 38 55 C50 63 74 62 93 60 Z"
+                                fill={shade}
+                                opacity="0.55"
+                            />
+                            <path
+                                d="M96 54 C82 36 60 20 36 22"
+                                fill="none"
+                                stroke="white"
+                                strokeOpacity="0.35"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                            />
+                        </g>
+                    ))}
+                    {/* The knot, gathered into pleats. */}
+                    <rect x="87" y="45" width="26" height="27" rx="9" fill="url(#rb-satin)" />
                     <path
-                        d="M100 60 C130 20 178 18 182 44 C186 70 136 74 100 60 Z"
-                        fill="url(#rb-satin)"
+                        d="M95 48 C93 56 93 62 95 69 M105 48 C107 56 107 62 105 69"
+                        fill="none"
+                        stroke={shade}
+                        strokeOpacity="0.5"
+                        strokeWidth="1.4"
+                        strokeLinecap="round"
                     />
-                    <path
-                        d="M100 60 C80 78 70 100 62 118 L78 116 C84 98 92 80 100 66 Z"
-                        fill="url(#rb-satin)"
-                    />
-                    <ellipse cx="100" cy="60" rx="14" ry="12" fill="url(#rb-satin)" />
                 </svg>
             </div>
             <button
@@ -139,21 +164,25 @@ export function RibbonOpening({ onBegin, onOpened }: OpeningProps) {
                 aria-label={copy('untieRibbon')}
                 {...handlers}
                 disabled={untied}
-                className={`absolute z-40 touch-none ${dragging ? '' : 'transition-[top,opacity] duration-300 ease-out'} ${untied ? 'pointer-events-none opacity-0' : 'cursor-grab active:cursor-grabbing'}`}
-                style={{
-                    left: 'calc(50% + 16px)',
-                    top: `calc(50% + 40px + ${String(pull)}px)`,
-                }}
+                className={`absolute z-40 touch-none transition-opacity ${untied ? 'pointer-events-none opacity-0' : 'cursor-grab active:cursor-grabbing'}`}
+                style={tailAnchor}
             >
-                {/* The right tail, longer as it is pulled. */}
-                <svg viewBox="0 0 30 60" className="w-8 drop-shadow-[0_6px_10px_rgba(0,0,0,0.4)]">
+                {/* The right tail stays tied to the knot and stretches as guests pull it. */}
+                <svg
+                    viewBox="0 0 40 80"
+                    className={`w-10 origin-top drop-shadow-[0_6px_10px_rgba(0,0,0,0.4)] ${dragging ? '' : 'transition-transform duration-300 ease-out'}`}
+                    style={{ transform: `scaleY(${String(1 + pull / 80)})` }}
+                >
+                    <defs>
+                        <linearGradient id="rb-tail" x1="0" x2="1" y1="0" y2="0">
+                            <stop offset="0" stopColor={shade} />
+                            <stop offset="0.5" stopColor={sheen} />
+                            <stop offset="1" stopColor={shade} />
+                        </linearGradient>
+                    </defs>
                     <path
-                        d="M4 0 C12 18 18 36 24 58 L8 56 C6 38 4 20 0 4 Z"
-                        fill="var(--inv-gold)"
-                    />
-                    <path
-                        d="M8 56 L16 50 L24 58 Z"
-                        fill="color-mix(in oklab, var(--inv-gold) 55%, black)"
+                        d="M2 2 C9 26 17 50 27 76 L32 67 L40 77 C31 50 23 26 17 0 Z"
+                        fill="url(#rb-tail)"
                     />
                 </svg>
             </button>

@@ -463,6 +463,15 @@ export function edgeShape(kind: EdgeKind, seed: number): EdgeShape | null {
         case 'doli':
         case 'ghodi':
         case 'car':
+        case 'elephant':
+        case 'bagghi':
+        case 'dhol':
+        case 'rickshaw':
+        case 'doves':
+        case 'stork':
+        case 'lanterns':
+        case 'balloons':
+        case 'kites':
         case 'seam':
         case 'lace':
         case 'none':

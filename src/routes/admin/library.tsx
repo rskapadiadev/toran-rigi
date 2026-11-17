@@ -10,6 +10,7 @@ import { brandingInfo, type BrandingStyle, brandingStyles } from '@shared/brandi
 import { generateOrnament, generativeInfo, seedFrom, type StrokeRole } from '@shared/generative';
 import { motifLabel, motifs } from '@shared/motifs';
 import { categoryInfo } from '@shared/occasions';
+import { ceremonyProps } from '@shared/props';
 import { generativeKinds, motifIds } from '@shared/schemas/invitation';
 import { themeCatalog, themeLayouts } from '@shared/themes';
 import type { EdgeKind, EnterPreset, SceneKind, SectionConfig, SectionType } from '@shared/types';
@@ -20,24 +21,27 @@ import {
     Brush,
     Dices,
     DoorOpen,
+    Gem,
     Layers,
     LayoutTemplate,
     type LucideIcon,
     Palette,
     Play,
     Scissors,
+    Search,
     Sparkles,
     Wand2,
+    X,
 } from 'lucide-react';
 import { Fragment, type ReactNode, useState } from 'react';
 import { z } from 'zod';
 
 import { draftToPreview, type EditableInvitation, toDraft } from '@/admin/composer/draft';
 import { sectionNames } from '@/admin/composer/panels';
-import { PageHeader } from '@/admin/kit/page';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -49,6 +53,7 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { InvitationView } from '@/invitation/InvitationView';
+import { LazyCeremonyProp } from '@/invitation/LazyCeremonyProp';
 import type { PublicInvitationData } from '@/invitation/types';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -63,6 +68,7 @@ const categoryIds = [
     'generative',
     'themes',
     'branding',
+    'props',
 ] as const;
 type CategoryId = (typeof categoryIds)[number];
 
@@ -164,6 +170,17 @@ function GenerativeThumb({ kind }: { kind: (typeof generativeKinds)[number] }) {
 
 const DEFAULT_SEED = 1021;
 
+// Gallery layouts are empty without pictures, so the preview borrows illustrated scenes when the
+// sample invitation has none of its own.
+const SAMPLE_PHOTOS = [
+    'wedding-stage',
+    'wedding-couples',
+    'sangeet-stage',
+    'haldi-stage',
+    'wedding-florals',
+    'shanti-stage',
+].map((name) => `/kits/phoolwari/${name}.webp`);
+
 function MotifThumb({ id }: { id: (typeof motifIds)[number] }) {
     return (
         <svg viewBox="0 0 100 100" className="size-9 text-gold-deep" aria-hidden>
@@ -210,7 +227,7 @@ const catalogue: Category[] = [
                 label: v.label,
                 hint: v.hint,
                 group: sectionNames[type],
-                badge: type === 'gallery' ? 'Needs photos' : undefined,
+                badge: type === 'gallery' ? 'Sample photos' : undefined,
             })),
         ),
     },
@@ -311,6 +328,25 @@ const brandingCategory: Category = {
 };
 catalogue.push(brandingCategory);
 
+// Ceremony props: the object each stacked-arch card carries. Add one in shared/props.ts and
+// src/invitation/props.tsx and it appears here.
+const propsCategory: Category = {
+    id: 'props',
+    label: 'Ceremony props',
+    hint: 'The object each ceremony card carries in Stacked arches, chosen from the ceremony',
+    icon: Gem,
+    items: ceremonyProps.map((prop) => ({
+        key: prop.id,
+        label: prop.label,
+        hint:
+            prop.match.length > 0
+                ? `${prop.hint}. For: ${prop.match.slice(0, 4).join(', ')}`
+                : prop.hint,
+        thumb: <LazyCeremonyProp kind={prop.id} className="mb-1 h-14 w-auto" />,
+    })),
+};
+catalogue.push(propsCategory);
+
 const section = (type: SectionType, patch: Partial<SectionConfig> = {}): SectionConfig => ({
     type,
     enabled: true,
@@ -358,7 +394,21 @@ function previewFor(
             };
         case 'sections': {
             const [type, variant] = key.split(':') as [SectionType, string];
-            return withSections([section(type, { variant })]);
+            const preview = withSections([section(type, { variant })]);
+            if (type !== 'gallery' || invitation.content.gallery.length > 0) return preview;
+            return {
+                ...preview,
+                data: {
+                    ...preview.data,
+                    invitation: {
+                        ...preview.data.invitation,
+                        content: {
+                            ...invitation.content,
+                            gallery: SAMPLE_PHOTOS,
+                        },
+                    },
+                },
+            };
         }
         case 'entrances': {
             const enter = key as EnterPreset;
@@ -445,6 +495,28 @@ function previewFor(
                 },
                 opening: false,
             };
+        // Every ceremony of the sample becomes one that calls for this prop, on stacked arches.
+        case 'props': {
+            const prop = ceremonyProps.find((p) => p.id === key);
+            const kind = prop?.match[0] ?? 'gathering';
+            const dharmic =
+                'cultures' in (prop ?? {}) && !/^(hindu|jain|sikh)/.test(invitation.culture);
+            return {
+                data: {
+                    ...base,
+                    events: base.events.map((e) => ({
+                        ...e,
+                        kind,
+                    })),
+                    invitation: {
+                        ...invitation,
+                        culture: dharmic ? 'hindu' : invitation.culture,
+                        sections: [section('events', { variant: 'stack' })],
+                    },
+                },
+                opening: false,
+            };
+        }
         case 'themes': {
             const theme = themeCatalog.find((t) => t.slug === key);
             if (!theme) return withSections(invitation.sections);
@@ -484,7 +556,7 @@ function ItemCard({ item, on, onPick }: ItemCardProps) {
             aria-pressed={on}
             onClick={onPick}
             className={cn(
-                'flex flex-col gap-2 rounded-lg border bg-card p-3 text-start text-xs transition outline-none hover:border-gold/60 focus-visible:ring-2 focus-visible:ring-ring',
+                'flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 text-start text-xs transition outline-none hover:border-gold/60 hover:bg-card focus-visible:ring-2 focus-visible:ring-ring',
                 on && 'border-primary bg-primary/5 ring-1 ring-primary',
             )}
         >
@@ -503,6 +575,10 @@ function ItemCard({ item, on, onPick }: ItemCardProps) {
     );
 }
 
+// The small label above each column of the library card.
+const columnHead =
+    'shrink-0 border-b px-4 py-2.5 text-[11px] font-medium tracking-wider text-muted-foreground uppercase';
+
 function LibraryPage() {
     const search = Route.useSearch();
     const navigate = Route.useNavigate();
@@ -510,6 +586,7 @@ function LibraryPage() {
     const sampleSlug = search.s ?? 'rajwada';
     const sample = useSample(category?.id === 'themes' ? (search.i ?? sampleSlug) : sampleSlug);
     const [replay, setReplay] = useState(0);
+    const [query, setQuery] = useState('');
     if (!category) return null;
     const visible = category.items.filter((i) => !search.g || (i.group ?? '') === search.g);
     const active = visible.find((i) => i.key === search.i) ?? visible[0] ?? category.items[0];
@@ -531,215 +608,338 @@ function LibraryPage() {
             ? previewFor(sample.data, category.id, active.key, animate, search.r ?? DEFAULT_SEED)
             : null;
 
+    // Search runs across every category at once, so "ghodi" finds the edge and "lotus" finds the
+    // opening, the edge, the motif and the generative art together.
+    const q = query.trim().toLowerCase();
+    const results = q
+        ? catalogue
+              .map((c) => ({
+                  category: c,
+                  items: c.items.filter((i) =>
+                      `${i.label} ${i.hint} ${i.group ?? ''} ${c.label}`.toLowerCase().includes(q),
+                  ),
+              }))
+              .filter((r) => r.items.length > 0)
+        : [];
+    const found = results.reduce((n, r) => n + r.items.length, 0);
+    const searchBox = (
+        <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute start-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+                value={query}
+                onChange={(e) => {
+                    setQuery(e.target.value);
+                }}
+                placeholder="Search openings, edges, motifs…"
+                aria-label="Search the library"
+                className="h-8 bg-card ps-8 pe-8"
+            />
+            {query && (
+                <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => {
+                        setQuery('');
+                    }}
+                    className="absolute end-1.5 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                    <X className="size-3.5" />
+                </button>
+            )}
+        </div>
+    );
+
     return (
         <>
-            <PageHeader
-                eyebrow="Library"
-                title="Every component, live"
-                description="Pick a category and a template; it plays on the phone exactly as guests will see it."
-            />
-            <div className="grid gap-5 lg:grid-cols-[13rem_minmax(0,1fr)] xl:grid-cols-[13rem_minmax(0,1fr)_400px]">
-                <nav
-                    aria-label="Component categories"
-                    className="flex gap-1.5 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible"
-                >
-                    {catalogue.map((c) => {
-                        const Icon = c.icon;
-                        const on = c.id === category.id;
-                        // Section layouts list their sections (Cover, Welcome…) as sub-entries.
-                        const subGroups =
-                            c.id === 'sections'
-                                ? [...new Set(c.items.map((i) => i.group ?? ''))]
-                                : [];
-                        return (
-                            <Fragment key={c.id}>
-                                <button
-                                    key={c.id}
-                                    type="button"
-                                    aria-current={on ? 'page' : undefined}
-                                    onClick={() => {
-                                        go({
-                                            c: c.id,
-                                            i: undefined,
-                                            g: undefined,
-                                        });
-                                    }}
-                                    className={cn(
-                                        'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-start text-sm transition',
-                                        on
-                                            ? 'bg-primary text-primary-foreground shadow-sm'
-                                            : 'text-foreground/80 hover:bg-muted',
-                                    )}
-                                >
-                                    <Icon className="size-4 shrink-0" />
-                                    <span className="flex-1 whitespace-nowrap">{c.label}</span>
-                                    <span
-                                        className={cn(
-                                            'rounded-full px-1.5 text-[11px] tabular-nums',
-                                            on ? 'bg-white/15' : 'bg-muted text-muted-foreground',
+            {/* One card: the library's header, then three columns — components, the chosen
+                component's options, the live phone. */}
+            <div className="flex min-w-0 flex-col overflow-hidden rounded-xl bg-card text-sm ring-1 ring-foreground/10 xl:h-[calc(100svh-6rem)]">
+                <header className="flex shrink-0 flex-col gap-3 border-b p-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                        <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+                            Library
+                        </p>
+                        <h1 className="text-xl leading-tight font-semibold">
+                            Every component, live
+                        </h1>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Pick a category and a template; it plays on the phone exactly as guests
+                            will see it.
+                        </p>
+                    </div>
+                    {searchBox}
+                </header>
+                <div className="flex min-w-0 flex-col lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[14rem_minmax(0,1fr)_420px]">
+                    <div className="flex shrink-0 flex-col border-b lg:min-h-0 lg:border-e lg:border-b-0">
+                        <p className={columnHead}>Components</p>
+                        <nav
+                            aria-label="Component categories"
+                            className="flex gap-1.5 overflow-x-auto p-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto"
+                        >
+                            {catalogue.map((c) => {
+                                const Icon = c.icon;
+                                const on = c.id === category.id;
+                                // Section layouts list their sections (Cover, Welcome…) as sub-entries.
+                                const subGroups =
+                                    c.id === 'sections'
+                                        ? [...new Set(c.items.map((i) => i.group ?? ''))]
+                                        : [];
+                                return (
+                                    <Fragment key={c.id}>
+                                        <button
+                                            key={c.id}
+                                            type="button"
+                                            aria-current={on ? 'page' : undefined}
+                                            onClick={() => {
+                                                go({
+                                                    c: c.id,
+                                                    i: undefined,
+                                                    g: undefined,
+                                                });
+                                            }}
+                                            className={cn(
+                                                'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-start text-sm transition',
+                                                on
+                                                    ? 'bg-primary text-primary-foreground shadow-sm'
+                                                    : 'text-foreground/80 hover:bg-muted',
+                                            )}
+                                        >
+                                            <Icon className="size-4 shrink-0" />
+                                            <span className="flex-1 whitespace-nowrap">
+                                                {c.label}
+                                            </span>
+                                            <span
+                                                className={cn(
+                                                    'rounded-full px-1.5 text-[11px] tabular-nums',
+                                                    on
+                                                        ? 'bg-white/15'
+                                                        : 'bg-muted text-muted-foreground',
+                                                )}
+                                            >
+                                                {c.items.length}
+                                            </span>
+                                        </button>
+                                        {subGroups.length > 0 && (
+                                            <div
+                                                className={cn(
+                                                    'flex shrink-0 gap-1 lg:ms-6 lg:flex-col lg:border-s lg:ps-2',
+                                                    !on && 'hidden lg:flex',
+                                                )}
+                                            >
+                                                {subGroups.map((name) => {
+                                                    const subOn = on && group === name;
+                                                    const first = c.items.find(
+                                                        (i) => i.group === name,
+                                                    );
+                                                    return (
+                                                        <button
+                                                            key={name}
+                                                            type="button"
+                                                            aria-current={
+                                                                subOn ? 'page' : undefined
+                                                            }
+                                                            onClick={() => {
+                                                                go({
+                                                                    c: c.id,
+                                                                    g: name,
+                                                                    i: first?.key,
+                                                                });
+                                                                setReplay((r) => r + 1);
+                                                            }}
+                                                            className={cn(
+                                                                'flex shrink-0 items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-start text-[13px] transition',
+                                                                subOn
+                                                                    ? 'bg-primary/10 font-medium text-primary'
+                                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                                            )}
+                                                        >
+                                                            {/* Drop admin-only qualifiers like "(stacked stationery)". */}
+                                                            <span className="truncate">
+                                                                {name.replace(/\s*\(.*\)$/, '')}
+                                                            </span>
+                                                            <span className="text-[11px] tabular-nums opacity-70">
+                                                                {
+                                                                    c.items.filter(
+                                                                        (i) => i.group === name,
+                                                                    ).length
+                                                                }
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         )}
-                                    >
-                                        {c.items.length}
-                                    </span>
-                                </button>
-                                {subGroups.length > 0 && (
-                                    <div
-                                        className={cn(
-                                            'flex shrink-0 gap-1 lg:ms-6 lg:flex-col lg:border-s lg:ps-2',
-                                            !on && 'hidden lg:flex',
-                                        )}
-                                    >
-                                        {subGroups.map((name) => {
-                                            const subOn = on && group === name;
-                                            const first = c.items.find((i) => i.group === name);
-                                            return (
-                                                <button
-                                                    key={name}
-                                                    type="button"
-                                                    aria-current={subOn ? 'page' : undefined}
-                                                    onClick={() => {
+                                    </Fragment>
+                                );
+                            })}
+                        </nav>
+                    </div>
+                    <section
+                        aria-label={q ? 'Search results' : category.label}
+                        className="flex min-w-0 shrink-0 flex-col lg:min-h-0"
+                    >
+                        <header className="shrink-0 border-b px-4 py-3">
+                            <h2 className="text-[15px] font-semibold">
+                                {q ? 'Search results' : category.label}
+                            </h2>
+                            <p className="mt-0.5 text-[13px] text-muted-foreground">
+                                <span aria-live="polite">
+                                    {q
+                                        ? found > 0
+                                            ? `${String(found)} ${found === 1 ? 'match' : 'matches'} for “${query.trim()}”`
+                                            : `Nothing in the library matches “${query.trim()}”.`
+                                        : category.hint}
+                                </span>
+                            </p>
+                        </header>
+
+                        <ScrollArea className="lg:min-h-0 lg:flex-1">
+                            <div className="p-4">
+                                {results.map(({ category: c, items }) => (
+                                    <div key={c.id} className="mb-5">
+                                        <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                                            {c.label}
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                            {items.map((item) => (
+                                                <ItemCard
+                                                    key={item.key}
+                                                    item={item}
+                                                    on={
+                                                        c.id === category.id &&
+                                                        item.key === active?.key
+                                                    }
+                                                    onPick={() => {
                                                         go({
                                                             c: c.id,
-                                                            g: name,
-                                                            i: first?.key,
+                                                            i: item.key,
+                                                            g: undefined,
                                                         });
                                                         setReplay((r) => r + 1);
                                                     }}
-                                                    className={cn(
-                                                        'flex shrink-0 items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-start text-[13px] transition',
-                                                        subOn
-                                                            ? 'bg-primary/10 font-medium text-primary'
-                                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                                                    )}
-                                                >
-                                                    {/* Drop admin-only qualifiers like "(stacked stationery)". */}
-                                                    <span className="truncate">
-                                                        {name.replace(/\s*\(.*\)$/, '')}
-                                                    </span>
-                                                    <span className="text-[11px] tabular-nums opacity-70">
-                                                        {
-                                                            c.items.filter((i) => i.group === name)
-                                                                .length
-                                                        }
-                                                    </span>
-                                                </button>
-                                            );
-                                        })}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
+                                ))}
+                                {!q &&
+                                    groups.map((group) => (
+                                        <div key={group} className="mb-5">
+                                            {group && (
+                                                <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                                                    {group}
+                                                </p>
+                                            )}
+                                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                                {category.items
+                                                    .filter((i) => (i.group ?? '') === group)
+                                                    .map((item) => (
+                                                        <ItemCard
+                                                            key={item.key}
+                                                            item={item}
+                                                            on={item.key === active?.key}
+                                                            onPick={() => {
+                                                                go({ i: item.key });
+                                                                setReplay((r) => r + 1);
+                                                            }}
+                                                        />
+                                                    ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                            </div>
+                        </ScrollArea>
+                    </section>
+                    <aside className="flex min-w-0 shrink-0 flex-col border-t bg-muted/30 lg:col-span-2 xl:col-span-1 xl:min-h-0 xl:border-s xl:border-t-0">
+                        <p className={columnHead}>Live view</p>
+                        <div className="flex min-h-0 flex-1 flex-col p-4">
+                            <div className="mb-3 flex items-center gap-2">
+                                {category.id !== 'themes' && (
+                                    <Select
+                                        value={sampleSlug}
+                                        onValueChange={(s) => {
+                                            go({ s });
+                                        }}
+                                    >
+                                        <SelectTrigger
+                                            className="h-8 flex-1 bg-card text-xs"
+                                            aria-label="Preview with"
+                                        >
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {samples.map((s) => (
+                                                <SelectItem key={s.slug} value={s.slug}>
+                                                    {s.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 )}
-                            </Fragment>
-                        );
-                    })}
-                </nav>
-                <section aria-label={category.label} className="min-w-0">
-                    <p className="mb-3 text-sm text-muted-foreground">{category.hint}</p>
-                    <ScrollArea className="xl:h-[calc(100svh-15rem)] xl:pe-3">
-                        {groups.map((group) => (
-                            <div key={group} className="mb-5">
-                                {group && (
-                                    <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                                        {group}
-                                    </p>
+                                {category.id === 'generative' && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="shrink-0"
+                                        onClick={() => {
+                                            const r = seedFrom(
+                                                String(Date.now()),
+                                                String(Math.random()),
+                                            );
+                                            go({ r });
+                                        }}
+                                    >
+                                        <Dices /> Shuffle
+                                    </Button>
                                 )}
-                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                                    {category.items
-                                        .filter((i) => (i.group ?? '') === group)
-                                        .map((item) => (
-                                            <ItemCard
-                                                key={item.key}
-                                                item={item}
-                                                on={item.key === active?.key}
-                                                onPick={() => {
-                                                    go({ i: item.key });
-                                                    setReplay((r) => r + 1);
-                                                }}
-                                            />
-                                        ))}
+                                {category.id === 'edges' && (
+                                    <Label className="flex shrink-0 items-center gap-2 text-sm font-normal">
+                                        <Checkbox
+                                            checked={animate}
+                                            onCheckedChange={(checked) => {
+                                                go({ a: checked === true ? true : undefined });
+                                            }}
+                                        />
+                                        Animate
+                                    </Label>
+                                )}
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="ms-auto"
+                                    onClick={() => {
+                                        setReplay((r) => r + 1);
+                                    }}
+                                >
+                                    <Sparkles /> Replay
+                                </Button>
+                            </div>
+                            <div className="mx-auto w-[min(100%,390px)] rounded-[2.75rem] bg-night p-2.5 shadow-[0_30px_80px_-30px_rgba(29,20,22,0.55)] ring-1 ring-black/10">
+                                {/* transform keeps the invitation's fixed layers inside the phone frame */}
+                                <div className="relative h-[min(760px,calc(100svh-19rem))] min-h-[520px] [transform:translateZ(0)] overflow-y-auto overscroll-contain rounded-[2.2rem] bg-background">
+                                    {preview ? (
+                                        <InvitationView
+                                            key={`${category.id}-${active?.key ?? ''}-${sampleSlug}-${String(animate)}-${String(search.r ?? '')}-${String(replay)}`}
+                                            data={preview.data}
+                                            embedded
+                                            skipOpening={!preview.opening}
+                                        />
+                                    ) : (
+                                        <Skeleton className="size-full" />
+                                    )}
                                 </div>
                             </div>
-                        ))}
-                    </ScrollArea>
-                </section>
-                <aside className="lg:col-span-2 xl:sticky xl:top-[5.5rem] xl:col-span-1 xl:self-start">
-                    <div className="mb-3 flex items-center gap-2">
-                        {category.id !== 'themes' && (
-                            <Select
-                                value={sampleSlug}
-                                onValueChange={(s) => {
-                                    go({ s });
-                                }}
-                            >
-                                <SelectTrigger
-                                    className="h-8 flex-1 bg-card text-xs"
-                                    aria-label="Preview with"
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {samples.map((s) => (
-                                        <SelectItem key={s.slug} value={s.slug}>
-                                            {s.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        )}
-                        {category.id === 'generative' && (
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="shrink-0"
-                                onClick={() => {
-                                    go({ r: seedFrom(String(Date.now()), String(Math.random())) });
-                                }}
-                            >
-                                <Dices /> Shuffle
-                            </Button>
-                        )}
-                        {category.id === 'edges' && (
-                            <Label className="flex shrink-0 items-center gap-2 text-sm font-normal">
-                                <Checkbox
-                                    checked={animate}
-                                    onCheckedChange={(checked) => {
-                                        go({ a: checked === true ? true : undefined });
-                                    }}
-                                />
-                                Animate
-                            </Label>
-                        )}
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            className="ms-auto"
-                            onClick={() => {
-                                setReplay((r) => r + 1);
-                            }}
-                        >
-                            <Sparkles /> Replay
-                        </Button>
-                    </div>
-                    <div className="mx-auto w-[min(100%,390px)] rounded-[2.75rem] bg-night p-2.5 shadow-[0_30px_80px_-30px_rgba(29,20,22,0.55)] ring-1 ring-black/10">
-                        {/* transform keeps the invitation's fixed layers inside the phone frame */}
-                        <div className="relative h-[min(760px,calc(100svh-12rem))] [transform:translateZ(0)] overflow-y-auto overscroll-contain rounded-[2.2rem] bg-background">
-                            {preview ? (
-                                <InvitationView
-                                    key={`${category.id}-${active?.key ?? ''}-${sampleSlug}-${String(animate)}-${String(search.r ?? '')}-${String(replay)}`}
-                                    data={preview.data}
-                                    embedded
-                                    skipOpening={!preview.opening}
-                                />
-                            ) : (
-                                <Skeleton className="size-full" />
+                            {active && (
+                                <p className="mt-3 text-center text-xs text-muted-foreground">
+                                    <span className="font-medium text-foreground">
+                                        {active.label}
+                                    </span>{' '}
+                                    · {category.label.toLowerCase()}
+                                </p>
                             )}
                         </div>
-                    </div>
-                    {active && (
-                        <p className="mt-3 text-center text-xs text-muted-foreground">
-                            <span className="font-medium text-foreground">{active.label}</span> ·{' '}
-                            {category.label.toLowerCase()}
-                        </p>
-                    )}
-                </aside>
+                    </aside>
+                </div>
             </div>
         </>
     );

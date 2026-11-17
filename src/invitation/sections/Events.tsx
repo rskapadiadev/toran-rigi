@@ -1,5 +1,6 @@
 import { eventLabel } from '@shared/cultures';
 import { buildIcs, googleCalendarUrl } from '@shared/ics';
+import { propFor } from '@shared/props';
 import { formatEventDate, formatEventTime, sameOffset, zonedToUtc, zoneLabel } from '@shared/time';
 import { m, useScroll, useSpring } from 'motion/react';
 import { useRef, useState } from 'react';
@@ -10,7 +11,7 @@ import { Reveal } from '../../motion/Reveal';
 import { useScrollProgress } from '../../motion/useScrollProgress';
 import { useInvite } from '../context';
 import { Editable, eventPath } from '../editing';
-import { CeremonyProp, propFor } from '../props';
+import { LazyCeremonyProp } from '../LazyCeremonyProp';
 import type { PublicInvitationEvent } from '../types';
 import { WardrobeEvents } from './phoolwari';
 
@@ -354,6 +355,7 @@ interface StackedArchProps extends EventCardProps {
 }
 
 function StackedArch({ event, index, clipId }: StackedArchProps) {
+    const { culture } = useInvite();
     const facts = useEventFacts(event);
     const tone = archTone(index);
     return (
@@ -407,9 +409,9 @@ function StackedArch({ event, index, clipId }: StackedArchProps) {
                         <EventActions event={event} />
                     </div>
                 </div>
-                <CeremonyProp
-                    kind={propFor(event.kind)}
-                    className={`absolute bottom-[4%] w-[26%] ${index % 2 ? 'start-[-6%]' : 'end-[-6%]'}`}
+                <LazyCeremonyProp
+                    kind={propFor(event.kind, culture.id)}
+                    className={`absolute bottom-[4%] w-[26%] ${index % 2 ? 'start-[-5%]' : 'end-[-5%]'}`}
                 />
             </div>
         </div>

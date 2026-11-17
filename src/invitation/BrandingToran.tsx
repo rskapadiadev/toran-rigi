@@ -121,9 +121,16 @@ function Drop({ look, y }: DropProps) {
     }
 }
 
+// Marigold and mango leaves belong to Hindu, Jain and Sikh doorways; every other tradition gets
+// the plain gold chain (white tuberose still marks remembrance).
+const marigoldCultures = new Set(['hindu', 'jain', 'sikh']);
+
 export function BrandingToran() {
-    const { occasion, tier } = useInvite();
-    const look = looks[occasion.tone];
+    const { occasion, culture, tier } = useInvite();
+    const look =
+        marigoldCultures.has(culture.id) || occasion.tone === 'solemn'
+            ? looks[occasion.tone]
+            : looks.formal;
     const still = look.calm === true || tier === 'static';
     const box = useRef<HTMLDivElement>(null);
     const swags = useSwagCount(box);

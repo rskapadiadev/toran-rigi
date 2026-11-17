@@ -657,6 +657,21 @@ export const wishes = sqliteTable(
     (t) => [index('wishes_inv_idx').on(t.invitationId, t.status)],
 );
 
+// Guests' double-tap hearts on a wish or a gallery photo: one running count per target
+// ("wish:<id>" or "photo:<key>"). No personal data is kept.
+export const hearts = sqliteTable(
+    'hearts',
+    {
+        invitationId: text('invitation_id')
+            .notNull()
+            .references(() => invitations.id),
+        target: text('target').notNull(),
+        count: integer('count').notNull().default(0),
+        updatedAt: updatedAt(),
+    },
+    (t) => [uniqueIndex('hearts_target_unique').on(t.invitationId, t.target)],
+);
+
 export const guestPhotos = sqliteTable(
     'guest_photos',
     {

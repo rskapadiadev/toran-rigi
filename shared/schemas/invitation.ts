@@ -221,6 +221,15 @@ export const edgeKinds = [
     'doli',
     'ghodi',
     'car',
+    'elephant',
+    'bagghi',
+    'dhol',
+    'rickshaw',
+    'doves',
+    'stork',
+    'lanterns',
+    'balloons',
+    'kites',
     'none',
 ] as const;
 

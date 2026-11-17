@@ -176,7 +176,7 @@ export function Closing({ variant }: VariantProps) {
         }
     };
     return (
-        <section className="relative overflow-hidden px-6 pt-24 pb-32 text-center">
+        <section className="relative overflow-hidden px-6 pt-24 pb-24 text-center">
             {variant === 'monogram' ? (
                 <Reveal className="mx-auto mb-10 flex size-40 items-center justify-center rounded-full border-2 border-(--inv-gold) shadow-[inset_0_0_0_6px_var(--inv-bg),inset_0_0_0_7px_var(--inv-gold)]">
                     <span className="inv-display foil-text text-6xl leading-none">
@@ -213,9 +213,6 @@ export function Closing({ variant }: VariantProps) {
                     {copy('share')}
                 </button>
             </Reveal>
-            <p className="mt-16 text-[10px] tracking-[0.35em] uppercase opacity-50">
-                {copy('madeWith')}
-            </p>
         </section>
     );
 }

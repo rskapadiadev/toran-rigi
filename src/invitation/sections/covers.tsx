@@ -221,7 +221,8 @@ export function ArchCover() {
 export function MonogramCover() {
     const { tier, data } = useInvite();
     const facts = useCoverFacts();
-    const ring = `$<Editable path="people.one.name">{facts.one}</Editable> · $<Editable path="people.two.name">{facts.two}</Editable> · ${facts.dateText} · `;
+    // Plain text on an SVG path: names are edited on the card below, not on the turning ring.
+    const ring = `${[facts.one, facts.two, facts.dateText].filter(Boolean).join(' · ')} · `;
     const id = `ring-${data.invitation.seed}`;
     return (
         <section className="relative flex min-h-svh flex-col items-center justify-center px-6 py-20 text-center">
@@ -320,7 +321,8 @@ export function EditorialCover() {
                 <Greeting />
                 <Reveal delay={120}>
                     <h2
-                        className="inv-display mt-6 leading-[0.82] font-light tracking-tight break-normal hyphens-none"
+                        // Fits the names, so the second name lines up under the first, not at the far edge of a wide screen.
+                        className="inv-display mt-6 w-fit max-w-full leading-[0.82] font-light tracking-tight break-normal hyphens-none"
                         style={{ fontSize: fitDisplay([facts.one, facts.two], 21, 150) }}
                     >
                         <span className="block">
@@ -328,7 +330,7 @@ export function EditorialCover() {
                         </span>
                         {facts.two && (
                             <>
-                                <span className="inv-script block ps-[18cqw] text-[0.5em] leading-[1.3] text-(--inv-primary)">
+                                <span className="inv-script block ps-[min(18cqw,1.6em)] text-[0.5em] leading-[1.3] text-(--inv-primary)">
                                     {facts.and}
                                 </span>
                                 <span className="block text-end">

@@ -1,13 +1,14 @@
 import { cultureIds } from '@shared/cultures';
-import { musicMimes } from '@shared/music';
+import { musicMimes, type MusicStyle, musicStyleInfo, musicStyles } from '@shared/music';
 import { can } from '@shared/permissions';
 import { PIXABAY_LICENSE_URL } from '@shared/stock';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { ExternalLink, Music, Search, Upload } from 'lucide-react';
+import { AudioWaveform, ExternalLink, Library, Music, Search, Upload } from 'lucide-react';
 import { type SyntheticEvent, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { z } from 'zod';
 
 import type { MusicTrack } from '@/admin/composer/MusicPanel';
 import { PanelCard } from '@/admin/kit/card';
@@ -35,9 +36,16 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { api, ApiError, patch, upload } from '@/lib/api';
 
-export const Route = createFileRoute('/admin/music')({ component: MusicPage });
+const sources = ['library', 'generated'] as const;
+
+export const Route = createFileRoute('/admin/music')({
+    // Unknown values in an old or mistyped link fall back to the library.
+    validateSearch: z.object({ source: z.enum(sources).optional().catch(undefined) }),
+    component: MusicPage,
+});
 
 const TITLE = 'Music';
 const SUBTITLE = 'Licensed tracks the studio can add to any invitation.';
@@ -64,7 +72,32 @@ function readDuration(file: File): Promise<number | undefined> {
     });
 }
 
+interface GeneratedRow {
+    id: MusicStyle;
+    title: string;
+    hint: string;
+    suits: string[];
+    mood: 'gentle' | 'festive';
+}
+
+const generatedRows: GeneratedRow[] = musicStyles.map((id) => ({
+    id,
+    title: musicStyleInfo[id].label,
+    hint: musicStyleInfo[id].hint,
+    suits: musicStyleInfo[id].suits,
+    mood: musicStyleInfo[id].gentle ? 'gentle' : 'festive',
+}));
+
+// Any one of a row's traditions matches the selected ones.
+const suitsFilter = (row: { getValue: (id: string) => unknown }, id: string, value: string[]) =>
+    value.length === 0 || (row.getValue(id) as string[]).some((c) => value.includes(c));
+
+// A fixed seed so the preview here plays the same tune every time.
+const PREVIEW_SEED = 7;
+
 function MusicPage() {
+    const { source = 'library' } = Route.useSearch();
+    const navigate = useNavigate({ from: Route.fullPath });
     const client = useQueryClient();
     const me = useMe();
     // Everyone can browse and preview; only owners change the library (the API enforces the same).
@@ -179,8 +212,81 @@ function MusicPage() {
         [preview, canManage, toggleActive],
     );
 
+    const generatedColumns = useMemo<ColumnDef<GeneratedRow>[]>(
+        () => [
+            {
+                id: 'play',
+                header: '',
+                enableSorting: false,
+                cell: ({ row }) => (
+                    <PreviewButton
+                        on={preview.playing === `gen-${row.original.id}`}
+                        label={row.original.title}
+                        onClick={() =>
+                            void preview.toggle(`gen-${row.original.id}`, {
+                                kind: 'generated',
+                                style: row.original.id,
+                                seed: PREVIEW_SEED,
+                            })
+                        }
+                    />
+                ),
+            },
+            {
+                accessorKey: 'title',
+                header: ({ column }) => <SortHeader column={column} title="Style" />,
+                cell: ({ row }) => (
+                    <div>
+                        <div className="font-medium">{row.original.title}</div>
+                        <div className="text-xs text-muted-foreground">{row.original.hint}</div>
+                    </div>
+                ),
+            },
+            {
+                id: 'tradition',
+                accessorFn: (r) => r.suits,
+                header: 'Suits',
+                enableSorting: false,
+                filterFn: suitsFilter,
+                cell: ({ row }) => row.original.suits.map((c) => cultureLabel[c] ?? c).join(', '),
+            },
+            {
+                accessorKey: 'mood',
+                header: 'Mood',
+                filterFn: inFilter,
+                cell: ({ row }) => (
+                    <ToneBadge tone={row.original.mood === 'gentle' ? 'info' : 'warning'}>
+                        {row.original.mood === 'gentle' ? 'Gentle' : 'Festive'}
+                    </ToneBadge>
+                ),
+            },
+            {
+                id: 'licence',
+                header: 'Licence',
+                enableSorting: false,
+                cell: () => (
+                    <span className="text-muted-foreground">Made in the browser · no licence</span>
+                ),
+            },
+        ],
+        [preview],
+    );
+
+    // Library | Generated, in the title row before the buttons (as on Orders).
+    const switcher = (
+        <TabsList>
+            <TabsTrigger value="library" className="px-3">
+                <Library /> Library
+            </TabsTrigger>
+            <TabsTrigger value="generated" className="px-3">
+                <AudioWaveform /> Generated
+            </TabsTrigger>
+        </TabsList>
+    );
+
     const add = (
         <>
+            {switcher}
             <Button
                 variant="outline"
                 onClick={() => {
@@ -202,9 +308,58 @@ function MusicPage() {
     );
     const rows = data ?? [];
 
+    const traditionOptions = cultureIds.map((c) => ({
+        value: c,
+        label: cultureLabel[c] ?? c,
+    }));
+
     return (
-        <>
-            {isPending || rows.length === 0 ? (
+        <Tabs
+            className="min-h-0 flex-1"
+            value={source}
+            onValueChange={(v) => {
+                preview.stop();
+                void navigate({ search: { source: v === 'generated' ? 'generated' : undefined } });
+            }}
+        >
+            {source === 'generated' ? (
+                <DataTable
+                    title={TITLE}
+                    subtitle="Music composed live in the guest's browser: nothing to license, nothing to download."
+                    noun="styles"
+                    actions={switcher}
+                    columns={generatedColumns}
+                    data={generatedRows}
+                    searchPlaceholder="Search styles…"
+                    initialSorting={[
+                        {
+                            id: 'title',
+                            desc: false,
+                        },
+                    ]}
+                    facets={[
+                        {
+                            columnId: 'tradition',
+                            title: 'Tradition',
+                            options: traditionOptions,
+                        },
+                        {
+                            columnId: 'mood',
+                            title: 'Mood',
+                            options: [
+                                {
+                                    value: 'gentle',
+                                    label: 'Gentle',
+                                },
+                                {
+                                    value: 'festive',
+                                    label: 'Festive',
+                                },
+                            ],
+                        },
+                    ]}
+                />
+            ) : isPending || rows.length === 0 ? (
                 <PanelCard
                     fill
                     contentClassName="flex min-h-[60svh] flex-col lg:min-h-0"
@@ -247,10 +402,7 @@ function MusicPage() {
                                     value: 'any',
                                     label: 'Any',
                                 },
-                                ...cultureIds.map((c) => ({
-                                    value: c,
-                                    label: cultureLabel[c] ?? c,
-                                })),
+                                ...traditionOptions,
                             ],
                         },
                         {
@@ -279,7 +431,7 @@ function MusicPage() {
                     await client.invalidateQueries({ queryKey: ['music-tracks'] });
                 }}
             />
-        </>
+        </Tabs>
     );
 }
 

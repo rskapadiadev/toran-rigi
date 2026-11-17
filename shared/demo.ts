@@ -819,7 +819,182 @@ const rawDemos: DemoInvitation[] = [
     },
 ];
 
-// Demos ship with their theme's full layout preset applied.
+// Each demo's finishing touches: generated music that suits the tradition (none where the culture
+// keeps music off, or for a notice of passing) and the footer credit style. Phoolwari sets its own.
+const demoFinish: Partial<Record<string, DemoInvitation['extras']>> = {
+    mehfil: {
+        music: {
+            source: 'generated',
+            style: 'shehnai',
+        },
+        branding: {
+            style: 'seal',
+            dark: true,
+        },
+    },
+    rajwada: {
+        music: {
+            source: 'generated',
+            style: 'shehnai',
+        },
+        branding: {
+            style: 'seal',
+            dark: true,
+        },
+    },
+    bandhani: {
+        music: {
+            source: 'generated',
+            style: 'shehnai',
+        },
+        branding: { style: 'pill' },
+    },
+    gulmohar: {
+        music: {
+            source: 'generated',
+            style: 'santoor',
+        },
+        branding: { style: 'signature' },
+    },
+    mashrabiya: {
+        branding: {
+            style: 'stamp',
+            dark: true,
+        },
+    },
+    noor: {
+        branding: {
+            style: 'signature',
+            dark: true,
+        },
+    },
+    kamal: {
+        music: {
+            source: 'generated',
+            style: 'bells',
+        },
+        branding: { style: 'line' },
+    },
+    phulkari: {
+        music: {
+            source: 'generated',
+            style: 'shehnai',
+        },
+        branding: { style: 'seal' },
+    },
+    'cathedral-garden': {
+        music: {
+            source: 'generated',
+            style: 'piano',
+        },
+        branding: { style: 'signature' },
+    },
+    chuppah: {
+        music: {
+            source: 'generated',
+            style: 'piano',
+        },
+        branding: { style: 'stamp' },
+    },
+    editorial: {
+        music: {
+            source: 'generated',
+            style: 'piano',
+        },
+        branding: { style: 'line' },
+    },
+    resham: {
+        music: {
+            source: 'generated',
+            style: 'ambient',
+        },
+        branding: { style: 'pill' },
+    },
+    shanti: {
+        music: {
+            source: 'generated',
+            style: 'ambient',
+        },
+        branding: { style: 'line' },
+    },
+    deepanjali: {
+        music: {
+            source: 'generated',
+            style: 'santoor',
+        },
+        branding: {
+            style: 'line',
+            dark: true,
+        },
+    },
+    smriti: { branding: { style: 'line' } },
+    chandni: {
+        music: {
+            source: 'generated',
+            style: 'bells',
+        },
+        branding: {
+            style: 'pill',
+            dark: true,
+        },
+    },
+    palna: {
+        music: {
+            source: 'generated',
+            style: 'bells',
+        },
+        branding: { style: 'pill' },
+    },
+    griha: {
+        music: {
+            source: 'generated',
+            style: 'bells',
+        },
+        branding: { style: 'seal' },
+    },
+    utsav: {
+        music: {
+            source: 'generated',
+            style: 'bells',
+        },
+        branding: { style: 'pill' },
+    },
+    legacy: {
+        music: {
+            source: 'generated',
+            style: 'piano',
+        },
+        branding: {
+            style: 'signature',
+            dark: true,
+        },
+    },
+    aarti: {
+        music: {
+            source: 'generated',
+            style: 'bells',
+        },
+        branding: {
+            style: 'seal',
+            dark: true,
+        },
+    },
+    mangal: {
+        music: {
+            source: 'generated',
+            style: 'shehnai',
+        },
+        branding: { style: 'stamp' },
+    },
+    summit: {
+        branding: {
+            style: 'line',
+            dark: true,
+        },
+    },
+};
+
+// Demos ship with their theme's full layout preset and finishing touches applied.
 export const demoInvitations: (DemoInvitation & { occasion: OccasionId })[] = [
     ...rawDemos,
     ...occasionDemos,
@@ -827,6 +1002,10 @@ export const demoInvitations: (DemoInvitation & { occasion: OccasionId })[] = [
     ...demo,
     occasion: demo.occasion ?? 'wedding',
     sections: applyLayout(demo.sections, themeLayouts[demo.themeSlug]),
+    extras: {
+        ...demo.extras,
+        ...demoFinish[demo.themeSlug],
+    },
 }));
 
 export const demoForTheme = (themeSlug: string) =>

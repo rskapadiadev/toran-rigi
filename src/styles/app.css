@@ -155,6 +155,8 @@
         container-type: inline-size;
         /* Body uses 'anywhere', which lets grids squeeze words to one letter; invites only break words that cannot fit. */
         overflow-wrap: break-word;
+        /* Entrances that slide in from the side must never let guests swipe the page sideways; clip (not hidden) keeps sticky cards working. */
+        overflow-x: clip;
         --foil-a: color-mix(in oklab, var(--inv-gold) 70%, black);
         --foil-b: color-mix(in oklab, var(--inv-gold) 40%, white);
         --foil-c: var(--inv-gold);
@@ -932,6 +934,33 @@ path.ornament-draw[fill]:not([fill='none']) {
     transform-origin: center;
     animation: proc-spin var(--proc-stride) linear infinite;
 }
+/* Fliers and dancers: wings beat from the shoulder, arms wave, lanterns and balloons bob,
+   a stork's bundle and a kite swing from where they hang. */
+.proc-flap {
+    transform-box: fill-box;
+    transform-origin: bottom center;
+    animation: proc-flap var(--proc-stride) ease-in-out infinite alternate;
+}
+.proc-flap-b {
+    animation-delay: calc(var(--proc-stride) / -2);
+}
+.proc-wave {
+    transform-box: fill-box;
+    transform-origin: bottom left;
+    animation: proc-wave var(--proc-stride) ease-in-out infinite alternate;
+}
+.proc-wave-b {
+    transform-origin: bottom right;
+    animation-direction: alternate-reverse;
+}
+.proc-float {
+    animation: proc-float calc(var(--proc-stride) * 4) ease-in-out infinite alternate;
+}
+.proc-swing {
+    transform-box: fill-box;
+    transform-origin: top center;
+    animation: proc-swing calc(var(--proc-stride) * 3) ease-in-out infinite alternate;
+}
 /* Section edges, when the section's "Animate edge" box is ticked. */
 .edge-drift {
     animation: edge-drift 6s linear infinite;
@@ -1001,6 +1030,35 @@ path.ornament-draw[fill]:not([fill='none']) {
     }
     to {
         transform: rotate(0.8deg);
+    }
+}
+@keyframes proc-flap {
+    from {
+        transform: rotate(-18deg);
+    }
+    to {
+        transform: rotate(10deg) scaleY(0.5);
+    }
+}
+@keyframes proc-wave {
+    from {
+        transform: rotate(-12deg);
+    }
+    to {
+        transform: rotate(12deg);
+    }
+}
+@keyframes proc-float {
+    to {
+        transform: translateY(-5px);
+    }
+}
+@keyframes proc-swing {
+    from {
+        transform: rotate(-7deg);
+    }
+    to {
+        transform: rotate(7deg);
     }
 }
 @keyframes proc-spin {

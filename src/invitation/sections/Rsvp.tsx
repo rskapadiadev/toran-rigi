@@ -4,6 +4,7 @@ import { type ComponentProps, type SyntheticEvent, useState } from 'react';
 
 import { formString } from '../../motion/hooks';
 import { Reveal } from '../../motion/Reveal';
+import { Confetti } from '../Confetti';
 import { useInvite } from '../context';
 import { dietaryLabels } from '../strings';
 import { BreakTheGlass, LightSky } from './Celebration';
@@ -97,6 +98,7 @@ export function Rsvp() {
                         <p className="inv-display text-2xl">
                             {attending ? copy('thanks') : copy('thanksDecline')}
                         </p>
+                        {attending && <Confetti />}
                         {/* Breaking the glass belongs to the Jewish wedding only. */}
                         {culture.id === 'jewish' && occasion.id === 'wedding' ? (
                             <BreakTheGlass />

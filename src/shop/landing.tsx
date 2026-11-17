@@ -6,7 +6,14 @@ import { photoUrl } from '@shared/photos';
 import { SHOW_SHOP_PRICES } from '@shared/pricing';
 import { Link } from '@tanstack/react-router';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion, useInView, useReducedMotion } from 'motion/react';
+import {
+    motion,
+    type MotionValue,
+    useInView,
+    useReducedMotion,
+    useScroll,
+    useTransform,
+} from 'motion/react';
 import { type CSSProperties, type ReactNode, useRef, useState, useSyncExternalStore } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -93,12 +100,85 @@ interface HeadingProps {
 
 export function SectionHeading({ eyebrow, before, accent, after = '', className }: HeadingProps) {
     return (
-        <Rise className={className}>
-            <p className="text-[11px] tracking-[0.35em] text-gold uppercase">{eyebrow}</p>
-            <h2 className="mt-3 font-display text-5xl leading-[1.05] text-ivory md:text-6xl">
-                {before} <em className="text-gold-bright">{accent}</em> {after}
-            </h2>
-        </Rise>
+        <div className={className}>
+            <Rise>
+                <p className="text-[11px] tracking-[0.35em] text-gold uppercase">{eyebrow}</p>
+            </Rise>
+            <ScrollWords
+                className="mt-3 font-display text-5xl leading-[1.05] text-ivory md:text-6xl"
+                before={before}
+                accent={accent}
+                after={after}
+            />
+        </div>
+    );
+}
+
+interface WordsProps {
+    before: string;
+    accent: string;
+    after: string;
+    className: string;
+}
+
+interface WordInfo {
+    text: string;
+    accent: boolean;
+}
+
+const splitWords = (text: string, accent: boolean): WordInfo[] =>
+    text
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((w) => ({
+            text: w,
+            accent,
+        }));
+
+// The heading brightens word by word as it scrolls up the screen. Words never start fully hidden,
+// so the heading reads even before the first scroll, and it is simply lit for reduced motion.
+function ScrollWords({ before, accent, after, className }: WordsProps) {
+    const ref = useRef<HTMLHeadingElement>(null);
+    const reduce = useReducedMotion();
+    const { scrollYProgress } = useScroll({
+        target: ref,
+        offset: ['start 0.92', 'start 0.5'],
+    });
+    const words = [
+        ...splitWords(before, false),
+        ...splitWords(accent, true),
+        ...splitWords(after, false),
+    ];
+    return (
+        <h2 ref={ref} className={className}>
+            {words.map((w, i) => (
+                <Word
+                    key={`${w.text}-${String(i)}`}
+                    word={w}
+                    progress={scrollYProgress}
+                    range={[i / words.length, (i + 1) / words.length]}
+                    still={reduce === true}
+                />
+            ))}
+        </h2>
+    );
+}
+
+interface WordProps {
+    word: WordInfo;
+    progress: MotionValue<number>;
+    range: [number, number];
+    still: boolean;
+}
+
+function Word({ word, progress, range, still }: WordProps) {
+    const opacity = useTransform(progress, range, [0.18, 1]);
+    const lit = still ? undefined : { opacity };
+    const text = word.accent ? <em className="text-gold-bright">{word.text}</em> : word.text;
+    return (
+        <>
+            <motion.span style={lit}>{text}</motion.span>{' '}
+        </>
     );
 }
 

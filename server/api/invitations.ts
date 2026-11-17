@@ -1,10 +1,11 @@
-import { rsvpInput, wishInput } from '@shared/schemas/guest';
+import { heartInput, rsvpInput, wishInput } from '@shared/schemas/guest';
 import { Hono } from 'hono';
 
 import type { AppEnv } from '../app';
 import { clientIp, fail } from '../lib/http';
 import { verifyTurnstile } from '../lib/turnstile';
 import { createRsvp, createWish, findGuest, totalAttending } from '../repos/guests';
+import { addHeart, heartCounts, isHeartTarget } from '../repos/hearts';
 import { getInvitationIdBySlug, pdfSource } from '../repos/invitations';
 import { invitationPdf, pdfResponse } from '../services/pdf';
 
@@ -58,6 +59,31 @@ invitationsApi.post('/:slug/wishes', async (c) => {
     const guest = await findGuest(invitation.id, parsed.data.guestToken);
     await createWish(invitation.id, parsed.data, guest?.id);
     return c.json({ ok: true });
+});
+
+// Heart counts are read live (the invitation itself is cached until the next publish).
+invitationsApi.get('/:slug/hearts', async (c) => {
+    const invitation = await getInvitationIdBySlug(c.req.param('slug'));
+    if (!invitation || invitation.status !== 'published') return c.json({});
+    return c.json(await heartCounts(invitation.id));
+});
+
+// A double-tap heart. Each device sends one per target; the rate limit stops a tap storm.
+invitationsApi.post('/:slug/hearts', async (c) => {
+    const slug = c.req.param('slug');
+    if (!(await c.env.rateLimit.limit(`heart:${slug}:${clientIp(c)}`)).success)
+        return fail(c, 429, 'Too many requests');
+    const parsed = heartInput.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return fail(c, 422, 'Invalid heart');
+    const invitation = await getInvitationIdBySlug(slug);
+    if (!invitation || invitation.status !== 'published')
+        return fail(c, 404, 'Invitation not found');
+    if (!(await isHeartTarget(invitation.id, parsed.data.target)))
+        return fail(c, 404, 'Nothing to heart here');
+    return c.json({
+        ok: true,
+        count: await addHeart(invitation.id, parsed.data.target),
+    });
 });
 
 // Guests' "Download PDF": only for published invitations whose couple has the PDF add-on.

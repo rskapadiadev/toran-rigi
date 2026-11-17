@@ -10,7 +10,10 @@ function sections(
     extra: SectionType[] = [],
 ): SectionConfig[] {
     const base = defaultSectionsFor(occasions[occasion], cultures[culture]);
-    return [...base, ...extra.filter((s) => !base.includes(s))].map((type) => ({
+    // Extra words (a story, a family note) read best right after the welcome, never after the close.
+    const at = base.indexOf('welcome') + 1;
+    const added = extra.filter((s) => !base.includes(s));
+    return [...base.slice(0, at), ...added, ...base.slice(at)].map((type) => ({
         type,
         enabled: true,
     }));
@@ -272,7 +275,7 @@ export const occasionDemos: DemoInvitation[] = [
         calendars: [],
         seed: 5303,
         content: {
-            people: {one: { name: t('The Patel family', 'gu', 'પટેલ પરિવાર') },},
+            people: { one: { name: t('The Patel family', 'gu', 'પટેલ પરિવાર') } },
             greetingKey: 'shree-ganeshay-namah',
             headline: t('welcome you to our new home', 'gu', 'નવા ઘરના વાસ્તુ પ્રસંગે આપને આમંત્રે છે'),
             welcome: t(
@@ -313,7 +316,7 @@ export const occasionDemos: DemoInvitation[] = [
         calendars: [],
         seed: 6101,
         content: {
-            people: {one: { name: t('Vihaan') },},
+            people: { one: { name: t('Vihaan') } },
             headline: t('is turning ONE!'),
             welcome: t(
                 'He has learnt to clap, climb and steal phones. Help us celebrate a year of chaos and joy.',
@@ -354,7 +357,7 @@ export const occasionDemos: DemoInvitation[] = [
         calendars: [],
         seed: 6202,
         content: {
-            people: {one: { name: t('Dr. Sunita Rao') },},
+            people: { one: { name: t('Dr. Sunita Rao') } },
             headline: t('celebrates 36 years at Manipal Hospital'),
             welcome: t(
                 'Thousands of patients, hundreds of residents trained, one legendary filter-coffee habit. Join us to honour a remarkable career.',
@@ -397,7 +400,7 @@ export const occasionDemos: DemoInvitation[] = [
         calendars: [],
         seed: 7101,
         content: {
-            people: {one: { name: t('The Agarwal family', 'hi', 'अग्रवाल परिवार') },},
+            people: { one: { name: t('The Agarwal family', 'hi', 'अग्रवाल परिवार') } },
             greetingKey: 'shree-ganeshay-namah',
             headline: t(
                 'invite you to a Shri Satyanarayan katha',
@@ -500,7 +503,7 @@ export const occasionDemos: DemoInvitation[] = [
         calendars: [],
         seed: 8101,
         content: {
-            people: {one: { name: t('Northwind Summit 2027') },},
+            people: { one: { name: t('Northwind Summit 2027') } },
             headline: t('Builders, operators and investors shaping what’s next'),
             welcome: t(
                 'One day of sharp talks, honest panels and the best hallway conversations of the year.',
