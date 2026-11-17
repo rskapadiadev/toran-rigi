@@ -90,6 +90,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             label: 'From the envelope',
             hint: 'The card slides out of a silk envelope as guests scroll',
         },
+        {
+            id: 'suite',
+            label: 'Stationery suite',
+            hint: 'A boxed set of deckled cards: the monogram foil-stamps in, the names write themselves, then the ceremonies and reply cards are dealt over it',
+        },
     ],
     countdown: [
         {
@@ -198,6 +203,13 @@ export interface OpeningInfo extends VariantInfo {
 }
 
 export const openingChoices: OpeningInfo[] = [
+    {
+        id: 'sealed-letter',
+        label: 'Sealed letter',
+        hint: 'Press and hold the wax seal until it cracks; the flap peels open on a gold liner and the card slides out under vellum',
+        gesture: 'Press the seal',
+        gentle: true,
+    },
     {
         id: 'jewellery-box',
         label: 'Jewellery box',

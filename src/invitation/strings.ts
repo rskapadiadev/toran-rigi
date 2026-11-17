@@ -73,6 +73,15 @@ const strings = {
         he: 'הרימו את המכסה',
         pa: 'ਢੱਕਣ ਚੁੱਕੋ',
     },
+    pressSeal: {
+        en: 'Press the seal',
+        hi: 'मुहर को दबाइए',
+        gu: 'મુદ્રા દબાવો',
+        ar: 'اضغط على الختم',
+        ur: 'مہر دبائیں',
+        he: 'לחצו על החותם',
+        pa: 'ਮੋਹਰ ਦਬਾਓ',
+    },
     liftVeil: {
         en: 'Swipe up to lift the veil',
         hi: 'घूंघट उठाने के लिए ऊपर स्वाइप करें',

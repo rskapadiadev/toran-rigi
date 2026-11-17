@@ -9,8 +9,8 @@ plugs into the existing engine: the `OpeningProps` contract, the `useInvite()` c
 
 | Stage | Scope | Status |
 |---|---|---|
-| 01 | Opening & entry experiences | **Done: Jewellery Box. Waiting for approval** |
-| 02 | Envelope & invitation reveal | Not started |
+| 01 | Opening & entry experiences | Approved: Jewellery Box |
+| 02 | Envelope & invitation reveal | **Done: Sealed Letter, WaxSeal, Stationery Suite. Waiting for approval** |
 | 03 | Cinematic hero & couple introduction | Not started |
 | 04 | Typography & decorative components | Not started |
 | 05 | Photo & memory experiences | Not started |
@@ -140,3 +140,98 @@ The desktop hand-off cost is shared by every opening and is noted for Stage 09.
 - Velvet sheen that shifts as the lid moves.
 - Optional gyroscope parallax on phones.
 - The desktop hand-off cost.
+
+---
+
+## Shared foundations (added in Stage 02)
+
+- **`src/invitation/luxury/materials.ts`**: palette-driven CSS materials used by every luxury piece.
+  - `grain`, `paperGrain`, `cottonGrain`: tiny inline noise textures.
+  - `plane()`: one face of a CSS 3D object.
+  - `foil()` and `foilInk()`: gold foil surfaces and text.
+  - `showroom()`: the dark table under a spotlight.
+  - `linerPattern()`: a gold trellis for envelope liners and vellum.
+- **`src/invitation/luxury/opening/stage.tsx`**: the parts every opening shares.
+  - `StageTitle`: names in foil, date, "Dear …".
+  - `StagePrompt`: the whispered gesture hint.
+  - `HandoffVeil`: dissolves into the invitation's colour.
+- The Jewellery Box now uses both, so the two openings share one look.
+
+## Component: `WaxSeal`
+
+`src/invitation/luxury/envelope/WaxSeal.tsx`. A reusable seal for any envelope, letter or box.
+
+- **Look:**
+  - A poured, irregular wax blob, shaped from the invitation seed so no two couples' seals are alike.
+  - A pressed disc with light and shadow rims and a beaded ring.
+  - The initials debossed into the wax, with a specular highlight and a soft shadow on the paper.
+- **Props:**
+  - `seed`: the blob shape and the fracture line.
+  - `wax`: the wax colour; light and shade are derived from it.
+  - `initials`
+  - `className`
+  - `handleRef`: receives the drawn parts.
+- **Animation:** `applySeal(handle, crack, split)`.
+  - `crack` 0 → 1 runs a jagged fracture with side branches across the wax and fills a fine gold press ring.
+  - `split` 0 → 1 drops the two halves apart under gravity with opposite spin. The shadow, crack and ring fade with them.
+  - Driven by the parent (GSAP), never by React state, so it stays at 60 fps.
+
+## Component: `SealedLetterOpening`
+
+`src/invitation/luxury/opening/SealedLetterOpening.tsx`. Opening kind: `sealed-letter`.
+
+**Experience**
+1. **Sealed.** A cotton-paper envelope, tilted slightly, on the showroom table, closed with the couple's wax seal. The names and date sit above it in foil. The hint reads "Press the seal".
+2. **Press and hold.** The fracture runs across the wax and the gold ring fills, in about 1 s. Letting go early lets the hairline close again. A quick tap, Enter or Space breaks it immediately.
+3. **Break.** The halves split and fall away, leaving no mark on the paper.
+4. **Peel.** The flap is hinged at the top and folds in two parts: it bends while moving and lies flat once open, like real paper. Its underside shows the liner: the gold trellis on the invitation's main colour.
+5. **Slide.** The card slides out of the pocket, then comes forward over the open flap. A sheet of patterned vellum lifts off it.
+6. **Hand-off.** A gentle dolly-in, then a dissolve into the invitation. About 4 s in total.
+
+**The card shows:** a monogram roundel, the headline ("Together with their families…"), the names, a gold rule and the date.
+
+**Colours:** paper from `surface`; liner and wax from `primary`; foil, trellis and press ring from `gold`.
+
+**Copy:** `pressSeal` in en, hi, gu, ar, ur, he and pa.
+
+**Reduced motion or `static` tier:** a tap fades straight to the invitation.
+
+**Performance** (same method as Stage 01)
+
+| Test | Frame rate | Slow frames |
+|---|---|---|
+| Phone 390×844, CPU slowed 4× | about 60 fps | none |
+| Large desktop (2880×1800, headless software drawing) | about 23 fps on average | Most of the drop is the engine's hand-off, when the invitation and its animations start behind the veil. This is the same hand-off cost noted in Stage 01, and it is larger on the heavier Mehfil invitation. It is tracked for Stage 09 (staggering the invitation's start). |
+
+**Refinements done:** wax crumbs break off along the fracture and scatter; the card has a deckled edge. **Still open:** optional gyroscope tilt.
+
+## Material: `deckled(seed)`
+
+`src/invitation/luxury/materials.ts`. A hand-torn cotton-paper edge, applied as a CSS mask.
+
+- The four sides wander by a hair, seeded so a card keeps its edge between renders.
+- Spread it into any card's style: `style={{ ...face, ...deckled(seed) }}`.
+
+## Component: `StationerySuite` (card layout `suite`)
+
+`src/invitation/luxury/envelope/StationerySuite.tsx`. Chosen per invitation in Section layouts → Invitation card → **Stationery suite**.
+
+**Experience** (driven by scroll, so it follows the guest's pace and plays backwards when they scroll up)
+
+| Point in the section's scroll | What happens |
+|---|---|
+| 0–10% | The main card rises into a pinned, full-screen stage. |
+| 8–34% | **Foil stamp.** A blind-debossed ring is pressed into the paper. The gold initials land in it with a press (over-scale, then settle) and a sheen of light sweeps across the foil. |
+| 22–41% | **Handwritten names.** Each name is uncovered from the start of the line, with a glowing gold nib riding the pen's tip. Right-to-left languages write from the right. |
+| 45–60% | The **ceremonies card** is dealt over it. The main card tilts aside. |
+| 72–86% | The **reply card** is dealt last. It holds the closing words, the RSVP button (only when the invitation has an RSVP section) and directions. The earlier cards fan out behind it like a suite on a table. |
+
+**The cards:** heavy cotton card with a fine grain, a `deckled` edge, a foil hairline border and a soft table shadow. They are sized in `cqw`, so they fit the phone, the editor and desktop.
+
+**Editing:** the headline and both names are editable in place in the visual editor (`Editable`), exactly as in the other card layouts.
+
+**Still layout:** the PDF, reduced motion and the `static` tier get the three cards laid out one under another, fully finished. This uses the device tier, which is already `static` for reduced motion and is safe to read while the page hydrates.
+
+**Performance:** scrolling the whole suite on a phone with the CPU slowed 4× runs at about 60 fps with no slow frames. It uses only transforms, opacity and clip-path, driven by Motion values, never React state.
+
+**Responsive:** no sideways scroll on phone or desktop. The cards cap at 24 rem wide.

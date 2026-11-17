@@ -6,6 +6,7 @@ import { type CSSProperties, type ReactNode, useMemo } from 'react';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable } from '../editing';
+import { StationerySuite } from '../luxury/envelope/StationerySuite';
 import { EnvelopeCard } from './EnvelopeCard';
 
 function PhotoCorner({ className }: { className: string }) {
@@ -173,6 +174,9 @@ export function InvitationCard({ variant }: { variant: string }) {
                 )}
         </>
     );
+
+    // A boxed suite of cards: foil-stamped, hand-lettered, dealt one over another as guests scroll.
+    if (variant === 'suite') return <StationerySuite />;
 
     // The card is drawn out of its envelope as guests scroll.
     if (variant === 'envelope')

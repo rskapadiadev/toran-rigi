@@ -20,16 +20,14 @@ import { useInvite } from '../../context';
 import { useFinish } from '../../openings/gesture';
 import type { OpeningProps } from '../../openings/types';
 import { useCoverFacts } from '../../sections/covers';
+import { foil, foilInk, grain, paperGrain, plane, showroom } from '../materials';
+import { HandoffVeil, StagePrompt, StageTitle } from './stage';
 
 // The lid's resting angle when fully open, and how far a finger must lift it to count.
 const OPEN_ANGLE = 106;
 const COMMIT_ANGLE = 28;
 // Pixels of upward drag that lift the lid all the way.
 const DRAG_RANGE = 170;
-
-// Velvet and lacquer grain, rendered once by the browser and tiled; paper gets a far finer one.
-const grain = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
-const paperGrain = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.4' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
 
 interface Palette {
     lacquer: string;
@@ -57,16 +55,6 @@ function usePalette(): Palette {
         [primary, gold],
     );
 }
-
-// Every face of the box is one absolutely placed plane in the box's 3D space.
-const plane = (style: CSSProperties): CSSProperties => ({
-    position: 'absolute',
-    backfaceVisibility: 'hidden',
-    ...style,
-});
-
-const foil = (gold: string) =>
-    `linear-gradient(115deg, ${mixHex(gold, '#000000', 0.45)} 0%, ${gold} 28%, ${mixHex(gold, '#ffffff', 0.7)} 48%, ${gold} 62%, ${mixHex(gold, '#000000', 0.4)} 100%)`;
 
 interface Parts {
     lid: HTMLDivElement | null;
@@ -110,7 +98,7 @@ function applyPose(parts: Parts, pose: Pose) {
 }
 
 export function JewelleryBoxOpening({ onBegin, onOpened }: OpeningProps) {
-    const { tier, copy, names } = useInvite();
+    const { tier, copy, names, data } = useInvite();
     const facts = useCoverFacts();
     const colors = usePalette();
     const finish = useFinish(onOpened);
@@ -257,8 +245,8 @@ export function JewelleryBoxOpening({ onBegin, onOpened }: OpeningProps) {
         transform: 'translate(-50%, -50%) rotateX(58deg)',
     };
     const preserve: CSSProperties = { transformStyle: 'preserve-3d' };
-    const spotlight = `radial-gradient(ellipse 62% 46% at 50% 58%, ${mixHex(colors.gold, colors.table, 0.82)} 0%, ${colors.table} 62%, #050303 100%)`;
-    const stageBg: CSSProperties = { background: spotlight };
+    const room = showroom(data.invitation.design.palette.primary, colors.gold);
+    const stageBg: CSSProperties = { background: room };
     const lacquerFace = `linear-gradient(118deg, transparent 32%, rgba(255,255,255,0.16) 40%, transparent 48%), ${grain}, linear-gradient(160deg, ${colors.lacquerLight} 0%, ${colors.lacquer} 46%, ${colors.lacquerDark} 100%)`;
     const lacquerTop: CSSProperties = { backgroundImage: lacquerFace };
     const velvet = `${grain}, radial-gradient(ellipse at 50% 40%, ${colors.velvetLight} 0%, ${colors.velvet} 70%)`;
@@ -270,12 +258,7 @@ export function JewelleryBoxOpening({ onBegin, onOpened }: OpeningProps) {
     const tabSatin = `linear-gradient(90deg, ${colors.gold}, ${mixHex(colors.gold, '#ffffff', 0.55)} 50%, ${colors.gold})`;
     const tab: CSSProperties = { background: tabSatin };
     const prompt = stage === 'closed';
-    const foilInk: CSSProperties = {
-        backgroundImage: gold,
-        WebkitBackgroundClip: 'text',
-        backgroundClip: 'text',
-        color: 'transparent',
-    };
+    const goldInk = foilInk(colors.gold);
     const rule: CSSProperties = { background: colors.gold };
     const crestRing: CSSProperties = { border: `1px solid ${colors.gold}` };
     const crestInk: CSSProperties = { color: mixHex(colors.gold, '#000000', 0.2) };
@@ -286,35 +269,11 @@ export function JewelleryBoxOpening({ onBegin, onOpened }: OpeningProps) {
             style={stageBg}
             data-opening
         >
-            {/* The couple's names above the box, in foil, no frame. */}
-            <div
-                ref={(el) => {
+            <StageTitle
+                titleRef={(el) => {
                     parts.current.title = el;
                 }}
-                className="pointer-events-none absolute inset-x-0 top-[11svh] z-20 flex flex-col items-center px-6 text-center text-[#f4ead6]"
-            >
-                {facts.guest && (
-                    <p className="mb-3 text-[11px] tracking-[0.4em] uppercase opacity-70">
-                        {copy('dearGuest')} {facts.guest.name}
-                    </p>
-                )}
-                <h1 className="inv-display text-[clamp(2rem,7.5cqw,3.6rem)] leading-none">
-                    <span className="foil-text">{names.one}</span>
-                    {names.two && (
-                        <>
-                            <span className="inv-script mx-3 text-[0.8em] opacity-80">
-                                {copy('and')}
-                            </span>
-                            <span className="foil-text">{names.two}</span>
-                        </>
-                    )}
-                </h1>
-                {facts.dateText && (
-                    <p className="mt-4 text-[11px] tracking-[0.45em] uppercase opacity-60">
-                        {facts.dateText}
-                    </p>
-                )}
-            </div>
+            />
 
             <div
                 ref={(el) => {
@@ -439,7 +398,7 @@ export function JewelleryBoxOpening({ onBegin, onOpened }: OpeningProps) {
                         />
                         <p
                             className="inv-display text-[calc(var(--w)*0.09)] leading-none"
-                            style={foilInk}
+                            style={goldInk}
                         >
                             {names.initials.join(' · ')}
                         </p>
@@ -577,12 +536,10 @@ export function JewelleryBoxOpening({ onBegin, onOpened }: OpeningProps) {
                 </div>
             </div>
 
-            {/* The camera ends on the invitation's own colour, so the hand-off is seamless. */}
-            <div
-                ref={(el) => {
+            <HandoffVeil
+                veilRef={(el) => {
                     parts.current.veil = el;
                 }}
-                className="pointer-events-none absolute inset-0 z-40 bg-(--inv-bg) opacity-0"
             />
 
             {/* The whole stage takes the gesture: lift anywhere, or tap. */}
@@ -593,13 +550,7 @@ export function JewelleryBoxOpening({ onBegin, onOpened }: OpeningProps) {
                 className="absolute inset-0 z-30 cursor-grab outline-none active:cursor-grabbing"
                 {...handlers}
             />
-            <p
-                aria-hidden
-                className={`pointer-events-none absolute inset-x-0 bottom-[9svh] z-30 mx-auto flex w-fit flex-col items-center gap-2 text-[11px] tracking-[0.4em] text-[#f4ead6]/80 uppercase transition-opacity duration-500 ${prompt ? 'opacity-100' : 'opacity-0'}`}
-            >
-                <span className="h-8 w-px animate-pulse bg-gradient-to-t from-transparent to-[#f4ead6]/80 motion-reduce:animate-none" />
-                {copy('liftLid')}
-            </p>
+            <StagePrompt visible={prompt}>{copy('liftLid')}</StagePrompt>
         </div>
     );
 }
