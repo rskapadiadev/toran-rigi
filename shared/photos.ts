@@ -56,6 +56,13 @@ export const photoSlots: Record<string, Record<string, readonly PhotoSlot[]>> = 
                 hint: 'Slides in from the right',
             },
         ],
+        premiere: [
+            {
+                id: COVER_SLOT,
+                label: 'Main photo',
+                hint: 'Seen through the letters of your names, then fills the screen',
+            },
+        ],
         garden: [
             {
                 id: 'cover.monogram',

@@ -10,8 +10,8 @@ plugs into the existing engine: the `OpeningProps` contract, the `useInvite()` c
 | Stage | Scope | Status |
 |---|---|---|
 | 01 | Opening & entry experiences | Approved: Jewellery Box |
-| 02 | Envelope & invitation reveal | **Done: Sealed Letter, WaxSeal, Stationery Suite. Waiting for approval** |
-| 03 | Cinematic hero & couple introduction | Not started |
+| 02 | Envelope & invitation reveal | Approved: Sealed Letter, WaxSeal, Stationery Suite |
+| 03 | Cinematic hero & couple introduction | **In progress: Premiere cover built. Waiting for review** |
 | 04 | Typography & decorative components | Not started |
 | 05 | Photo & memory experiences | Not started |
 | 06 | Wedding events & countdown | Not started |
@@ -235,3 +235,40 @@ The desktop hand-off cost is shared by every opening and is noted for Stage 09.
 **Performance:** scrolling the whole suite on a phone with the CPU slowed 4× runs at about 60 fps with no slow frames. It uses only transforms, opacity and clip-path, driven by Motion values, never React state.
 
 **Responsive:** no sideways scroll on phone or desktop. The cards cap at 24 rem wide.
+
+## Component: `PremiereCover` (cover layout `premiere`)
+
+`src/invitation/luxury/hero/PremiereCover.tsx`. Chosen per invitation in Section layouts → Cover & names → **Premiere**.
+
+**Experience** (scroll-driven, inside a pinned full-screen stage)
+
+| Point in the section's scroll | What happens |
+|---|---|
+| 0–22% | **Title card.** A dark, letterboxed frame with film grain. The names are set huge in the display face, and the couple's photo shows only through the letters (image masking with `background-clip: text`). A hairline gold outline keeps every letter readable over dark parts of the photo. The greeting or "Dear …" sits above and the date below, like credits. |
+| 22–50% | **Fly-through.** The camera pushes through the names (they scale to 11×), and the full photograph settles in behind from a slight push-in. |
+| 45–62% | The letterbox bars draw back. |
+| 55–70% | **Introduction.** "The wedding of", the names in script, the headline, a gold rule and the date rise over a dark gradient on the photo. |
+
+**Photo:** a cover photo slot (`photoSlots.cover.premiere`), so the editor's Photos panel offers "Main photo". The Library preview borrows a sample scene when the sample invitation has no photo.
+
+**Without a photo:**
+- The letters are cut from gold foil.
+- The camera flies into the couple's own generative medallion, drawn in gold on night, with their foil monogram at its centre.
+- No plain gradients.
+
+**Editing:** the names and headline are editable in place.
+
+**Still layout:** the PDF, reduced motion and the `static` tier get the finished frame: the photo (or medallion) with the introduction.
+
+**Languages:** right-to-left scripts work; Noor in Urdu was tested.
+
+**Performance**
+
+| Test | Frame rate |
+|---|---|
+| Scrolling the whole cover on a phone with the CPU slowed 4×, with a photo | about 58 fps |
+| The same, without a photo | about 60 fps |
+
+The first version ran at 22–29 fps. Two things caused it: a full-screen grain layer using `mix-blend-mode`, and a `drop-shadow` filter on the scaling letters, which was redrawn every frame. The grain is now a plain low-opacity layer and the filter is gone.
+
+**Rule learned:** never put `filter` or `mix-blend-mode` on large layers that move with scroll.

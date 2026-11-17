@@ -395,6 +395,21 @@ function previewFor(
         case 'sections': {
             const [type, variant] = key.split(':') as [SectionType, string];
             const preview = withSections([section(type, { variant })]);
+            // Photo-led covers borrow an illustrated scene when the sample has no photo of its own.
+            if (type === 'cover' && variant === 'premiere' && !invitation.content.coverPhotoKey)
+                return {
+                    ...preview,
+                    data: {
+                        ...preview.data,
+                        invitation: {
+                            ...preview.data.invitation,
+                            content: {
+                                ...invitation.content,
+                                coverPhotoKey: SAMPLE_PHOTOS[0],
+                            },
+                        },
+                    },
+                };
             if (type !== 'gallery' || invitation.content.gallery.length > 0) return preview;
             return {
                 ...preview,

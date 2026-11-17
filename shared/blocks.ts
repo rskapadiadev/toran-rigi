@@ -73,6 +73,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             label: 'Photo story',
             hint: 'Your photo fills the screen, then settles into a torn-paper frame as you scroll',
         },
+        {
+            id: 'premiere',
+            label: 'Premiere',
+            hint: 'A film title sequence: your photo seen through your names, then the camera flies through them into the picture',
+        },
     ],
     card: [
         {

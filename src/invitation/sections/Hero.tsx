@@ -5,6 +5,7 @@ import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable } from '../editing';
+import { PremiereCover } from '../luxury/hero/PremiereCover';
 import {
     ArchCover,
     EditorialCover,
@@ -28,6 +29,7 @@ export function Hero({ variant }: { variant: string }) {
     if (variant === 'editorial') return <EditorialCover />;
     if (variant === 'photo') return <PhotoCover />;
     if (variant === 'garden') return <GardenCover />;
+    if (variant === 'premiere') return <PremiereCover />;
     return <SpotlightCover />;
 }
 
