@@ -170,6 +170,26 @@ function GenerativeThumb({ kind }: { kind: (typeof generativeKinds)[number] }) {
 
 const DEFAULT_SEED = 1021;
 
+// The section types that are only words, and what the Library shows when a sample has none.
+const textFields: Partial<Record<SectionType, 'welcome' | 'story' | 'family'>> = {
+    welcome: 'welcome',
+    story: 'story',
+    family: 'family',
+};
+const sampleWords = {
+    welcome:
+        'With joy in our hearts and the blessings of our elders, we invite you to share this day with us.',
+    story: 'We met at a friend’s wedding and argued about the music all night. Five years and a thousand cups of chai later, here we are.',
+    family: 'With the blessings of Smt. Meera & Shri Rajesh Malhotra and Smt. Nisha & Shri Vikram Kapoor',
+};
+
+// The portraits opening borrows illustrated figures when previewed, like the portraits layouts.
+const portraitSamples = {
+    'story.one': '/kits/phoolwari/haldi-1.webp',
+    'story.two': '/kits/phoolwari/sangeet-2.webp',
+    'story.together': '/kits/phoolwari/wedding-couples.webp',
+};
+
 // Gallery layouts are empty without pictures, so the preview borrows illustrated scenes when the
 // sample invitation has none of its own.
 const SAMPLE_PHOTOS = [
@@ -384,6 +404,16 @@ function previewFor(
                     ...base,
                     invitation: {
                         ...invitation,
+                        content:
+                            key === 'portraits'
+                                ? {
+                                      ...invitation.content,
+                                      photoSlots: {
+                                          ...portraitSamples,
+                                          ...invitation.content.photoSlots,
+                                      },
+                                  }
+                                : invitation.content,
                         design: {
                             ...invitation.design,
                             opening: key as typeof invitation.design.opening,
@@ -395,6 +425,42 @@ function previewFor(
         case 'sections': {
             const [type, variant] = key.split(':') as [SectionType, string];
             const preview = withSections([section(type, { variant })]);
+            // Text sections hide themselves when empty; preview them with sample words instead.
+            const field = textFields[type];
+            if (field && !Object.values(invitation.content[field] ?? {}).some(Boolean))
+                return {
+                    ...preview,
+                    data: {
+                        ...preview.data,
+                        invitation: {
+                            ...preview.data.invitation,
+                            content: {
+                                ...invitation.content,
+                                [field]: { en: sampleWords[field] },
+                            },
+                        },
+                    },
+                };
+            // Two portraits borrow illustrated figures and a scene for the sample.
+            if ((type === 'story' || type === 'cover') && variant === 'portraits')
+                return {
+                    ...preview,
+                    data: {
+                        ...preview.data,
+                        invitation: {
+                            ...preview.data.invitation,
+                            content: {
+                                ...invitation.content,
+                                photoSlots: {
+                                    'story.one': '/kits/phoolwari/haldi-1.webp',
+                                    'story.two': '/kits/phoolwari/sangeet-2.webp',
+                                    'story.together': '/kits/phoolwari/wedding-couples.webp',
+                                    ...invitation.content.photoSlots,
+                                },
+                            },
+                        },
+                    },
+                };
             // Photo-led covers borrow an illustrated scene when the sample has no photo of its own.
             if (type === 'cover' && variant === 'premiere' && !invitation.content.coverPhotoKey)
                 return {

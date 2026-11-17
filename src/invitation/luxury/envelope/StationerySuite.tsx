@@ -296,7 +296,11 @@ export function StationerySuite() {
     const still = print || tier === 'static';
     if (still)
         return (
-            <section ref={ref} className="relative space-y-10 py-[10svh]" data-print-page>
+            <section
+                ref={ref}
+                className="relative space-y-10 py-[calc(var(--inv-screen,100svh)*0.1)]"
+                data-print-page
+            >
                 <Card seed={seed + 1} className={cardBox}>
                     <MainCard p={done} />
                 </Card>
@@ -315,8 +319,8 @@ export function StationerySuite() {
     });
     return (
         // Tall section, sticky stage: the scroll is the timeline.
-        <section ref={ref} className="relative h-[420svh]" data-suite>
-            <div className="sticky top-0 flex h-svh items-center justify-center overflow-hidden">
+        <section ref={ref} className="relative h-[calc(var(--inv-screen,100svh)*4.2)]" data-suite>
+            <div className="sticky top-0 flex h-[var(--inv-screen,100svh)] items-center justify-center overflow-hidden">
                 <m.div
                     className="absolute"
                     style={stack(

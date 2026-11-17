@@ -4,6 +4,7 @@ import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable, useEditing } from '../editing';
+import { Portraits } from '../luxury/hero/Portraits';
 import type { StringKey } from '../strings';
 import { BlessingsCard, LetterChapter, RangoliClosing } from './story';
 
@@ -131,6 +132,8 @@ export const Welcome = ({ variant }: VariantProps) => {
 
 export const Story = ({ variant }: VariantProps) => {
     const { data } = useInvite();
+    // The couple introduced as a magazine feature: two portraits that part onto the two of them.
+    if (variant === 'portraits') return <Portraits />;
     return (
         <Chapter
             field="story"

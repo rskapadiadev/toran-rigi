@@ -78,6 +78,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             label: 'Premiere',
             hint: 'A film title sequence: your photo seen through your names, then the camera flies through them into the picture',
         },
+        {
+            id: 'portraits',
+            label: 'Two portraits',
+            hint: 'One arched portrait each with names and family; they part like doors onto the two of you, introduced',
+        },
     ],
     card: [
         {
@@ -125,6 +130,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             id: 'letter',
             label: 'A note from us',
             hint: 'Handwritten letter on torn paper, with polaroids and pressed flowers',
+        },
+        {
+            id: 'portraits',
+            label: 'Two portraits',
+            hint: 'A magazine feature: one portrait each with names and family, then they part like doors onto a photo of the two of you',
         },
     ],
     family: [
@@ -208,6 +218,13 @@ export interface OpeningInfo extends VariantInfo {
 }
 
 export const openingChoices: OpeningInfo[] = [
+    {
+        id: 'portraits',
+        label: 'Two portraits',
+        hint: 'The two of you greet guests in arched portraits with your names; a tap parts them like doors onto the two of you together',
+        gesture: 'Tap',
+        gentle: true,
+    },
     {
         id: 'sealed-letter',
         label: 'Sealed letter',

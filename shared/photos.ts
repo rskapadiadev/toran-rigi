@@ -56,6 +56,23 @@ export const photoSlots: Record<string, Record<string, readonly PhotoSlot[]>> = 
                 hint: 'Slides in from the right',
             },
         ],
+        portraits: [
+            {
+                id: 'story.one',
+                label: 'First portrait',
+                hint: 'The left arch, beside the first name',
+            },
+            {
+                id: 'story.two',
+                label: 'Second portrait',
+                hint: 'The right arch, beside the second name',
+            },
+            {
+                id: 'story.together',
+                label: 'The two of you',
+                hint: 'Revealed when the portraits part',
+            },
+        ],
         premiere: [
             {
                 id: COVER_SLOT,
@@ -72,6 +89,23 @@ export const photoSlots: Record<string, Record<string, readonly PhotoSlot[]>> = 
         ],
     },
     story: {
+        portraits: [
+            {
+                id: 'story.one',
+                label: 'First portrait',
+                hint: 'The left half of the screen, beside the first name',
+            },
+            {
+                id: 'story.two',
+                label: 'Second portrait',
+                hint: 'The right half, beside the second name',
+            },
+            {
+                id: 'story.together',
+                label: 'The two of you',
+                hint: 'Revealed when the portraits part; your story is told over it',
+            },
+        ],
         letter: [
             {
                 id: 'story.top',

@@ -1032,6 +1032,15 @@ path.ornament-draw[fill]:not([fill='none']) {
         transform: rotate(0.8deg);
     }
 }
+/* Light pull: the cord and bead sway gently at rest, inviting a pull. */
+@keyframes lp-sway {
+    from {
+        transform: rotate(-2.2deg);
+    }
+    to {
+        transform: rotate(2.2deg);
+    }
+}
 /* Premiere cover: film grain that jumps a few times a second, like a projected print. */
 @keyframes premiere-grain {
     0% {

@@ -46,14 +46,17 @@ export function StageTitle({ titleRef }: TitleProps) {
 interface PromptProps {
     children: string;
     visible: boolean;
+    // Where it sits: the foot of the screen, or higher when something already lives down there.
+    at?: 'bottom' | 'middle';
 }
 
 // A hairline that breathes above a whispered instruction; never a button, the object is the control.
-export function StagePrompt({ children, visible }: PromptProps) {
+export function StagePrompt({ children, visible, at = 'bottom' }: PromptProps) {
+    const place = at === 'bottom' ? 'bottom-[9svh]' : 'top-[67%]';
     return (
         <p
             aria-hidden
-            className={`pointer-events-none absolute inset-x-0 bottom-[9svh] z-30 mx-auto flex w-fit flex-col items-center gap-2 text-[11px] tracking-[0.4em] text-[#f4ead6]/80 uppercase transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}
+            className={`pointer-events-none absolute inset-x-0 ${place} z-30 mx-auto flex w-fit flex-col items-center gap-2 text-[11px] tracking-[0.4em] text-[#f4ead6]/80 uppercase transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}
         >
             <span className="h-8 w-px animate-pulse bg-gradient-to-t from-transparent to-[#f4ead6]/80 motion-reduce:animate-none" />
             {children}

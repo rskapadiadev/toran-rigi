@@ -53,7 +53,7 @@ function Introduction({ still, style }: IntroProps) {
         </>
     );
     const box =
-        'absolute inset-x-0 bottom-0 z-30 px-6 pt-[30svh] pb-[12svh] text-center text-[#fbf5ea] [text-shadow:0_2px_18px_rgba(0,0,0,0.45)]';
+        'absolute inset-x-0 bottom-0 z-30 px-6 pt-[calc(var(--inv-screen,100svh)*0.3)] pb-[calc(var(--inv-screen,100svh)*0.12)] text-center text-[#fbf5ea] [text-shadow:0_2px_18px_rgba(0,0,0,0.45)]';
     const shade: CSSProperties = {
         background:
             'linear-gradient(180deg, transparent 0%, rgba(8,5,4,0.55) 45%, rgba(8,5,4,0.88) 100%)',
@@ -96,7 +96,11 @@ export function PremiereCover() {
     const photoIn = useTransform(p, [0.3, 0.48], [0, 1]);
     const photoScale = useTransform(p, [0.3, 0.6, 1], [1.25, 1.06, 1]);
     // The letterbox draws back once the shot is full-frame.
-    const bars = useTransform(p, [0.45, 0.62], ['11svh', '0svh']);
+    const bars = useTransform(
+        p,
+        [0.45, 0.62],
+        ['calc(var(--inv-screen, 100svh) * 0.03)', 'calc(var(--inv-screen, 100svh) * 0)'],
+    );
     const introIn = useTransform(p, [0.55, 0.7], [0, 1]);
     const introY = useTransform(p, [0.55, 0.7], [28, 0]);
     const cue = useTransform(p, [0, 0.06], [1, 0]);
@@ -147,7 +151,7 @@ export function PremiereCover() {
     if (print || tier === 'static')
         return (
             <section
-                className="relative h-svh min-h-[600px] overflow-hidden"
+                className="relative h-[var(--inv-screen,100svh)] min-h-[600px] overflow-hidden"
                 style={stageBg}
                 data-print-page
             >
@@ -177,8 +181,13 @@ export function PremiereCover() {
         y: introY,
     };
     return (
-        <section ref={ref} className="relative h-[260svh]" style={stageBg} data-premiere>
-            <div className="sticky top-0 h-svh overflow-hidden">
+        <section
+            ref={ref}
+            className="relative h-[calc(var(--inv-screen,100svh)*2.6)]"
+            style={stageBg}
+            data-premiere
+        >
+            <div className="sticky top-0 h-[var(--inv-screen,100svh)] overflow-hidden">
                 <m.div className="absolute inset-0" style={photoStyle}>
                     {shot}
                 </m.div>
@@ -204,7 +213,7 @@ export function PremiereCover() {
 
                 {/* Credits around the title card, like the first frame of a film. */}
                 <m.div
-                    className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between px-6 py-[15svh] text-center text-[#f4ead6]"
+                    className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between px-6 py-[calc(var(--inv-screen,100svh)*0.1)] text-center text-[#f4ead6]"
                     style={{ opacity: credits }}
                 >
                     <p className="text-[11px] tracking-[0.5em] uppercase opacity-75">
@@ -242,7 +251,7 @@ export function PremiereCover() {
 
                 <m.div
                     aria-hidden
-                    className="pointer-events-none absolute inset-x-0 bottom-[2.5svh] z-40 mx-auto flex w-fit flex-col items-center gap-2 text-[10px] tracking-[0.45em] text-[#f4ead6]/70 uppercase"
+                    className="pointer-events-none absolute inset-x-0 bottom-[calc(var(--inv-screen,100svh)*0.025)] z-40 mx-auto flex w-fit flex-col items-center gap-2 text-[10px] tracking-[0.45em] text-[#f4ead6]/70 uppercase"
                     style={{ opacity: cue }}
                 >
                     <span className="h-8 w-px animate-pulse bg-gradient-to-b from-transparent to-[#f4ead6]/70 motion-reduce:animate-none" />

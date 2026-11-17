@@ -33,8 +33,6 @@ import { HandoffVeil, StagePrompt, StageTitle } from './stage';
 // Where the flap folds as it lifts, and where its tip (and the seal) sits, as fractions of height.
 const FOLD = 0.3;
 const TIP = 0.62;
-// A press shorter than this is a tap: the seal breaks by itself.
-const TAP_MS = 220;
 
 interface Parts {
     flap: HTMLDivElement | null;
@@ -109,7 +107,6 @@ export function SealedLetterOpening({ onBegin, onOpened }: OpeningProps) {
         vellum: 0,
         push: 0,
     });
-    const pressedAt = useRef(0);
     const begun = useRef(false);
     const still = tier === 'static';
 
@@ -218,7 +215,6 @@ export function SealedLetterOpening({ onBegin, onOpened }: OpeningProps) {
         if (stage !== 'sealed') return;
         begin();
         setStage('pressing');
-        pressedAt.current = performance.now();
         if (still) return;
         const gsap = await loadGsap();
         const p = pose.current;
@@ -236,8 +232,8 @@ export function SealedLetterOpening({ onBegin, onOpened }: OpeningProps) {
 
     const release = async () => {
         if (stage !== 'pressing') return;
-        const tapped = performance.now() - pressedAt.current < TAP_MS;
-        if (still || tapped || pose.current.crack >= 0.45) {
+        // Only a real press breaks the seal; a tap starts a hairline that closes again.
+        if (still || pose.current.crack >= 0.45) {
             void reveal();
             return;
         }

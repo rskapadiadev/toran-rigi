@@ -9,16 +9,20 @@ import type { OpeningProps } from './types';
 // How much rubbing (px of finger travel) develops the photo fully.
 const RUB = 1400;
 
-// A blank instant photo: rub it (or tap) and it develops into the couple's names in warm sepia,
+// A blank instant photo: rub it and it develops into the couple's names in warm sepia,
 // then the photo grows to fill the screen and becomes the invitation.
+interface Point {
+    x: number;
+    y: number;
+}
+
 export function PolaroidOpening({ onBegin, onOpened }: OpeningProps) {
     const { tier, copy, names, data } = useInvite();
     const { design, seed } = data.invitation;
     const [developed, setDeveloped] = useState(0);
     const [leaving, setLeaving] = useState(false);
     const finish = useFinish(onOpened);
-    const last = useRef<{ x: number;
-y: number } | null>(null);
+    const last = useRef<Point | null>(null);
     const begun = useRef(false);
     const auto = useRef<number | undefined>(undefined);
     const done = developed >= 1;
@@ -29,7 +33,7 @@ y: number } | null>(null);
         onBegin();
     };
 
-    // A tap develops it on its own over a couple of seconds.
+    // Enter/Space (and still devices) develop it on its own over a couple of seconds.
     const develop = () => {
         start();
         if (tier === 'static') {
@@ -84,9 +88,17 @@ y: number } | null>(null);
             setDeveloped((d) => Math.min(1, d + travel / RUB));
         },
         onPointerUp: () => {
-            // No rubbing at all means it was a tap.
-            if (developed === 0) develop();
             last.current = null;
+            if (developed > 0) return;
+            // A tap: still devices develop it outright; elsewhere the photo glimmers, a hint to rub.
+            if (tier === 'static') {
+                develop();
+                return;
+            }
+            setDeveloped(0.12);
+            window.setTimeout(() => {
+                setDeveloped((d) => (d === 0.12 ? 0 : d));
+            }, 420);
         },
     };
 

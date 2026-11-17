@@ -189,6 +189,30 @@ export function JewelleryBoxOpening({ onBegin, onOpened }: OpeningProps) {
         setStage('closed');
     };
 
+    // A tap lifts the lid a finger's width and lets it drop: "this opens upward".
+    const nudge = async () => {
+        if (still) return;
+        const gsap = await loadGsap();
+        const p = pose.current;
+        const apply = () => {
+            applyPose(parts.current, p);
+        };
+        gsap.killTweensOf(p);
+        const tl = gsap.timeline();
+        tl.to(p, {
+            lid: 14,
+            duration: 0.22,
+            ease: 'power2.out',
+            onUpdate: apply,
+        });
+        tl.to(p, {
+            lid: 0,
+            duration: 0.5,
+            ease: 'bounce.out',
+            onUpdate: apply,
+        });
+    };
+
     const handlers = {
         onPointerDown: (e: PointerEvent<HTMLDivElement>) => {
             if (stage === 'opening') return;
@@ -216,7 +240,9 @@ export function JewelleryBoxOpening({ onBegin, onOpened }: OpeningProps) {
             const d = drag.current;
             drag.current = null;
             if (!d || stage === 'opening') return;
-            if (!d.moved || pose.current.lid >= COMMIT_ANGLE) void open();
+            // Only a real lift opens the box; a tap just hints at the gesture.
+            if (!d.moved) void nudge();
+            else if (pose.current.lid >= COMMIT_ANGLE) void open();
             else void settleBack();
         },
         onPointerCancel: () => {

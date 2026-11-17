@@ -278,6 +278,23 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
     // What scrolls this invitation: the window live, the canvas frame in the editor.
     const scrollRoot = useRef<HTMLElement | null>(null);
 
+    // Inside a preview frame the "screen" is the frame, not the browser window: full-screen scenes
+    // size themselves from --inv-screen, so measure the frame and keep it current.
+    useEffect(() => {
+        const frame = scrollRoot.current;
+        const root = rootRef.current;
+        if (!embedded || !frame || !root) return;
+        const measure = () => {
+            root.style.setProperty('--inv-screen', `${String(frame.clientHeight)}px`);
+        };
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(frame);
+        return () => {
+            observer.disconnect();
+        };
+    }, [embedded]);
+
     // Inertia ("buttery") scrolling on the live page once the invitation is open; never in the editor.
     useEffect(() => {
         if (embedded || !opened || tier !== 'full') return;

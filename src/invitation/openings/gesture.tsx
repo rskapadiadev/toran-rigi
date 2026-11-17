@@ -1,6 +1,7 @@
 // Shared bits for the hands-on openings (pull the light, the chain, the zip, the ribbon, the veil):
-// one drag feel everywhere, a tap that plays the gesture for you, and a prompt pill that never
-// steals the pointer.
+// one drag feel everywhere, and a prompt pill that never steals the pointer. A plain tap does not
+// play the gesture: the handle gives a little and springs back, showing which way to pull.
+// Enter/Space still open for keyboard users, and Skip is always there.
 import {
     type KeyboardEvent,
     type PointerEvent,
@@ -10,6 +11,11 @@ import {
     useState,
 } from 'react';
 
+interface PullStart {
+    y: number;
+    moved: boolean;
+}
+
 interface PullOptions {
     /** Furthest the handle travels, in px. */
     max: number;
@@ -17,7 +23,7 @@ interface PullOptions {
     direction?: 'down' | 'up';
     /** Fraction of `max` that counts as done when the guest lets go. */
     threshold?: number;
-    /** Called once: on a pull past the threshold, on a plain tap, or on Enter/Space. */
+    /** Called once: on a pull past the threshold, or on Enter/Space. */
     onPass: () => void;
     /** First touch: the gesture browsers require before music may play. */
     onStart?: () => void;
@@ -34,8 +40,7 @@ export function usePull({
 }: PullOptions) {
     const [pull, setPull] = useState(0);
     const [dragging, setDragging] = useState(false);
-    const start = useRef<{ y: number;
-moved: boolean } | null>(null);
+    const start = useRef<PullStart | null>(null);
     const latest = useRef(0);
     const begun = useRef(false);
 
@@ -78,9 +83,14 @@ moved: boolean } | null>(null);
             start.current = null;
             setDragging(false);
             if (!s) return;
-            // A plain tap plays the whole gesture; a short pull springs back.
-            if (!s.moved || latest.current >= max * threshold) onPass();
-            else setPull(0);
+            if (s.moved && latest.current >= max * threshold) onPass();
+            else if (!s.moved) {
+                // A tap: tug the handle a little and let it spring back, to teach the pull.
+                setPull(max * 0.22);
+                window.setTimeout(() => {
+                    setPull(0);
+                }, 240);
+            } else setPull(0);
             latest.current = 0;
         },
         onPointerCancel: () => {
@@ -125,12 +135,16 @@ export function useFinish(onOpened: () => void) {
 }
 
 /** The bottom prompt as a label, not a button: the gesture lives on the handle itself. */
-export function PromptPill({ children, hidden = false }: { children: string;
-hidden?: boolean }) {
+interface PromptPillProps {
+    children: string;
+    hidden?: boolean;
+}
+
+export function PromptPill({ children, hidden = false }: PromptPillProps) {
     return (
         <p
             aria-live="polite"
-            className={`pointer-events-none absolute inset-x-0 bottom-[8svh] z-30 mx-auto w-fit rounded-3xl bg-(--inv-bg)/70 px-7 py-3 text-xs tracking-[0.28em] uppercase shadow-[0_10px_40px_-12px_rgba(0,0,0,0.35)] backdrop-blur-md transition-opacity duration-500 ${hidden ? 'opacity-0' : 'opacity-100'}`}
+            className={`pointer-events-none absolute inset-x-0 bottom-[calc(var(--inv-screen,100svh)*0.07)] z-30 mx-auto w-fit max-w-[86%] rounded-3xl bg-(--inv-bg)/70 px-7 py-3 text-center text-xs tracking-[0.28em] uppercase shadow-[0_10px_40px_-12px_rgba(0,0,0,0.35)] backdrop-blur-md transition-opacity duration-500 ${hidden ? 'opacity-0' : 'opacity-100'}`}
         >
             {children}
         </p>

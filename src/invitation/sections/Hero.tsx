@@ -5,6 +5,7 @@ import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable } from '../editing';
+import { Portraits } from '../luxury/hero/Portraits';
 import { PremiereCover } from '../luxury/hero/PremiereCover';
 import {
     ArchCover,
@@ -30,6 +31,7 @@ export function Hero({ variant }: { variant: string }) {
     if (variant === 'photo') return <PhotoCover />;
     if (variant === 'garden') return <GardenCover />;
     if (variant === 'premiere') return <PremiereCover />;
+    if (variant === 'portraits') return <Portraits mode="cover" />;
     return <SpotlightCover />;
 }
 

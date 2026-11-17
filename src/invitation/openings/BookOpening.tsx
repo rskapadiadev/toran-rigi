@@ -1,7 +1,7 @@
 // A storybook opening with a real page curl (react-pageflip, as in the GTS story library).
 // A leather-bound book on a table: the cover opens, pages turn through the title, the names, the
 // ceremonies and the date, and turning onto the back cover (or "Enter") opens the invitation.
-// Wide screens see a two-page spread; phones see one large page at a time, spine on the left.
+// Every screen sees an open book: the cover alone, then two-page spreads, the turned page on the left.
 import { materialBackground, mixHex } from '@shared/materials';
 import { peopleOf } from '@shared/people';
 import { formatEventDate, zonedToUtc } from '@shared/time';
@@ -195,6 +195,12 @@ function Corners({ side }: { side: Side }) {
     );
 }
 
+interface BookSize {
+    w: number;
+    h: number;
+    spread: boolean;
+}
+
 export function BookOpening({ onBegin, onOpened }: OpeningProps) {
     const { tier, copy, data, t, locale, names, occasion } = useInvite();
     const facts = useCoverFacts();
@@ -202,9 +208,7 @@ export function BookOpening({ onBegin, onOpened }: OpeningProps) {
     const people = peopleOf(content);
     const stage = useRef<HTMLDivElement>(null);
     const book = useRef<FlipHandle>(null);
-    const [size, setSize] = useState<{ w: number;
-h: number;
-spread: boolean } | null>(null);
+    const [size, setSize] = useState<BookSize | null>(null);
     const [page, setPage] = useState(0);
     const [leaving, setLeaving] = useState(false);
     const finish = useFinish(onOpened);
@@ -216,10 +220,11 @@ spread: boolean } | null>(null);
         if (!el) return;
         const w = el.clientWidth;
         const h = el.clientHeight;
-        const spread = w >= 640;
-        const across = spread ? 2 : 1;
+        // Always an open book, phones too: a turned page lies on the left like a real one.
+        const spread = true;
+        const across = 2;
         const pageW = Math.floor(
-            Math.min((w - (spread ? 80 : 56)) / across, (h * 0.68) / 1.42, 400),
+            Math.min((w - (w >= 640 ? 80 : 20)) / across, (h * 0.68) / 1.42, 400),
         );
         setSize({
             w: pageW,
@@ -328,9 +333,9 @@ spread: boolean } | null>(null);
                             width={size.w}
                             height={size.h}
                             size="fixed"
-                            minWidth={160}
+                            minWidth={120}
                             maxWidth={420}
-                            minHeight={220}
+                            minHeight={170}
                             maxHeight={620}
                             showCover
                             drawShadow

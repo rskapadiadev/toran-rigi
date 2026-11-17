@@ -11,7 +11,7 @@ plugs into the existing engine: the `OpeningProps` contract, the `useInvite()` c
 |---|---|---|
 | 01 | Opening & entry experiences | Approved: Jewellery Box |
 | 02 | Envelope & invitation reveal | Approved: Sealed Letter, WaxSeal, Stationery Suite |
-| 03 | Cinematic hero & couple introduction | **In progress: Premiere cover built. Waiting for review** |
+| 03 | Cinematic hero & couple introduction | **Done: Premiere cover, Two portraits. Waiting for approval** |
 | 04 | Typography & decorative components | Not started |
 | 05 | Photo & memory experiences | Not started |
 | 06 | Wedding events & countdown | Not started |
@@ -272,3 +272,65 @@ The desktop hand-off cost is shared by every opening and is noted for Stage 09.
 The first version ran at 22–29 fps. Two things caused it: a full-screen grain layer using `mix-blend-mode`, and a `drop-shadow` filter on the scaling letters, which was redrawn every frame. The grain is now a plain low-opacity layer and the filter is gone.
 
 **Rule learned:** never put `filter` or `mix-blend-mode` on large layers that move with scroll.
+
+## Component: `Portraits` (story layout `portraits`)
+
+`src/invitation/luxury/hero/Portraits.tsx`. Chosen per invitation in Section layouts → Our story → **Two portraits**.
+
+**Experience** (scroll-driven, inside a pinned full-screen stage)
+
+| Point in the section's scroll | What happens |
+|---|---|
+| 0–18% | **Split screen.** One portrait in each half, each backed by woven silk in the invitation's colours. They are unveiled from opposite ends: the first rises from below, the second falls from above. Each pushes in slowly. A gold seam marks where the halves meet. |
+| 12–44% | **Nameplates.** Each name is set tall in capitals along its outer edge, with the family line ("Son of …") in small caps beneath. A shade at the foot of each half keeps the text readable on any photo. |
+| 40–60% | **The doors.** The halves part outward onto a photo of the two of them together, which settles from a slight push-in. In Arabic, Urdu and Hebrew they part in the reading direction. |
+| 62–76% | **The story.** "Our story" and the story text (or the welcome, when there is no story) rise over a dark gradient. |
+
+**Photos** (new slots `story.one`, `story.two`, `story.together`, offered in the editor's Photos panel)
+- "The two of you" falls back to the cover photo.
+- Without photos, each half is silk with the person's initial in foil, and the shared frame is the couple's medallion.
+- The Library preview borrows illustrated figures.
+
+**Data:** names and family lines come from `people.one/two.name/parents`. Story text comes from `content.story`. There are no schema changes; names and story are editable in place.
+
+**Still layout:** the PDF, reduced motion and the `static` tier get two full pages: the split portraits with names, then the two of them together with the story.
+
+**Performance:** scrolling on a phone with the CPU slowed 4× runs at about 59 fps with photos and 60 fps without. It uses transforms, opacity and clip-path only, with no filters or blend modes.
+
+## Interaction rule: the gesture is the experience
+
+Openings whose ritual is a physical gesture never let a plain tap stand in for it. A tap gives a small hint and springs back, so the guest learns the gesture. Enter/Space (keyboard) and the shared Skip button always remain.
+
+| Opening | Gesture that opens | What a tap does |
+|---|---|---|
+| Jewellery box | lift the lid | the lid lifts a finger's width and drops back |
+| Chain, Light pull, Zipper, Ribbon, Veil | pull or swipe (shared `usePull` in `openings/gesture.tsx`) | the handle tugs 22% and springs back |
+| Sealed letter | press and hold the seal about 1 s | a hairline starts and closes again |
+| Polaroid | rub | a faint glimmer (the `static` tier still develops on tap) |
+| Bell, Lanterns, Tribute, Book | the tap *is* the gesture | unchanged |
+| Diya, Tribute (blow) | blow into the mic | tap or hold stays as the fallback, since not everyone allows the mic |
+
+## Component: `PortraitsOpening` (opening kind `portraits`) and the `portraits` cover
+
+The Two portraits scene, `PortraitsStage` in `hero/Portraits.tsx`, is driven by any 0 → 1 progress value:
+
+| Where | Driven by | Ends on |
+|---|---|---|
+| Our story → Two portraits | scroll | the couple's story (`mode="story"`) |
+| Cover & names → Two portraits | scroll | the introduction: "The wedding of", names, headline, date (`mode="cover"`) |
+| Opening entries → Two portraits | a timeline | the same introduction |
+
+The opening, step by step:
+1. The portraits unveil and the names arrive (2.4 s).
+2. "Tap to open" appears between the arches and the names.
+3. A tap parts the doors onto the introduction (3 s).
+4. The invitation takes over.
+
+All three use the same photo slots: `story.one`, `story.two` and `story.together`.
+
+## Preview frames: `--inv-screen`
+
+Full-screen scenes size themselves from `var(--inv-screen, 100svh)`, never bare `svh`.
+- On a guest's phone the value is the real screen height.
+- Inside a preview frame (Library, editor, try page, template preview), `InvitationView` measures the frame and sets `--inv-screen`, so the scenes fit the frame rather than the monitor.
+- New full-screen pieces must use `--inv-screen` too.
