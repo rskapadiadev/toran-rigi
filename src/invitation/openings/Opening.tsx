@@ -1,6 +1,7 @@
 import type { InvitationDesign } from '@shared/types';
 import type { ComponentType } from 'react';
 
+import { JewelleryBoxOpening } from '../luxury/opening/JewelleryBoxOpening';
 import { BellOpening } from './BellOpening';
 import { BloomOpening } from './BloomOpening';
 import { BookOpening } from './BookOpening';
@@ -55,6 +56,7 @@ const registry: Record<InvitationDesign['opening'], ComponentType<OpeningProps>>
     tribute: TributeOpening,
     book: BookOpening,
     garden: GardenOpening,
+    'jewellery-box': JewelleryBoxOpening,
 };
 
 type Props = OpeningProps & { kind: InvitationDesign['opening'] };

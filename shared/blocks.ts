@@ -199,6 +199,13 @@ export interface OpeningInfo extends VariantInfo {
 
 export const openingChoices: OpeningInfo[] = [
     {
+        id: 'jewellery-box',
+        label: 'Jewellery box',
+        hint: 'A lacquered case under a spotlight: lift the hinged lid, light spills from the velvet and the card rises to meet you',
+        gesture: 'Lift the lid',
+        gentle: true,
+    },
+    {
         id: 'garden',
         label: 'Wildflower garden',
         hint: 'Ganesha glows in, the gold monogram draws itself and a meadow grows; on the tap it rises and parts',

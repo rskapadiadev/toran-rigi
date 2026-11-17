@@ -53,6 +53,7 @@ src/
   shop/        Customer shop UI (dark editorial pages, form editor, sign-in)
   admin/       Studio UI: kit/ (DataTable, PanelCard, PageHeader, FormField…), shell/, editor/, composer/
   invitation/  The invitation engine (sections, openings, scenes). Renders inside .inv-root from --inv-* tokens only.
+    luxury/    The premium component library, built stage by stage (see docs/luxury/README.md: docs + progress tracker).
 migrations/    SQL migrations (drizzle-kit). Never edit one that has been applied.
 scripts/dev/   Playwright scripts that drive the real app (journey, responsive, posters…)
 ```

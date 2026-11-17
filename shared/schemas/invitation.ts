@@ -40,6 +40,7 @@ export const openingKinds = [
     'tribute',
     'book',
     'garden',
+    'jewellery-box',
 ] as const;
 
 export const generativeKinds = [
