@@ -266,6 +266,9 @@ export const motifIds = [
     'balloons',
 ] as const;
 
+// The ornament between a chapter's title and its words (see src/invitation/luxury/typography/dividers.tsx).
+export const dividerKinds = ['medallion', 'flourish', 'lotus', 'paisley', 'deco', 'line'] as const;
+
 export const sectionConfigSchema = z.object({
     type: z.enum(sectionTypes),
     enabled: z.boolean().default(true),
@@ -276,6 +279,7 @@ export const sectionConfigSchema = z.object({
     motif: z.enum(motifIds).optional(),
     // One switch for every edge: drift, breathe, walk or pulse. Off = still.
     edgeMotion: z.boolean().optional(),
+    divider: z.enum(dividerKinds).optional(),
 });
 
 export const extrasSchema = z.object({

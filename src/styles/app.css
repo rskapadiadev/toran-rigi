@@ -1032,6 +1032,20 @@ path.ornament-draw[fill]:not([fill='none']) {
         transform: rotate(0.8deg);
     }
 }
+/* Letterpress cover: on phones the foil sheen drifts slowly by itself (desktop follows the pointer). */
+@keyframes letterpress-sheen {
+    from {
+        --sheen: 15%;
+    }
+    to {
+        --sheen: 85%;
+    }
+}
+@property --sheen {
+    syntax: '<percentage>';
+    inherits: true;
+    initial-value: 50%;
+}
 /* Light pull: the cord and bead sway gently at rest, inviting a pull. */
 @keyframes lp-sway {
     from {

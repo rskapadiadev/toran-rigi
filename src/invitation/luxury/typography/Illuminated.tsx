@@ -11,7 +11,8 @@ import { GenerativeOrnament } from '../../../motion/GenerativeOrnament';
 import { useInvite } from '../../context';
 import { useEditing } from '../../editing';
 import { foilInk, paperGrain } from '../materials';
-import { Filigree, Flourish } from './ornaments';
+import { SectionDivider } from './dividers';
+import { Filigree } from './ornaments';
 
 interface InitialProps {
     letter: string;
@@ -120,7 +121,7 @@ export function Illuminated({
                 <Filigree at="bottom-end" delay={0.6} />
                 {kicker && (
                     <div className="text-center">
-                        <Flourish className="mx-auto w-[min(48cqw,200px)]" />
+                        <SectionDivider fallback="flourish" />
                         <p
                             className="my-3 text-[11px] tracking-[0.45em] uppercase"
                             style={{ color: mixHex(palette.gold, '#000000', 0.2) }}
@@ -136,7 +137,7 @@ export function Illuminated({
                         {words}
                     </m.div>
                 )}
-                <Flourish className="mx-auto mt-8 w-[min(60cqw,240px)]" />
+                <SectionDivider fallback="flourish" />
             </div>
         </section>
     );

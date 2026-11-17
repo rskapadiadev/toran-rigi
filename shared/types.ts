@@ -3,6 +3,7 @@ import type { z } from 'zod';
 import type {
     contentSchema,
     designSchema,
+    dividerKinds,
     edgeKinds,
     enterPresets,
     eventKinds,
@@ -25,6 +26,7 @@ export type SectionConfig = z.infer<typeof sectionConfigSchema>;
 export type EnterPreset = (typeof enterPresets)[number];
 export type SceneKind = (typeof sceneKinds)[number];
 export type EdgeKind = (typeof edgeKinds)[number];
+export type DividerKind = (typeof dividerKinds)[number];
 export type InvitationExtras = z.infer<typeof extrasSchema>;
 export type PackageLimits = z.infer<typeof packageLimitsSchema>;
 

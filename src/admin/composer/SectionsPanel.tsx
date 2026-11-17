@@ -1,6 +1,7 @@
 import {
     blockVariants,
     calmEntrances,
+    dividerInfo,
     edgeInfo,
     enterInfo,
     resolveBlock,
@@ -10,7 +11,7 @@ import {
 } from '@shared/blocks';
 import { motifLabel } from '@shared/motifs';
 import { motifIds } from '@shared/schemas/invitation';
-import type { EdgeKind, EnterPreset, SceneKind, SectionConfig } from '@shared/types';
+import type { DividerKind, EdgeKind, EnterPreset, SceneKind, SectionConfig } from '@shared/types';
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -26,6 +27,10 @@ import { cn } from '@/lib/cn';
 const enterIds = Object.keys(enterInfo) as EnterPreset[];
 const sceneIds = Object.keys(sceneInfo) as SceneKind[];
 const edgeIds = Object.keys(edgeInfo) as EdgeKind[];
+const dividerIds = Object.keys(dividerInfo) as DividerKind[];
+// Only the words-only chapters, in the layouts that draw one, carry a divider.
+const dividerSections: readonly string[] = ['welcome', 'story', 'family'];
+const dividerLayouts: readonly string[] = ['centered', 'framed', 'illuminated'];
 const AUTO = '__auto';
 
 // Swatches hint at each backdrop without rendering the full material in the list.
@@ -134,6 +139,9 @@ interface BlockEditorProps {
 }
 
 export function BlockEditor({ section, previousScene, calm, update }: BlockEditorProps) {
+    const hasDivider =
+        dividerSections.includes(section.type) &&
+        dividerLayouts.includes(resolveBlock(section, previousScene).variant);
     const variants = blockVariants[section.type] ?? [];
     const resolved = resolveBlock(section, previousScene);
     return (
@@ -209,6 +217,30 @@ export function BlockEditor({ section, previousScene, calm, update }: BlockEdito
                         Animate edge
                     </Label>
                 </div>
+                {hasDivider && (
+                    <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground uppercase">Divider</Label>
+                        <Select
+                            value={section.divider ?? AUTO}
+                            onValueChange={(v) => {
+                                const divider = v === AUTO ? undefined : (v as DividerKind);
+                                update({ divider });
+                            }}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={AUTO}>Layout default</SelectItem>
+                                {dividerIds.map((id) => (
+                                    <SelectItem key={id} value={id}>
+                                        {dividerInfo[id].label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
                 <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground uppercase">Motif</Label>
                     <Select

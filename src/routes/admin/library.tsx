@@ -1,6 +1,7 @@
 import {
     applyLayout,
     blockVariants,
+    dividerInfo,
     edgeInfo,
     enterInfo,
     openingChoices,
@@ -13,7 +14,14 @@ import { categoryInfo } from '@shared/occasions';
 import { ceremonyProps } from '@shared/props';
 import { generativeKinds, motifIds } from '@shared/schemas/invitation';
 import { themeCatalog, themeLayouts } from '@shared/themes';
-import type { EdgeKind, EnterPreset, SceneKind, SectionConfig, SectionType } from '@shared/types';
+import type {
+    DividerKind,
+    EdgeKind,
+    EnterPreset,
+    SceneKind,
+    SectionConfig,
+    SectionType,
+} from '@shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import {
@@ -25,6 +33,7 @@ import {
     Layers,
     LayoutTemplate,
     type LucideIcon,
+    Minus,
     Palette,
     Play,
     Scissors,
@@ -69,6 +78,7 @@ const categoryIds = [
     'themes',
     'branding',
     'props',
+    'dividers',
 ] as const;
 type CategoryId = (typeof categoryIds)[number];
 
@@ -367,6 +377,20 @@ const propsCategory: Category = {
 };
 catalogue.push(propsCategory);
 
+// Section dividers: the ornament between a chapter's title and its words, chosen per section.
+const dividersCategory: Category = {
+    id: 'dividers',
+    label: 'Dividers',
+    hint: 'The ornament between a chapter’s title and its words, chosen per section',
+    icon: Minus,
+    items: (Object.keys(dividerInfo) as DividerKind[]).map((id) => ({
+        key: id,
+        label: dividerInfo[id].label,
+        hint: dividerInfo[id].hint,
+    })),
+};
+catalogue.push(dividersCategory);
+
 const section = (type: SectionType, patch: Partial<SectionConfig> = {}): SectionConfig => ({
     type,
     enabled: true,
@@ -576,6 +600,18 @@ function previewFor(
                 },
                 opening: false,
             };
+        // A welcome in the centred layout, then the illuminated page, both with this divider.
+        case 'dividers':
+            return withSections([
+                section('welcome', {
+                    variant: 'centered',
+                    divider: key as DividerKind,
+                }),
+                section('story', {
+                    variant: 'illuminated',
+                    divider: key as DividerKind,
+                }),
+            ]);
         // Every ceremony of the sample becomes one that calls for this prop, on stacked arches.
         case 'props': {
             const prop = ceremonyProps.find((p) => p.id === key);

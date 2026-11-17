@@ -14,7 +14,7 @@ interface DrawProps {
 }
 
 // One engraved line: drawn from end to end with the pen, once, when it scrolls into view.
-function Line({ d, width = 1.2, delay = 0, opacity = 1 }: DrawProps) {
+export function Line({ d, width = 1.2, delay = 0, opacity = 1 }: DrawProps) {
     const { tier } = useInvite();
     const common = {
         d,
@@ -43,7 +43,7 @@ function Line({ d, width = 1.2, delay = 0, opacity = 1 }: DrawProps) {
 }
 
 // A dot of gold that lands after the line reaches it.
-function Bead({
+export function Bead({
     cx,
     cy,
     r = 2.2,

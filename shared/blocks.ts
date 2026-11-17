@@ -1,6 +1,7 @@
 // Block catalog: the menu of layouts, entrances, backdrops and edges every section can mix.
 // Pure data so the admin Composer, the seed and the renderer all read the same source.
 import type {
+    DividerKind,
     EdgeKind,
     EnterPreset,
     InvitationDesign,
@@ -82,6 +83,16 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             id: 'premiere',
             label: 'Premiere',
             hint: 'A film title sequence: your photo seen through your names, then the camera flies through them into the picture',
+        },
+        {
+            id: 'letterpress',
+            label: 'Letterpress',
+            hint: 'A heavy cotton card: your names pressed in letter by letter and filled with gold foil, engraved flourishes around them',
+        },
+        {
+            id: 'calligraphy',
+            label: 'Calligraphy',
+            hint: 'Your names written across a quiet page in gold ink, one after the other, as if by hand',
         },
         {
             id: 'portraits',
@@ -744,6 +755,40 @@ export const edgeInfo: Record<EdgeKind, VariantInfo> = {
     },
 };
 
+// The ornament between a chapter's title and its words, picked per section.
+export const dividerInfo: Record<DividerKind, VariantInfo> = {
+    medallion: {
+        id: 'medallion',
+        label: 'Medallion',
+        hint: 'Your own generative ornament, drawn in',
+    },
+    flourish: {
+        id: 'flourish',
+        label: 'Engraved flourish',
+        hint: 'Scrolls curling out from a lozenge, engraved in gold',
+    },
+    lotus: {
+        id: 'lotus',
+        label: 'Lotus',
+        hint: 'A lotus opening at the centre, its stems running into fine rules',
+    },
+    paisley: {
+        id: 'paisley',
+        label: 'Paisley',
+        hint: 'Two butas bowing to a centre bead',
+    },
+    deco: {
+        id: 'deco',
+        label: 'Art Deco',
+        hint: 'A stepped fan over a long double rule',
+    },
+    line: {
+        id: 'line',
+        label: 'Hairline',
+        hint: 'One fine gold line with a bead at its heart',
+    },
+};
+
 const sectionDefaults: Partial<Record<SectionType, BlockDefaults>> = {
     cover: {
         variant: 'spotlight',
@@ -831,6 +876,7 @@ export interface ResolvedBlock {
     edge: EdgeKind;
     edgeMotion: boolean;
     motif?: SectionConfig['motif'];
+    divider?: DividerKind;
 }
 
 // Calm motion keeps only gentle entrances; theatrical ones settle into a soft ink fade.
@@ -863,9 +909,16 @@ export const isRendered = (type: SectionType): type is RenderedSection =>
 
 // Identity of a block's look; the renderer remounts on change so the entrance replays.
 export const blockKey = (b: ResolvedBlock) =>
-    [b.type, b.variant, b.enter, b.scene, b.edge, b.edgeMotion ? 'live' : '', b.motif ?? ''].join(
-        ':',
-    );
+    [
+        b.type,
+        b.variant,
+        b.enter,
+        b.scene,
+        b.edge,
+        b.edgeMotion ? 'live' : '',
+        b.motif ?? '',
+        b.divider ?? '',
+    ].join(':');
 
 export function resolveBlock(config: SectionConfig, previousScene?: SceneKind): ResolvedBlock {
     const defaults = sectionDefaults[config.type] ?? fallback;
@@ -880,6 +933,7 @@ export function resolveBlock(config: SectionConfig, previousScene?: SceneKind): 
         edge: config.edge ?? (previousScene && previousScene !== scene ? 'seam' : 'none'),
         edgeMotion: config.edgeMotion ?? false,
         motif: config.motif,
+        divider: config.divider,
     };
 }
 

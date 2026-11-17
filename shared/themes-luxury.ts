@@ -312,7 +312,7 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
     },
     patra: {
         cover: {
-            variant: 'spotlight',
+            variant: 'letterpress',
             enter: 'ink',
             scene: 'paper',
             motif: 'rose',
@@ -488,7 +488,7 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
     },
     kagaz: {
         cover: {
-            variant: 'monogram',
+            variant: 'calligraphy',
             enter: 'unfold',
             scene: 'paper',
             motif: 'leaf',

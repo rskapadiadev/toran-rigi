@@ -12,7 +12,7 @@ plugs into the existing engine: the `OpeningProps` contract, the `useInvite()` c
 | 01 | Opening & entry experiences | Approved: Jewellery Box |
 | 02 | Envelope & invitation reveal | Approved: Sealed Letter, WaxSeal, Stationery Suite |
 | 03 | Cinematic hero & couple introduction | Approved and live: Premiere cover, Two portraits (also as cover and opening); on Mehfil |
-| 04 | Typography & decorative components | **In progress** |
+| 04 | Typography & decorative components | **Done: ornaments, Illuminated, Letterpress, Calligraphy, Dividers. Waiting for approval** |
 | 05 | Photo & memory experiences | Not started |
 | 06 | Wedding events & countdown | Not started |
 | 07 | Interactive guest experiences | Not started |
@@ -334,3 +334,67 @@ Full-screen scenes size themselves from `var(--inv-screen, 100svh)`, never bare 
 - On a guest's phone the value is the real screen height.
 - Inside a preview frame (Library, editor, try page, template preview), `InvitationView` measures the frame and sets `--inv-screen`, so the scenes fit the frame rather than the monitor.
 - New full-screen pieces must use `--inv-screen` too.
+
+## Stage 04: typography and decoration
+
+### `Flourish` and `Filigree` (`luxury/typography/ornaments.tsx`)
+Engraved gold ornaments that draw themselves in with a pen-like stroke when they scroll into view, with beads landing at the ends.
+- `Flourish`: a symmetric scroll divider.
+- `Filigree`: corner pieces for the four corners of a page, mirrored automatically and right-to-left aware.
+- Still devices get them fully drawn.
+
+### `Illuminated` (layout `illuminated` for welcome, story and family)
+A manuscript page.
+- **Paper and ornaments:** cotton-paper grain, four filigree corners, and the kicker set between flourishes.
+- **Ink:** the words settle in from the top, like ink soaking into the paper.
+- **The initial:** English prose gets a painted initial, a gold-foil letter on a tile of the couple's own medallion. Screen readers still read the full text.
+- **When the initial is skipped:**
+  - the family section (a list of names, so "Smt." stays whole);
+  - non-Latin scripts;
+  - the studio editor, where the text stays fully editable.
+- **Mixed text:** the paragraph uses `dir="auto"`.
+- **Used on:** Sitara, Patra, Heera, Roshni, Zari.
+
+### `EmbossedText` (`luxury/typography/EmbossedText.tsx`)
+Letterpress lettering: the text is first blind-debossed into the paper (a lit lower edge and a shadowed upper edge, no ink), then foil fills it.
+- **Order:** the impression arrives letter by letter (graphemes, so Indic clusters stay whole). Joined scripts (Arabic, Urdu, Hebrew) arrive as whole words so their letters never break apart. Then the foil pours in through a soft-edged mask, start to end, mirrored for right-to-left.
+- **Sheen:** follows `--sheen`, a registered CSS property, so it can animate.
+- **Accessibility:** screen readers hear the words once.
+
+### `LetterpressCover` (cover layout `letterpress`)
+A heavy cotton card on a table.
+- **Content:** names in `EmbossedText`, flourishes and filigree, the greeting or "Dear …", the headline, the date in letterpressed small capitals, and the venue.
+- **Sheen:** follows the mouse on desktop (one CSS variable, no React state) and drifts slowly by itself on phones (`letterpress-sheen` keyframes).
+- **Editing:** names are plain editable text in the studio.
+- **Used on:** Patra.
+
+### `Calligraphy` (`luxury/typography/Calligraphy.tsx`)
+Text written in ink: the pen traces every letter's outline in gold (an SVG text stroke-dash animation), then the ink floods in.
+- **Any script:** it draws the font's own outlines, so Latin script, Devanagari, Gujarati and Nastaliq all work. Joined scripts stay joined.
+- **Fit:** the drawing is measured after the fonts load (`getBBox`), so a long name always fits.
+- **Props:** `text`, `delay`, `duration`, `face` (`script` or `display`).
+- **Still devices:** the finished ink.
+
+### `CalligraphyCover` (cover layout `calligraphy`)
+A quiet page with the couple's medallion breathing faintly behind it.
+- **Order:** the first name is written, then "and", then the second name, then a rule, the headline and the date settle in.
+- **Editing:** names are plain editable text in the studio.
+- **Used on:** Kagaz.
+
+### Section dividers (`SectionConfig.divider`, `luxury/typography/dividers.tsx`)
+The ornament between a chapter's title and its words, chosen per section:
+
+| Divider | Look |
+|---|---|
+| `medallion` | The couple's generative ornament, the long-standing default |
+| `flourish` | Engraved scrolls |
+| `lotus` | A lotus opening at the centre |
+| `paisley` | Two butas bowing to a bead |
+| `deco` | A stepped fan over a double rule |
+| `line` | A hairline with a bead |
+
+- **Data:** an optional field on the section config. Older invitations have none and look exactly as before. No migration is needed, since it is part of the section's JSON.
+- **How it flows:** `Scene` provides it through `DividerContext`, and `SectionDivider` draws it (with the pen, like every engraved ornament). Layouts pass their own default: centred and framed use `medallion`, Illuminated uses `flourish`.
+- **Editor:** a "Divider" picker in the section settings. It appears only for welcome, story and family in the layouts that draw one (centred, framed, illuminated).
+- **Library:** the **Dividers** category previews each one on a centred welcome and an illuminated page.
+- **Adding one:** draw it in `dividers.tsx`, add its id to `dividerKinds` (`shared/schemas/invitation.ts`), and add a label to `dividerInfo` (`shared/blocks.ts`).

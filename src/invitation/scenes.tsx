@@ -10,6 +10,7 @@ import { type CSSProperties, type ReactNode, useMemo } from 'react';
 import { EnterContext } from '../motion/Reveal';
 import { useInvite } from './context';
 import { type TextPath, useEditing } from './editing';
+import { DividerContext } from './luxury/typography/dividers';
 import { BEAT, Heartbeat, isProcession, Procession } from './procession';
 
 interface SceneStyle {
@@ -679,9 +680,11 @@ export function Scene({ block, index, children }: SceneProps) {
                 />
             )}
             <EnterContext value={enter}>
-                <div className="relative" data-block-body>
-                    {children}
-                </div>
+                <DividerContext value={block.divider}>
+                    <div className="relative" data-block-body>
+                        {children}
+                    </div>
+                </DividerContext>
             </EnterContext>
         </div>
     );

@@ -1,27 +1,16 @@
 import type { LocalizedText } from '@shared/types';
 
-import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable, useEditing } from '../editing';
 import { Portraits } from '../luxury/hero/Portraits';
+import { SectionDivider } from '../luxury/typography/dividers';
 import { Illuminated } from '../luxury/typography/Illuminated';
 import type { StringKey } from '../strings';
 import { BlessingsCard, LetterChapter, RangoliClosing } from './story';
 
-function Divider() {
-    const { data } = useInvite();
-    return (
-        <div className="mx-auto my-6 flex w-24 items-center justify-center" aria-hidden>
-            <GenerativeOrnament
-                kind={data.invitation.design.generative.kind}
-                seed={data.invitation.seed + 7}
-                className="w-full"
-                duration={1800}
-            />
-        </div>
-    );
-}
+// The section's chosen divider; the couple's medallion when none is picked.
+const Divider = () => <SectionDivider />;
 
 interface ChapterProps {
     field: 'welcome' | 'story' | 'family';

@@ -7,6 +7,8 @@ import { useInvite } from '../context';
 import { Editable } from '../editing';
 import { Portraits } from '../luxury/hero/Portraits';
 import { PremiereCover } from '../luxury/hero/PremiereCover';
+import { CalligraphyCover } from '../luxury/typography/CalligraphyCover';
+import { LetterpressCover } from '../luxury/typography/LetterpressCover';
 import {
     ArchCover,
     EditorialCover,
@@ -31,6 +33,8 @@ export function Hero({ variant }: { variant: string }) {
     if (variant === 'photo') return <PhotoCover />;
     if (variant === 'garden') return <GardenCover />;
     if (variant === 'premiere') return <PremiereCover />;
+    if (variant === 'letterpress') return <LetterpressCover />;
+    if (variant === 'calligraphy') return <CalligraphyCover />;
     if (variant === 'portraits') return <Portraits mode="cover" />;
     return <SpotlightCover />;
 }
