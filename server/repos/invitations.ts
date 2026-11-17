@@ -145,3 +145,39 @@ export async function countRsvps(invitationId: string) {
 export async function invalidateInvitationCache(slug: string, version: number) {
     await getPlatform().cache.delete(cacheKey(slug, version));
 }
+
+export interface PdfSource {
+    id: string;
+    slug: string;
+    status: string;
+    version: number;
+    previewToken: string;
+    updatedAt: string;
+    enabled: boolean;
+}
+
+// What the PDF needs to know about an invitation: where to render it from and whether it is on.
+export async function pdfSource(
+    where: { slug: string } | { id: string },
+): Promise<PdfSource | null> {
+    const { db } = getPlatform();
+    const row = await db
+        .select({
+            id: invitations.id,
+            slug: invitations.slug,
+            status: invitations.status,
+            version: invitations.version,
+            previewToken: invitations.previewToken,
+            updatedAt: invitations.updatedAt,
+            extras: invitations.extras,
+        })
+        .from(invitations)
+        .where('slug' in where ? eq(invitations.slug, where.slug) : eq(invitations.id, where.id))
+        .get();
+    if (!row) return null;
+    const { extras, ...rest } = row;
+    return {
+        ...rest,
+        enabled: extras.pdf?.enabled ?? false,
+    };
+}

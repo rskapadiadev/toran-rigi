@@ -9,6 +9,10 @@ import { convertUsd, type RateSnapshot } from './fx';
 export const baseCurrencies = ['INR', 'USD'] as const;
 export type BaseCurrency = (typeof baseCurrencies)[number];
 
+// Customer-facing prices (landing, collections, try page, checkout, my invitations). Hidden for
+// now; flip to true to show them again. The admin always shows prices.
+export const SHOW_SHOP_PRICES = false as boolean;
+
 // What a new template sells for until the studio changes it (minor units): ₹799 / $50.
 export const DEFAULT_TEMPLATE_PRICE = {
     INR: 79900,

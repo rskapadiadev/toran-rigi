@@ -1,4 +1,5 @@
 import { applyLayout } from '@shared/blocks';
+import { PDF_ADDON } from '@shared/catalog';
 import { cultureOf } from '@shared/cultures';
 import { seedFrom } from '@shared/generative';
 import { newToken } from '@shared/ids';
@@ -21,7 +22,7 @@ import {
     wishes,
 } from '../db/schema';
 import { getPlatform } from '../platform/context';
-import { invoicesForOrder } from './billing';
+import { invoicesForOrder, setOrderAddon } from './billing';
 import { invalidateInvitationCache } from './invitations';
 import { resolveMusic } from './music';
 import { OrderError } from './orders';
@@ -194,6 +195,9 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
               .get()
         : undefined;
     const wasLive = current.invitation.status === 'published';
+    // The PDF download is a paid add-on: switching it puts it on (or takes it off) the invoice.
+    const pdfBefore = current.invitation.extras.pdf?.enabled ?? false;
+    const pdfAfter = input.extras.pdf?.enabled ?? false;
     // Editing a live invitation bumps the version so guests see the change immediately.
     const version = wasLive ? current.invitation.version + 1 : current.invitation.version;
 
@@ -240,6 +244,8 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
     if (wasLive)
         await invalidateInvitationCache(current.invitation.slug, current.invitation.version);
     if (current.template) await syncTemplateFromInvitation(id);
+    if (current.order && pdfBefore !== pdfAfter)
+        await setOrderAddon(current.order.id, PDF_ADDON, pdfAfter);
     return invitationForEdit(id);
 }
 

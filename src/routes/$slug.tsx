@@ -12,6 +12,8 @@ const search = z.object({
     g: z.string().max(64).optional(),
     // Set by the shop's template cards, which show the page in a small frame with no try bar.
     embed: z.coerce.string().max(4).optional(),
+    // The still edition the PDF is rendered from (see server/services/pdf.ts).
+    print: z.coerce.string().max(4).optional(),
 });
 
 export const Route = createFileRoute('/$slug')({
@@ -47,15 +49,16 @@ export const Route = createFileRoute('/$slug')({
 });
 
 function InvitationPage() {
-    const { invitation, guest } = Route.useLoaderData();
-    const { lang, embed } = Route.useSearch();
+    const { invitation, guest, origin } = Route.useLoaderData();
+    const { lang, embed, print } = Route.useSearch();
+    const printUrl = print === undefined ? undefined : `${origin}/${invitation.invitation.slug}`;
     // Demos are template previews: visitors can try their own names and start an order.
     const [trial, setTrial] = useState<Trial | null>(null);
     const data = useMemo(() => applyTrial(invitation, trial), [invitation, trial]);
     return (
         <>
-            <InvitationView data={data} initialLocale={lang} guest={guest} />
-            {invitation.invitation.isDemo && embed === undefined && (
+            <InvitationView data={data} initialLocale={lang} guest={guest} print={printUrl} />
+            {invitation.invitation.isDemo && embed === undefined && print === undefined && (
                 <PreviewBar data={invitation} trial={trial} onTrial={setTrial} />
             )}
         </>

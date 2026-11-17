@@ -166,8 +166,12 @@ export interface AddonDefinition {
     code: string;
     name: string;
     description: string;
-    prices: Record<Currency, number>;
+    // Shop orders outside India are in US dollars, so newer add-ons carry a USD price too.
+    prices: Record<Currency, number> & { USD?: number };
 }
+
+// The downloadable PDF of an invitation; the studio switches it on per invitation.
+export const PDF_ADDON = 'pdf_invitation';
 
 export const addonCatalog: AddonDefinition[] = [
     {
@@ -186,6 +190,16 @@ export const addonCatalog: AddonDefinition[] = [
         prices: {
             INR: 29900,
             AED: 2500,
+        },
+    },
+    {
+        code: PDF_ADDON,
+        name: 'PDF invitation',
+        description: 'A downloadable PDF of the invitation for the couple and their guests.',
+        prices: {
+            INR: 29900,
+            AED: 2500,
+            USD: 500,
         },
     },
     {

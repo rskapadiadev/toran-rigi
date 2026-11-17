@@ -19,6 +19,7 @@ import {
     storeCode,
 } from '../repos/auth';
 import { setSlug } from '../repos/composer';
+import { pdfSource } from '../repos/invitations';
 import { OrderError } from '../repos/orders';
 import { storePhoto } from '../repos/photos';
 import {
@@ -38,6 +39,7 @@ import {
     storeTemplate,
 } from '../repos/store';
 import { sendMail } from '../services/mailer';
+import { invitationPdf, pdfResponse } from '../services/pdf';
 
 interface StoreEnv extends AppEnv {
     Variables: { customer: StoreCustomer };
@@ -267,4 +269,17 @@ storeApi.post('/me/invitations/:id/photos', async (c) => {
         },
         201,
     );
+});
+
+// The couple's "Download PDF" (works before publishing too), when the studio has switched it on.
+storeApi.get('/me/invitations/:id/pdf', async (c) => {
+    await ownsInvitation(c.get('customer').id, c.req.param('id'));
+    const src = await pdfSource({ id: c.req.param('id') });
+    if (!src?.enabled) return fail(c, 404, 'PDF download isn’t switched on for this invitation');
+    try {
+        return pdfResponse(await invitationPdf(src, new URL(c.req.url).origin), src.slug);
+    } catch (error) {
+        console.error('[pdf]', error);
+        return fail(c, 409, 'The PDF couldn’t be made just now. Please try again in a minute.');
+    }
 });

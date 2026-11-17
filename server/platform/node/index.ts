@@ -10,6 +10,7 @@ import * as schema from '../../db/schema';
 import { createMemoryCache, createMemoryRateLimiter } from '../shared/memory';
 import { createS3Blob } from '../shared/s3-blob';
 import type { BlobStore, Db, Platform } from '../types';
+import { nodeCapturer } from './capture';
 
 function diskBlob(root: string): BlobStore {
     const path = (key: string) => join(root, key.replace(/\.\./g, ''));
@@ -96,6 +97,7 @@ export function getNodePlatform(): Platform {
         },
         country: (request) =>
             request.headers.get('cf-ipcountry') ?? request.headers.get('x-country') ?? undefined,
+        capturer: nodeCapturer(),
     };
     return platform;
 }

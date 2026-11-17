@@ -3,6 +3,7 @@
 import { formatMoney } from '@shared/money';
 import { occasionOf } from '@shared/occasions';
 import { photoUrl } from '@shared/photos';
+import { SHOW_SHOP_PRICES } from '@shared/pricing';
 import { Link } from '@tanstack/react-router';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, useInView, useReducedMotion } from 'motion/react';
@@ -241,6 +242,7 @@ export function PriceTag({
     tone = 'dark',
 }: PriceTagProps) {
     const dark = tone === 'dark';
+    if (!SHOW_SHOP_PRICES) return null;
     return (
         <span className={cn('inline-flex items-baseline gap-2', className)}>
             {compare !== null && (
@@ -410,17 +412,20 @@ export function ScreenShowcase({ templates, currency }: ShowcaseProps) {
                 </button>
             </div>
             <p className="mt-8 font-display text-3xl text-ivory">{t.name}</p>
-            {t.price !== null && (
-                <p className="mt-1 flex items-baseline justify-center gap-2 text-sm">
-                    <PriceTag
-                        price={t.price}
-                        compare={t.comparePrice}
-                        off={t.off}
-                        currency={currency}
-                    />
-                    <span className="text-ivory/45">· {occasionOf(t.eventKind).name.en}</span>
-                </p>
-            )}
+            <p className="mt-1 flex items-baseline justify-center gap-2 text-sm">
+                {SHOW_SHOP_PRICES && t.price !== null && (
+                    <>
+                        <PriceTag
+                            price={t.price}
+                            compare={t.comparePrice}
+                            off={t.off}
+                            currency={currency}
+                        />
+                        <span className="text-ivory/45">·</span>
+                    </>
+                )}
+                <span className="text-ivory/45">{occasionOf(t.eventKind).name.en}</span>
+            </p>
             <div className="mt-5 flex gap-3">
                 <a
                     href={`/${t.sampleSlug}`}

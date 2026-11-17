@@ -5,7 +5,8 @@ import type { AppEnv } from '../app';
 import { clientIp, fail } from '../lib/http';
 import { verifyTurnstile } from '../lib/turnstile';
 import { createRsvp, createWish, findGuest, totalAttending } from '../repos/guests';
-import { getInvitationIdBySlug } from '../repos/invitations';
+import { getInvitationIdBySlug, pdfSource } from '../repos/invitations';
+import { invitationPdf, pdfResponse } from '../services/pdf';
 
 export const invitationsApi = new Hono<AppEnv>();
 
@@ -57,4 +58,18 @@ invitationsApi.post('/:slug/wishes', async (c) => {
     const guest = await findGuest(invitation.id, parsed.data.guestToken);
     await createWish(invitation.id, parsed.data, guest?.id);
     return c.json({ ok: true });
+});
+
+// Guests' "Download PDF": only for published invitations whose couple has the PDF add-on.
+invitationsApi.get('/:slug/pdf', async (c) => {
+    const src = await pdfSource({ slug: c.req.param('slug') });
+    if (!src || src.status !== 'published' || !src.enabled) return fail(c, 404, 'Not available');
+    if (!(await c.env.rateLimit.limit(`pdf:${clientIp(c)}`)).success)
+        return fail(c, 429, 'Too many requests');
+    try {
+        return pdfResponse(await invitationPdf(src, new URL(c.req.url).origin), src.slug);
+    } catch (error) {
+        console.error('[pdf]', error);
+        return fail(c, 409, 'The PDF couldn’t be made just now. Please try again in a minute.');
+    }
 });

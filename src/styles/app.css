@@ -2236,3 +2236,40 @@ body:has([data-opening]) [data-preview-bar] {
         rotate: 5deg;
     }
 }
+
+/*
+ * The PDF edition (?print=1, rendered with reduced motion so every scene is still). Phone-shaped
+ * pages like the stationery couples share on WhatsApp: each section starts a page and fills it.
+ */
+@page {
+    size: 430px 932px;
+    margin: 0;
+}
+@media print {
+    html,
+    body {
+        background: var(--inv-bg, #fff);
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    [data-print] main > * {
+        break-before: page;
+        break-inside: auto;
+        min-height: 932px;
+    }
+    [data-print] main > *:first-child {
+        break-before: auto;
+    }
+    [data-print] [data-print-closing],
+    [data-print] [data-branding] {
+        break-before: avoid;
+        min-height: 0;
+    }
+    [data-print] [data-print-closing] {
+        break-before: page;
+    }
+    [data-print] [data-skip-opening],
+    [data-print] .pw-hero-cue {
+        display: none !important;
+    }
+}

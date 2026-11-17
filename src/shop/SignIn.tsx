@@ -13,11 +13,42 @@ interface SignInProps {
     lead?: string;
 }
 
+const PENDING_KEY = 'toran-signin';
+// A code is good for 10 minutes; so is our memory of having sent it.
+const CODE_TTL_MS = 10 * 60_000;
+
+interface Pending {
+    email: string;
+    at: number;
+}
+
+// The email a code was just sent to, so leaving to read the mail (or closing this window) and
+// coming back lands on the code box, not a blank form.
+function readPending(): Pending | null {
+    try {
+        const raw = sessionStorage.getItem(PENDING_KEY);
+        const saved = raw ? (JSON.parse(raw) as Pending) : null;
+        return saved && Date.now() - saved.at < CODE_TTL_MS ? saved : null;
+    } catch {
+        return null;
+    }
+}
+
+function writePending(value: Pending | null) {
+    try {
+        if (value) sessionStorage.setItem(PENDING_KEY, JSON.stringify(value));
+        else sessionStorage.removeItem(PENDING_KEY);
+    } catch {
+        // Private mode: the form still works, it just won't survive a reload.
+    }
+}
+
 // Email → 6-digit code. The first sign-in makes the account; there are no passwords.
 export function SignIn({ onDone, lead }: SignInProps) {
-    const [email, setEmail] = useState('');
+    const [pending] = useState(readPending);
+    const [email, setEmail] = useState(pending?.email ?? '');
     const [code, setCode] = useState('');
-    const [step, setStep] = useState<'email' | 'code'>('email');
+    const [step, setStep] = useState<'email' | 'code'>(pending ? 'code' : 'email');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const form = useRef<HTMLFormElement>(null);
@@ -30,12 +61,17 @@ export function SignIn({ onDone, lead }: SignInProps) {
         try {
             if (step === 'email') {
                 await post('/store/auth/request-code', { email });
+                writePending({
+                    email,
+                    at: Date.now(),
+                });
                 setStep('code');
             } else {
                 await post('/store/auth/verify', {
                     email,
                     code,
                 });
+                writePending(null);
                 onDone();
             }
         } catch (err) {
@@ -81,6 +117,7 @@ export function SignIn({ onDone, lead }: SignInProps) {
                             type="button"
                             className="text-primary underline underline-offset-2"
                             onClick={() => {
+                                writePending(null);
                                 setStep('email');
                                 setCode('');
                             }}

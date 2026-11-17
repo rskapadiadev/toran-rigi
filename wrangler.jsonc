@@ -16,6 +16,8 @@
         },
     ],
     "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "toran-media" }],
+    // Browser Rendering: photographs invitations page by page for their PDF.
+    "browser": { "binding": "BROWSER" },
     "ratelimits": [
         {
             "name": "RATE_LIMITER",
@@ -47,6 +49,7 @@
                 },
             ],
             "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "toran-media" }],
+            "browser": { "binding": "BROWSER" },
             "ratelimits": [
                 {
                     "name": "RATE_LIMITER",

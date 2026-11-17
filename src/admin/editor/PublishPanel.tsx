@@ -16,6 +16,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { ApiError, patch } from '@/lib/api';
+import { DownloadPdf } from '@/shop/DownloadPdf';
 
 import type { EditableInvitation } from '../composer/draft';
 
@@ -101,6 +102,21 @@ export function PublishPanel({ id, data, dirty }: PublishPanelProps) {
                     family
                 </p>
                 <CopyField value={previewUrl} label="Preview link" className="bg-card" />
+            </div>
+            <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+                <p className="text-sm">
+                    <span className="font-medium">PDF copy</span>
+                    <span className="block text-xs text-muted-foreground">
+                        {data.invitation.extras.pdf?.enabled
+                            ? 'The couple and guests can download it too.'
+                            : 'Only the studio can download it. Switch it on in Extras for the couple.'}
+                    </span>
+                </p>
+                <DownloadPdf
+                    invitationId={id}
+                    slug={data.invitation.slug}
+                    endpoint={`/api/admin/invitations/${id}/pdf`}
+                />
             </div>
             <Separator />
             {dirty && (

@@ -31,6 +31,7 @@ import {
     Dices,
     DoorOpen,
     Droplets,
+    FileDown,
     Flame,
     Flower,
     Flower2,
@@ -1635,7 +1636,7 @@ export function EventsPanel({ draft, set, focus, limit }: EventsPanelProps) {
 
 // ── Extras ───────────────────────────────────────────────────────────────────
 
-export type ExtraPart = 'music' | 'rsvp' | 'wishes' | 'gifts' | 'live' | 'travel';
+export type ExtraPart = 'music' | 'rsvp' | 'wishes' | 'gifts' | 'live' | 'travel' | 'pdf';
 
 interface ExtrasPanelProps extends PanelProps {
     invitationId: string;
@@ -1710,6 +1711,30 @@ export function ExtrasPanel({ draft, set, invitationId, only }: ExtrasPanelProps
                                 }}
                             />
                         )}
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            {show('pdf') && (
+                <AccordionItem value="pdf">
+                    <AccordionTrigger className={sectionTrigger}>
+                        <span className="flex items-center gap-2">
+                            PDF download
+                            <Badge variant="outline" className="font-normal">
+                                Paid add-on
+                            </Badge>
+                        </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-2">
+                        <SwitchRow
+                            id="pdf-enabled"
+                            icon={<FileDown />}
+                            label="Allow PDF download"
+                            description="The couple and their guests get a Download PDF button. Switching it on adds the PDF invitation add-on to the order’s invoice."
+                            checked={x.pdf?.enabled ?? false}
+                            onChange={(enabled) => {
+                                setExtras({ pdf: { enabled } });
+                            }}
+                        />
                     </AccordionContent>
                 </AccordionItem>
             )}

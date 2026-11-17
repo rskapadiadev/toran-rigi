@@ -5,11 +5,14 @@ import * as schema from '../../db/schema';
 import { createMemoryCache } from '../shared/memory';
 import { createS3Blob } from '../shared/s3-blob';
 import type { BlobStore, KvCache, Platform, RateLimiter } from '../types';
+import { cloudflareCapturer } from './capture';
 
 export interface CloudflareEnv {
     DB: D1Database;
     MEDIA: R2Bucket;
     RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> };
+    // Browser Rendering, for invitation PDFs.
+    BROWSER?: Fetcher;
     [key: string]: unknown;
 }
 
@@ -96,5 +99,6 @@ export function createCloudflarePlatform(env: CloudflareEnv, ctx: ExecutionConte
             ctx.waitUntil(task);
         },
         country: (request) => request.headers.get('cf-ipcountry') ?? undefined,
+        capturer: env.BROWSER ? cloudflareCapturer(env.BROWSER) : undefined,
     };
 }

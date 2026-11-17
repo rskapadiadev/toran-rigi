@@ -25,6 +25,8 @@ import { Branding } from './Branding';
 import { InviteProvider, useInvite } from './context';
 import { createPlayer, type MusicPlan, type MusicPlayer } from './music/player';
 import { Opening } from './openings/Opening';
+import { PrintContext, usePrintFit } from './print';
+import { PrintClosing } from './PrintClosing';
 import { Scene } from './scenes';
 import { findScrollParent, ReplayOpeningContext, ScrollRootContext } from './scroll';
 import { Countdown } from './sections/Countdown';
@@ -104,7 +106,13 @@ function Credits() {
     );
 }
 
-function Chrome({ player }: { player: MusicPlayer | null }) {
+interface ChromeProps {
+    player: MusicPlayer | null;
+    // The invitation's PDF, when the couple has the PDF add-on and it is published.
+    pdfHref?: string;
+}
+
+function Chrome({ player, pdfHref }: ChromeProps) {
     const { data, locale, setLocale, copy } = useInvite();
     // Read straight from the player: music usually starts on the opening tap, before this mounts.
     const subscribe = useCallback(
@@ -119,6 +127,25 @@ function Chrome({ player }: { player: MusicPlayer | null }) {
     const locales = data.invitation.locales;
     return (
         <div className="fixed end-4 top-4 z-40 flex items-center gap-2">
+            {pdfHref && (
+                <a
+                    href={pdfHref}
+                    download
+                    aria-label="Download the invitation as a PDF"
+                    className="inv-card flex h-10 items-center gap-1.5 rounded-full px-3.5 text-xs font-medium tracking-wide"
+                >
+                    <svg viewBox="0 0 24 24" className="size-4" aria-hidden fill="none">
+                        <path
+                            d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                    </svg>
+                    PDF
+                </a>
+            )}
             {locales.length > 1 && (
                 <div className="inv-card flex rounded-full p-1 text-xs">
                     {locales.map((l) => (
@@ -186,9 +213,15 @@ function musicPlan(invitation: PublicInvitationData['invitation']): MusicPlan {
 interface ExperienceProps {
     embedded: boolean;
     skipOpening: boolean;
+    // Set for the PDF: the living invitation's link, for the QR on the last page.
+    print?: string;
 }
 
-function Experience({ embedded, skipOpening }: ExperienceProps) {
+// Sections that only make sense live (forms, a ticking countdown, a stream) stay out of the PDF;
+// its last page points guests back to the living invitation instead.
+const liveOnly: readonly string[] = ['rsvp', 'wishes', 'countdown', 'live', 'shagun'];
+
+function Experience({ embedded, skipOpening, print }: ExperienceProps) {
     const { data, dir, locale, culture, occasion, tier } = useInvite();
     const { invitation } = data;
     const [opened, setOpened] = useState(skipOpening);
@@ -233,13 +266,15 @@ function Experience({ embedded, skipOpening }: ExperienceProps) {
         const list: ResolvedBlock[] = [];
         for (const section of invitation.sections) {
             if (!section.enabled || !isRendered(section.type)) continue;
+            if (print !== undefined && liveOnly.includes(section.type)) continue;
             list.push(resolveBlock(section, list.at(-1)?.scene));
         }
         return list;
-    }, [invitation.sections]);
+    }, [invitation.sections, print]);
 
     // In the composer preview, bring the block that was just edited into view so its new look plays at once.
     const rootRef = useRef<HTMLDivElement>(null);
+    usePrintFit(rootRef, print !== undefined);
     // What scrolls this invitation: the window live, the canvas frame in the editor.
     const scrollRoot = useRef<HTMLElement | null>(null);
 
@@ -287,6 +322,7 @@ function Experience({ embedded, skipOpening }: ExperienceProps) {
                 scrollRoot.current = embedded ? findScrollParent(el) : null;
             }}
             className={`inv-root texture-${invitation.design.texture} min-h-svh`}
+            data-print={print === undefined ? undefined : ''}
             style={designStyle(invitation.design)}
             dir={dir}
             lang={locale}
@@ -308,27 +344,40 @@ function Experience({ embedded, skipOpening }: ExperienceProps) {
                 data-staging={opened ? undefined : ''}
                 className={opened ? 'animate-[fade-in_1.2s_var(--ease-silk)]' : ''}
             >
-                <ScrollRootContext value={embedded ? scrollRoot : null}>
-                    <ReplayOpeningContext value={replayOpening}>
-                        <StageContext value={opened}>
-                            <LazyMotion features={domAnimation} strict>
-                                {blocks.map((block, i) => {
-                                    if (!isRendered(block.type)) return null;
-                                    const Section = sectionRegistry[block.type];
-                                    return (
-                                        <Scene key={blockKey(block)} block={block} index={i}>
-                                            <Section variant={block.variant} />
-                                        </Scene>
-                                    );
-                                })}
-                            </LazyMotion>
-                            <Credits />
-                            <Branding />
-                        </StageContext>
-                    </ReplayOpeningContext>
-                </ScrollRootContext>
+                <PrintContext value={print !== undefined}>
+                    <ScrollRootContext value={embedded ? scrollRoot : null}>
+                        <ReplayOpeningContext value={replayOpening}>
+                            <StageContext value={opened}>
+                                <LazyMotion features={domAnimation} strict>
+                                    {blocks.map((block, i) => {
+                                        if (!isRendered(block.type)) return null;
+                                        const Section = sectionRegistry[block.type];
+                                        return (
+                                            <Scene key={blockKey(block)} block={block} index={i}>
+                                                <Section variant={block.variant} />
+                                            </Scene>
+                                        );
+                                    })}
+                                </LazyMotion>
+                                <Credits />
+                                {print !== undefined ? <PrintClosing url={print} /> : <Branding />}
+                            </StageContext>
+                        </ReplayOpeningContext>
+                    </ScrollRootContext>
+                </PrintContext>
             </main>
-            {opened && <Chrome player={player} />}
+            {opened && print === undefined && (
+                <Chrome
+                    player={player}
+                    pdfHref={
+                        !embedded &&
+                        invitation.status === 'published' &&
+                        invitation.extras.pdf?.enabled
+                            ? `/api/i/${encodeURIComponent(invitation.slug)}/pdf`
+                            : undefined
+                    }
+                />
+            )}
         </div>
     );
 }
@@ -340,6 +389,8 @@ interface InvitationViewProps {
     // Composer preview: renders inside a phone frame without touching page scroll.
     embedded?: boolean;
     skipOpening?: boolean;
+    // The still, page-by-page edition the PDF is made from; the value is the live link for its QR.
+    print?: string;
 }
 
 export function InvitationView({
@@ -348,11 +399,16 @@ export function InvitationView({
     guest,
     embedded = false,
     skipOpening = false,
+    print,
 }: InvitationViewProps) {
     const tier = useMotionTier();
     return (
         <InviteProvider data={data} initialLocale={initialLocale} tier={tier} guest={guest}>
-            <Experience embedded={embedded} skipOpening={skipOpening} />
+            <Experience
+                embedded={embedded}
+                skipOpening={skipOpening || Boolean(print)}
+                print={print}
+            />
         </InviteProvider>
     );
 }

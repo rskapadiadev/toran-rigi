@@ -291,6 +291,9 @@ export const extrasSchema = z.object({
         })
         .optional(),
     wishes: z.object({ enabled: z.boolean() }).optional(),
+    // Paid add-on: the couple and their guests can download the invitation as a PDF. Only the
+    // studio switches it on; doing so adds the add-on to the order's invoice.
+    pdf: z.object({ enabled: z.boolean() }).optional(),
     // Which "Created with Toran" mark sits at the foot of the page (see shared/branding.ts).
     branding: z
         .object({

@@ -1,4 +1,5 @@
 import { formatMoney } from '@shared/money';
+import { SHOW_SHOP_PRICES } from '@shared/pricing';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, Check, Loader2, Sparkles } from 'lucide-react';
@@ -16,7 +17,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { api, post } from '@/lib/api';
+import { api, ApiError, post } from '@/lib/api';
 import { FormEditor } from '@/shop/FormEditor';
 import { PriceTag } from '@/shop/landing';
 import { localPhotos, mapLocalPhotos, withoutLocalPhotos } from '@/shop/local-photos';
@@ -36,16 +37,7 @@ export const Route = createFileRoute('/try/$slug')({
             },
         ],
     }),
-    errorComponent: () => (
-        <ShopShell>
-            <div className="mx-auto max-w-md px-4 py-24 text-center">
-                <h1 className="font-display text-4xl">This design isn’t available</h1>
-                <Link to="/collections" className="mt-6 inline-block text-burgundy underline">
-                    See the collection
-                </Link>
-            </div>
-        </ShopShell>
-    ),
+    errorComponent: TryError,
     component: TryPage,
 });
 
@@ -81,6 +73,41 @@ function writeSaved(slug: string, draft: Draft | null) {
     } catch {
         // Private mode or full storage: trying still works for this visit.
     }
+}
+
+// "Not available" only when the design really is gone; anything else gets a reload, never a
+// misleading dead end.
+function TryError({ error }: { error: unknown }) {
+    const missing = error instanceof ApiError && (error.status === 404 || error.status === 409);
+    return (
+        <ShopShell>
+            <div className="mx-auto max-w-md px-4 py-24 text-center">
+                <h1 className="font-display text-4xl">
+                    {missing ? 'This design isn’t available' : 'Something went wrong'}
+                </h1>
+                {!missing && (
+                    <p className="mt-3 text-sm text-muted-foreground">
+                        Your words are kept on this device, so reloading won’t lose them.
+                    </p>
+                )}
+                <div className="mt-6 flex justify-center gap-4">
+                    {!missing && (
+                        <Button
+                            className="rounded-full"
+                            onClick={() => {
+                                window.location.reload();
+                            }}
+                        >
+                            Reload
+                        </Button>
+                    )}
+                    <Link to="/collections" className="self-center text-burgundy underline">
+                        See the collection
+                    </Link>
+                </div>
+            </div>
+        </ShopShell>
+    );
 }
 
 function TryPage() {
@@ -244,13 +271,14 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
     const [working, setWorking] = useState(false);
     const [progress, setProgress] = useState('');
     const me = meQuery.data;
+    // Spinner only before the first answer; later re-checks keep the sign-in form on screen.
     const step: BuyStep = working
         ? 'working'
-        : meQuery.isPending
-          ? 'loading'
-          : me
-            ? 'review'
-            : 'signin';
+        : me
+          ? 'review'
+          : meQuery.isFetched
+            ? 'signin'
+            : 'loading';
 
     const offer = data.offer;
     const price = offer ? formatMoney(offer.price, offer.currency) : '';
@@ -365,19 +393,21 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
                                 uploaded with it.
                             </p>
                         )}
-                        <div className="flex items-baseline justify-between border-t pt-4">
-                            <span className="text-sm text-muted-foreground">Total</span>
-                            {offer ? (
-                                <PriceTag
-                                    price={offer.price}
-                                    compare={offer.comparePrice}
-                                    off={offer.off}
-                                    currency={offer.currency}
-                                    tone="light"
-                                    className="font-display text-3xl"
-                                />
-                            ) : null}
-                        </div>
+                        {SHOW_SHOP_PRICES && (
+                            <div className="flex items-baseline justify-between border-t pt-4">
+                                <span className="text-sm text-muted-foreground">Total</span>
+                                {offer ? (
+                                    <PriceTag
+                                        price={offer.price}
+                                        compare={offer.comparePrice}
+                                        off={offer.off}
+                                        currency={offer.currency}
+                                        tone="light"
+                                        className="font-display text-3xl"
+                                    />
+                                ) : null}
+                            </div>
+                        )}
                         <Button
                             size="lg"
                             className="w-full"
@@ -385,7 +415,7 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
                                 void buy();
                             }}
                         >
-                            Pay {price}
+                            {SHOW_SHOP_PRICES ? `Pay ${price}` : 'Buy & keep'}
                         </Button>
                         <p className="text-center text-xs text-muted-foreground">
                             {me?.payments === 'fake'

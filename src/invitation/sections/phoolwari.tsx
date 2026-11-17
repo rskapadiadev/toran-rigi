@@ -11,6 +11,7 @@ import { cn } from '../../lib/utils';
 import { useInvite } from '../context';
 import { Editable, eventPath } from '../editing';
 import { type Ambient, coverPage, type Layer, PAGE_RATIO, pageFor } from '../kits/phoolwari';
+import { usePrint } from '../print';
 import { useSectionScroll } from '../scroll';
 import type { PublicInvitationEvent } from '../types';
 import { EventActions } from './Events';
@@ -237,14 +238,17 @@ export function GardenCover() {
     const scene = useRef<HTMLDivElement>(null);
     useStageProgress(hero, true, 0);
     useTilt(scene, live);
+    const print = usePrint();
     return (
         <>
             {/* Same layout on every device (no swap after load); reduced motion just unpins it. */}
             <section ref={hero} className="pw-hero relative h-[220svh] motion-reduce:h-auto">
                 <div
                     ref={scene}
+                    data-print-page={print ? '' : undefined}
                     className={cn(
                         'pw-hero-sky top-0 h-dvh min-h-[560px] overflow-hidden',
+                        print && 'h-[932px]',
                         'sticky motion-reduce:relative',
                     )}
                 >
@@ -432,11 +436,16 @@ function dayNumbers(events: readonly PublicInvitationEvent[]) {
 // "The celebrations": every ceremony as a tappable chip that jumps to its scene.
 function CeremonyIndex() {
     const { data, t } = useInvite();
+    const print = usePrint();
     const days = dayNumbers(data.events);
     return (
         <section
-            className="pw-letter relative overflow-hidden px-5 py-16"
+            className={cn(
+                'pw-letter relative overflow-hidden px-5 py-16',
+                print && 'flex h-[932px] flex-col justify-center',
+            )}
             style={{ color: coverPage.ink }}
+            data-print-page={print ? '' : undefined}
         >
             <img
                 src={coverPage.sprig}
@@ -497,13 +506,18 @@ function CeremonyIndex() {
 
 export function WardrobeEvents() {
     const { data } = useInvite();
+    const print = usePrint();
     const days = dayNumbers(data.events);
     return (
         <div>
             <CeremonyIndex />
-            {data.events.map((event, i) => (
-                <CeremonyScene key={event.id} event={event} index={i} day={days[i] ?? i + 1} />
-            ))}
+            {data.events.map((event, i) =>
+                print ? (
+                    <PrintCeremony key={event.id} event={event} index={i} day={days[i] ?? i + 1} />
+                ) : (
+                    <CeremonyScene key={event.id} event={event} index={i} day={days[i] ?? i + 1} />
+                ),
+            )}
         </div>
     );
 }
@@ -582,6 +596,71 @@ function CeremonyScene({ event, index, day }: SceneProps) {
                 <Ambient kind={page.ambient} />
             </div>
         </section>
+    );
+}
+
+// The PDF's two pages for a ceremony: its illustrated scene, then its details, on the same sky.
+function PrintCeremony({ event, index, day }: SceneProps) {
+    const { t } = useInvite();
+    const page = pageFor(event.kind);
+    const when = dayParts(zonedToUtc(event.startsAt, event.timezone), event.timezone);
+    const sky = {
+        background: page.sky,
+        color: page.ink,
+    };
+    const art = { aspectRatio: String(ART_RATIO) };
+    const head = (
+        <header className="relative z-[2] px-6 pt-14 text-center">
+            <p
+                className="text-[11px] font-semibold tracking-[0.4em] uppercase"
+                style={{ color: page.tint }}
+            >
+                Day {day} · {when.weekday} {when.day} {when.month}
+            </p>
+            {event.dressCode?.title && (
+                <h2 className="inv-display mt-3 text-[2.6rem] leading-[1.05]">
+                    {t(event.dressCode.title)}
+                </h2>
+            )}
+            <p className="mt-3 flex items-center justify-center gap-3 text-sm font-semibold tracking-[0.3em] uppercase">
+                <span className="h-px w-8 bg-current opacity-40" />
+                {t(event.title)}
+                <span className="h-px w-8 bg-current opacity-40" />
+            </p>
+        </header>
+    );
+    return (
+        <>
+            <section
+                id={`pw-${event.id}`}
+                className={cn('relative h-[932px] overflow-hidden', page.dark && 'pw-dark')}
+                style={sky}
+                data-print-page
+            >
+                {page.dark && <Stars />}
+                {page.lights && <MirrorBall />}
+                {head}
+                <div className="absolute inset-x-0 bottom-0 z-[1] w-full" style={art}>
+                    {page.layers.map((layer, i) => (
+                        <StageLayer key={i} layer={layer} />
+                    ))}
+                </div>
+            </section>
+            <section
+                className={cn(
+                    'relative flex h-[932px] flex-col justify-center gap-6 overflow-hidden px-4',
+                    page.dark && 'pw-dark',
+                )}
+                style={sky}
+                data-print-page
+            >
+                {page.dark && <Stars />}
+                {head}
+                <div className="relative z-[2]">
+                    <DetailsCard event={event} index={index} />
+                </div>
+            </section>
+        </>
     );
 }
 

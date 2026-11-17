@@ -382,6 +382,7 @@ export async function myInvitations(customerId: string) {
             status: invitations.status,
             content: invitations.content,
             design: invitations.design,
+            extras: invitations.extras,
             orderId: orders.id,
             orderNumber: orders.number,
             createdAt: invitations.createdAt,
@@ -391,8 +392,9 @@ export async function myInvitations(customerId: string) {
         .where(eq(orders.customerId, customerId))
         .orderBy(desc(invitations.createdAt));
     return Promise.all(
-        rows.map(async ({ content, ...row }) => ({
+        rows.map(async ({ content, extras, ...row }) => ({
             ...row,
+            pdf: extras.pdf?.enabled ?? false,
             title: coupleName(content) || 'Your invitation',
             balance: await balanceOf(row.orderId),
         })),

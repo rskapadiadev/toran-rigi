@@ -2,6 +2,8 @@ import { advanceFor, computeInvoice } from '@shared/billing';
 import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm';
 
 import {
+    addonPrices,
+    addons,
     counters,
     creditNotes,
     customers,
@@ -152,6 +154,44 @@ export async function addInvoiceItem(invoiceId: string, item: NewInvoiceItem) {
         sort: count?.n ?? 0,
     });
     return recalcInvoice(invoiceId);
+}
+
+// Adds (or, when switched off, removes) an add-on line on the order's latest open invoice, priced
+// in the order's currency. A line already paid for is left alone: refunds are a studio decision.
+export async function setOrderAddon(orderId: string, code: string, on: boolean) {
+    const { db } = getPlatform();
+    const addon = await db.select().from(addons).where(eq(addons.code, code)).get();
+    if (!addon) return;
+    const open = (await invoicesForOrder(orderId)).filter((i) => i.status !== 'void').at(-1);
+    if (!open) return;
+    const line = await db
+        .select({ id: invoiceItems.id })
+        .from(invoiceItems)
+        .where(
+            and(
+                eq(invoiceItems.invoiceId, open.id),
+                eq(invoiceItems.kind, 'addon'),
+                eq(invoiceItems.description, addon.name),
+            ),
+        )
+        .get();
+    if (on && !line) {
+        const price = await db
+            .select({ amount: addonPrices.amountMinor })
+            .from(addonPrices)
+            .where(and(eq(addonPrices.addonCode, code), eq(addonPrices.currency, open.currency)))
+            .get();
+        if (!price) return;
+        await addInvoiceItem(open.id, {
+            kind: 'addon',
+            description: addon.name,
+            qty: 1,
+            unitPrice: price.amount,
+        });
+    } else if (!on && line && open.status !== 'paid') {
+        await db.delete(invoiceItems).where(eq(invoiceItems.id, line.id));
+        await recalcInvoice(open.id);
+    }
 }
 
 export async function recordPayment(

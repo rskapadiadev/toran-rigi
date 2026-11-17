@@ -1,9 +1,11 @@
 import { featuredCurrencies } from '@shared/fx';
+import { SHOW_SHOP_PRICES } from '@shared/pricing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { type ReactNode, useEffect } from 'react';
 
 import { Toaster } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { FloatingHeader } from '@/shop/landing';
 
@@ -12,6 +14,9 @@ const queryClient = new QueryClient({
         queries: {
             staleTime: 15_000,
             retry: false,
+            // Guests switch to their mail app for the sign-in code; coming back must not reload
+            // (and reset) the page they were on.
+            refetchOnWindowFocus: false,
         },
     },
 });
@@ -36,18 +41,21 @@ export function ShopShell({ children, bare = false, tone = 'light', currency }: 
     }, []);
     return (
         <QueryClientProvider client={queryClient}>
-            <div
-                className={cn(
-                    'shop min-h-dvh',
-                    bare && 'h-dvh overflow-hidden',
-                    dark && 'shop-dark overflow-x-clip bg-night text-ivory',
-                )}
-            >
-                {!bare && (dark ? <FloatingHeader /> : <ShopHeader />)}
-                {children}
-                {!bare && <ShopFooter dark={dark} currency={currency} />}
-            </div>
-            <Toaster position="top-center" />
+            {/* The shared editor panels (ceremonies, photos) use tooltips, as in the studio. */}
+            <TooltipProvider>
+                <div
+                    className={cn(
+                        'shop min-h-dvh',
+                        bare && 'h-dvh overflow-hidden',
+                        dark && 'shop-dark overflow-x-clip bg-night text-ivory',
+                    )}
+                >
+                    {!bare && (dark ? <FloatingHeader /> : <ShopHeader />)}
+                    {children}
+                    {!bare && <ShopFooter dark={dark} currency={currency} />}
+                </div>
+                <Toaster position="top-center" />
+            </TooltipProvider>
         </QueryClientProvider>
     );
 }
@@ -147,7 +155,10 @@ function ShopFooter({ dark, currency }: FooterProps) {
                     · Every celebration begins at the Toran.
                 </p>
                 <div className="flex items-center gap-5">
-                    {currency && <CurrencySwitcher currency={currency} dark={dark} />}
+                    {/* Currency only matters while prices are shown. */}
+                    {SHOW_SHOP_PRICES && currency && (
+                        <CurrencySwitcher currency={currency} dark={dark} />
+                    )}
                     <p>Toran by Rigi</p>
                 </div>
             </div>

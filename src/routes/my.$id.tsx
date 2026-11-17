@@ -1,4 +1,5 @@
 import { formatMoney } from '@shared/money';
+import { SHOW_SHOP_PRICES } from '@shared/pricing';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeft, Check, Copy, ExternalLink, Loader2, Lock } from 'lucide-react';
@@ -10,6 +11,7 @@ import { upload } from '@/admin/editor/PhotosPanel';
 import type { Uploader } from '@/admin/editor/uploader';
 import { Button } from '@/components/ui/button';
 import { api, ApiError, post } from '@/lib/api';
+import { DownloadPdf } from '@/shop/DownloadPdf';
 import { FormEditor } from '@/shop/FormEditor';
 import { ShopShell } from '@/shop/ShopShell';
 import { SignIn } from '@/shop/SignIn';
@@ -193,14 +195,21 @@ function Editor({ data, onChanged }: EditorProps) {
                     }}
                 >
                     {busy === 'pay' && <Loader2 className="animate-spin" />}
-                    Pay {formatMoney(data.balance, data.currency)}
+                    {SHOW_SHOP_PRICES
+                        ? `Pay ${formatMoney(data.balance, data.currency)}`
+                        : 'Complete payment'}
                 </Button>
             ) : live ? (
-                <Button variant="outline" asChild>
-                    <a href={link} target="_blank" rel="noreferrer">
-                        <ExternalLink /> View
-                    </a>
-                </Button>
+                <>
+                    {base.invitation.extras.pdf?.enabled && (
+                        <DownloadPdf invitationId={id} slug={base.invitation.slug} />
+                    )}
+                    <Button variant="outline" asChild>
+                        <a href={link} target="_blank" rel="noreferrer">
+                            <ExternalLink /> View
+                        </a>
+                    </Button>
+                </>
             ) : (
                 <Button
                     className="bg-gold text-ink hover:bg-gold-bright"

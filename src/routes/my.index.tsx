@@ -4,6 +4,7 @@ import { ExternalLink, Loader2, PenLine } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { api, ApiError, post } from '@/lib/api';
+import { DownloadPdf } from '@/shop/DownloadPdf';
 import { ShopShell } from '@/shop/ShopShell';
 import { SignIn } from '@/shop/SignIn';
 import type { Me } from '@/shop/types';
@@ -111,6 +112,9 @@ function MyInvitations() {
                                     </p>
                                 </div>
                                 <div className="flex gap-2">
+                                    {inv.pdf && (
+                                        <DownloadPdf invitationId={inv.id} slug={inv.slug} />
+                                    )}
                                     {inv.status === 'published' && (
                                         <Button variant="outline" size="sm" asChild>
                                             <a
