@@ -2143,8 +2143,9 @@ export const themeLayouts: Record<string, BlockPreset> = {
             variant: 'photo',
             scene: 'velvet',
         },
+        // A boxed suite of deckled cards: foil-stamped monogram, names written in ink.
         card: {
-            variant: 'envelope',
+            variant: 'suite',
             scene: 'velvet',
         },
         countdown: {
@@ -2162,8 +2163,9 @@ export const themeLayouts: Record<string, BlockPreset> = {
             edge: 'dhol',
             edgeMotion: true,
         },
+        // The couple introduced as a magazine feature: two arched portraits that part like doors.
         story: {
-            variant: 'letter',
+            variant: 'portraits',
             scene: 'blush',
             edge: 'lace',
         },

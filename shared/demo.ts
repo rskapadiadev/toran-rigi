@@ -186,6 +186,12 @@ const rawDemos: DemoInvitation[] = [
             ),
             family: t('Smt. Meera & Shri Rajesh Malhotra · Smt. Nisha & Shri Vikram Kapoor'),
             closing: t('We can’t wait to celebrate with you.'),
+            // Illustrated stand-ins for the couple's portraits (the Phoolwari art kit).
+            photoSlots: {
+                'story.one': '/kits/phoolwari/haldi-1.webp',
+                'story.two': '/kits/phoolwari/sangeet-2.webp',
+                'story.together': '/kits/phoolwari/wedding-couples.webp',
+            },
             gallery: [],
         },
         events: [
