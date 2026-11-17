@@ -4,6 +4,7 @@ import { applyLayout } from './blocks';
 import type { CultureId } from './cultures';
 import { cultures } from './cultures';
 import { type DemoInvitation, maps, t } from './demo-kit';
+import { luxuryDemos } from './demo-luxury';
 import { occasionDemos } from './demo-occasions';
 import type { OccasionId } from './occasions';
 import { themeBySlug, themeLayouts } from './themes';
@@ -1003,6 +1004,7 @@ const demoFinish: Partial<Record<string, DemoInvitation['extras']>> = {
 // Demos ship with their theme's full layout preset and finishing touches applied.
 export const demoInvitations: (DemoInvitation & { occasion: OccasionId })[] = [
     ...rawDemos,
+    ...luxuryDemos,
     ...occasionDemos,
 ].map((demo) => ({
     ...demo,

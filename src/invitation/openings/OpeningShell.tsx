@@ -44,7 +44,7 @@ export function OpeningShell({
                                 {copy('dearGuest')} {guest.name}
                             </p>
                         )}
-                        <h1 className="inv-display text-[clamp(2.2rem,8cqw,4.5rem)] leading-none">
+                        <h1 className="inv-display text-[clamp(2rem,8cqw,4.5rem)] leading-[1.1] text-balance [overflow-wrap:normal]">
                             <span className="foil-text">{names.one}</span>
                             {names.two && (
                                 <>

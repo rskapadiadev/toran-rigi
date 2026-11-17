@@ -71,6 +71,13 @@
       "when": 1794913755957,
       "tag": "0009_hearts",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1794934643476,
+      "tag": "0010_refresh_template_descriptions",
+      "breakpoints": true
     }
   ]
 }

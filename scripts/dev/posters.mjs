@@ -2,6 +2,10 @@
 // and uploads it, so the shop shows pictures instead of running every invitation live.
 // Usage: npm run dev, then `node scripts/dev/posters.mjs [base-url] [admin-email]`.
 // Re-run after changing a template's look; `--all` also redoes templates that already have one.
+// Production: `node scripts/dev/posters.mjs https://toran.therigi.workers.dev you@example.com`
+// asks for the sign-in code from your email (there is no dev inbox there).
+import { createInterface } from 'node:readline/promises';
+
 import { chromium } from '@playwright/test';
 
 const args = process.argv.slice(2).filter((a) => !a.startsWith('--'));
@@ -20,10 +24,22 @@ const ctx = await browser.newContext({
 });
 const page = await ctx.newPage();
 
-// Sign in as an admin through the dev inbox.
+// Sign in as an admin: locally the code comes from the dev inbox; anywhere else, from your email.
+const local = /localhost|127\.0\.0\.1/.test(base);
+if (!local && !args[1]) throw new Error('Pass the admin email for a live site.');
 await page.request.post(`${base}/api/auth/request-code`, { data: { email } });
-const mails = await (await fetch(`${base}/api/dev/mail`)).json();
-const code = mails.find((m) => m.to === email)?.subject.slice(0, 6);
+let code;
+if (local) {
+    const mails = await (await fetch(`${base}/api/dev/mail`)).json();
+    code = mails.find((m) => m.to === email)?.subject.slice(0, 6);
+} else {
+    const prompt = createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+    code = (await prompt.question(`Enter the 6-digit code sent to ${email}: `)).trim();
+    prompt.close();
+}
 if (!code) throw new Error(`No sign-in code for ${email}. Is the dev server running?`);
 const signedIn = await page.request.post(`${base}/api/auth/verify`, {
     data: {

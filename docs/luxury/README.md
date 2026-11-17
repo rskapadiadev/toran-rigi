@@ -11,8 +11,8 @@ plugs into the existing engine: the `OpeningProps` contract, the `useInvite()` c
 |---|---|---|
 | 01 | Opening & entry experiences | Approved: Jewellery Box |
 | 02 | Envelope & invitation reveal | Approved: Sealed Letter, WaxSeal, Stationery Suite |
-| 03 | Cinematic hero & couple introduction | **Done: Premiere cover, Two portraits. Waiting for approval** |
-| 04 | Typography & decorative components | Not started |
+| 03 | Cinematic hero & couple introduction | Approved and live: Premiere cover, Two portraits (also as cover and opening); on Mehfil |
+| 04 | Typography & decorative components | **In progress** |
 | 05 | Photo & memory experiences | Not started |
 | 06 | Wedding events & countdown | Not started |
 | 07 | Interactive guest experiences | Not started |

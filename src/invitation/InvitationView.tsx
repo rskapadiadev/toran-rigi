@@ -174,7 +174,9 @@ function Chrome({ player, pdfHref }: ChromeProps) {
                     }}
                     className="inv-card flex size-10 items-center justify-center rounded-full"
                 >
-                    <span className={`flex h-4 items-end gap-0.5 ${playing ? '' : 'opacity-50'}`}>
+                    <span
+                        className={`relative flex h-4 items-end gap-0.5 ${playing ? '' : 'opacity-60'}`}
+                    >
                         {[0, 1, 2].map((i) => (
                             <span
                                 key={i}
@@ -185,6 +187,13 @@ function Chrome({ player, pdfHref }: ChromeProps) {
                                 }}
                             />
                         ))}
+                        {/* Off: the bars are struck through, so silence reads at a glance. */}
+                        {!playing && (
+                            <span
+                                aria-hidden
+                                className="absolute start-1/2 top-1/2 h-[2px] w-[22px] -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-current shadow-[0_0_0_1.5px_var(--inv-surface)] rtl:translate-x-1/2"
+                            />
+                        )}
                     </span>
                 </button>
             )}

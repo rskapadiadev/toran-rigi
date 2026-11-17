@@ -1,0 +1,453 @@
+// Demo invitations for the luxury collection (themes-luxury.ts). Names, dates and venues are
+// fictional; portraits and scenes are illustrated stand-ins from the Phoolwari art kit.
+import { type DemoEvent, type DemoInvitation, maps, t } from './demo-kit';
+import type { SectionConfig, SectionType } from './types';
+
+const sections = (types: SectionType[]): SectionConfig[] =>
+    types.map((type) => ({
+        type,
+        enabled: true,
+    }));
+
+const portraits = {
+    'story.one': '/kits/phoolwari/haldi-1.webp',
+    'story.two': '/kits/phoolwari/sangeet-2.webp',
+    'story.together': '/kits/phoolwari/wedding-couples.webp',
+};
+
+interface Day {
+    kind: string;
+    title: string;
+    at: string;
+}
+
+// One venue for every ceremony, the way most destination weddings run.
+function days(list: Day[], venue: string, address: string, timezone = 'Asia/Kolkata'): DemoEvent[] {
+    return list.map((d) => ({
+        kind: d.kind,
+        title: t(d.title),
+        startsAt: d.at,
+        timezone,
+        venue,
+        address,
+        mapsUrl: maps(`${venue} ${address}`),
+    }));
+}
+
+const headline = t('request the pleasure of your company at the celebration of their marriage');
+const wedding: SectionType[] = [
+    'cover',
+    'card',
+    'countdown',
+    'welcome',
+    'story',
+    'family',
+    'events',
+    'gallery',
+    'rsvp',
+    'wishes',
+    'closing',
+];
+
+export const luxuryDemos: DemoInvitation[] = [
+    {
+        slug: 'demo-sitara',
+        themeSlug: 'sitara',
+        culture: 'hindu',
+        locales: ['en'],
+        calendars: [],
+        seed: 7301,
+        content: {
+            people: {
+                one: {
+                    name: t('Ishaan'),
+                    parents: t('Son of Mr & Mrs Arjun Mehra'),
+                },
+                two: {
+                    name: t('Myra'),
+                    parents: t('Daughter of Mr & Mrs Rohan Kapoor'),
+                },
+            },
+            greetingKey: 'shree-ganeshay-namah',
+            headline,
+            welcome: t(
+                'Under a sky full of stars, two families become one. Come and be part of our story.',
+            ),
+            story: t(
+                'We met on a film set in Mumbai: he was the assistant director, she was the one who kept correcting his script. Six years and many retakes later, this is our favourite scene.',
+            ),
+            family: t('Smt. Kavita & Shri Arjun Mehra · Smt. Neha & Shri Rohan Kapoor'),
+            closing: t('Save us a seat in the front row.'),
+            coverPhotoKey: '/kits/phoolwari/wedding-stage.webp',
+            photoSlots: portraits,
+            gallery: [],
+        },
+        events: days(
+            [
+                {
+                    kind: 'sangeet',
+                    title: 'Sangeet under the stars',
+                    at: '2027-01-29T19:30',
+                },
+                {
+                    kind: 'pheras',
+                    title: 'The Wedding',
+                    at: '2027-01-30T18:00',
+                },
+                {
+                    kind: 'reception',
+                    title: 'Reception',
+                    at: '2027-01-31T20:00',
+                },
+            ],
+            'Taj Lands End',
+            'Bandstand, Bandra West, Mumbai',
+        ),
+        extras: { wishes: { enabled: true } },
+        sections: sections(wedding),
+    },
+    {
+        slug: 'demo-heera',
+        themeSlug: 'heera',
+        culture: 'hindu.marwari',
+        locales: ['en'],
+        calendars: [],
+        seed: 7302,
+        content: {
+            people: {
+                one: {
+                    name: t('Vihaan'),
+                    parents: t('Son of Mr & Mrs Ramesh Agarwal'),
+                },
+                two: {
+                    name: t('Anaya'),
+                    parents: t('Daughter of Mr & Mrs Sunil Jain'),
+                },
+            },
+            greetingKey: 'shree-ganeshay-namah',
+            headline,
+            welcome: t('With the blessings of our elders, we open our doors to you.'),
+            story: t(
+                'Our grandmothers were school friends in Jodhpur. Fifty years later, they finally got the wedding they always planned.',
+            ),
+            family: t('Smt. Sarla & Shri Ramesh Agarwal · Smt. Asha & Shri Sunil Jain'),
+            closing: t('Your presence is the jewel of our celebration.'),
+            photoSlots: portraits,
+            gallery: [],
+        },
+        events: days(
+            [
+                {
+                    kind: 'mehndi',
+                    title: 'Mehendi',
+                    at: '2027-02-18T15:00',
+                },
+                {
+                    kind: 'haldi',
+                    title: 'Haldi',
+                    at: '2027-02-19T10:00',
+                },
+                {
+                    kind: 'pheras',
+                    title: 'Pheras',
+                    at: '2027-02-19T19:00',
+                },
+                {
+                    kind: 'reception',
+                    title: 'Reception',
+                    at: '2027-02-20T20:00',
+                },
+            ],
+            'Umaid Bhawan Palace',
+            'Circuit House Road, Jodhpur',
+        ),
+        extras: { wishes: { enabled: true } },
+        sections: sections(wedding),
+    },
+    {
+        slug: 'demo-patra',
+        themeSlug: 'patra',
+        culture: 'universal.interfaith',
+        locales: ['en'],
+        calendars: [],
+        seed: 7303,
+        content: {
+            people: {
+                one: { name: t('Eleanor') },
+                two: { name: t('Arjun') },
+            },
+            headline,
+            welcome: t(
+                'Two families, two traditions and one long table. We would love for you to be there.',
+            ),
+            story: t(
+                'We wrote to each other for a year before we ever met: letters between London and Pune, folded small enough to fit in a book. This is the last one, and it is addressed to you.',
+            ),
+            family: t('Mr & Mrs Thomas Whitmore · Mr & Mrs Prakash Deshpande'),
+            closing: t('With love, and a seat kept for you.'),
+            gallery: [],
+        },
+        events: days(
+            [
+                {
+                    kind: 'ceremony',
+                    title: 'The Ceremony',
+                    at: '2027-05-22T15:00',
+                },
+                {
+                    kind: 'dinner',
+                    title: 'Dinner & Dancing',
+                    at: '2027-05-22T19:00',
+                },
+            ],
+            'Cliveden House',
+            'Taplow, Berkshire',
+            'Europe/London',
+        ),
+        extras: { wishes: { enabled: true } },
+        sections: sections(wedding),
+    },
+    {
+        slug: 'demo-roshni',
+        themeSlug: 'roshni',
+        culture: 'hindu.gujarati',
+        locales: ['en'],
+        calendars: [],
+        seed: 7304,
+        content: {
+            people: {
+                one: {
+                    name: t('Dev'),
+                    parents: t('Son of Mr & Mrs Kirit Shah'),
+                },
+                two: {
+                    name: t('Riya'),
+                    parents: t('Daughter of Mr & Mrs Nimesh Patel'),
+                },
+            },
+            greetingKey: 'shree-ganeshay-namah',
+            headline,
+            welcome: t(
+                'Switch on the lights, the dhol is waiting. Three days of garba, family and joy.',
+            ),
+            story: t(
+                'One Navratri, one dandiya that hit the wrong head, and one apology that never ended. Here we are.',
+            ),
+            family: t('Smt. Hema & Shri Kirit Shah · Smt. Bina & Shri Nimesh Patel'),
+            closing: t('Come ready to dance.'),
+            photoSlots: portraits,
+            gallery: [],
+        },
+        events: days(
+            [
+                {
+                    kind: 'garba',
+                    title: 'Garba Night',
+                    at: '2027-12-03T20:00',
+                },
+                {
+                    kind: 'mehndi',
+                    title: 'Mehendi',
+                    at: '2027-12-04T15:00',
+                },
+                {
+                    kind: 'pheras',
+                    title: 'Hastmilap',
+                    at: '2027-12-05T18:30',
+                },
+            ],
+            'The Courtyard',
+            'Sarkhej-Gandhinagar Highway, Ahmedabad',
+        ),
+        extras: { wishes: { enabled: true } },
+        sections: sections(wedding),
+    },
+    {
+        slug: 'demo-sona',
+        themeSlug: 'sona',
+        culture: 'universal.modern',
+        locales: ['en'],
+        calendars: [],
+        seed: 7305,
+        content: {
+            people: {
+                one: { name: t('Kabir') },
+                two: { name: t('Zoya') },
+            },
+            headline: t('are getting married'),
+            welcome: t('No fuss, all heart. Dress sharp, dance hard.'),
+            story: t(
+                'Two doctors, one night shift, a broken vending machine and a shared bar of chocolate at 3 a.m. Our hearts have been in sync ever since.',
+            ),
+            family: t('With love from the Khannas and the Mirzas'),
+            closing: t('See you on the dance floor.'),
+            gallery: [],
+        },
+        events: days(
+            [
+                {
+                    kind: 'ceremony',
+                    title: 'The Vows',
+                    at: '2027-03-13T17:00',
+                },
+                {
+                    kind: 'after-party',
+                    title: 'After-party',
+                    at: '2027-03-13T21:00',
+                },
+            ],
+            'The Glasshouse',
+            'Lodhi Road, New Delhi',
+        ),
+        extras: { wishes: { enabled: true } },
+        sections: sections(wedding),
+    },
+    {
+        slug: 'demo-zari',
+        themeSlug: 'zari',
+        culture: 'hindu.punjabi',
+        locales: ['en'],
+        calendars: [],
+        seed: 7306,
+        content: {
+            people: {
+                one: {
+                    name: t('Aarav'),
+                    parents: t('Son of Mr & Mrs Harpreet Bedi'),
+                },
+                two: {
+                    name: t('Simran'),
+                    parents: t('Daughter of Mr & Mrs Jaspal Ahuja'),
+                },
+            },
+            greetingKey: 'shree-ganeshay-namah',
+            headline,
+            welcome: t(
+                'Stitched together by family, love and a great deal of food. Join us as we begin.',
+            ),
+            story: t(
+                'Our mothers met at a tailor’s shop arguing over the same bolt of silk. They both lost: it was made into this wedding.',
+            ),
+            family: t('Smt. Gurpreet & Shri Harpreet Bedi · Smt. Manpreet & Shri Jaspal Ahuja'),
+            closing: t('Balle balle, see you there.'),
+            gallery: [],
+        },
+        events: days(
+            [
+                {
+                    kind: 'chooda',
+                    title: 'Chooda & Haldi',
+                    at: '2027-11-12T10:00',
+                },
+                {
+                    kind: 'sangeet',
+                    title: 'Sangeet',
+                    at: '2027-11-12T20:00',
+                },
+                {
+                    kind: 'pheras',
+                    title: 'Wedding',
+                    at: '2027-11-13T18:00',
+                },
+            ],
+            'The Oberoi',
+            'Dr Zakir Hussain Marg, New Delhi',
+        ),
+        extras: { wishes: { enabled: true } },
+        sections: sections(wedding),
+    },
+    {
+        slug: 'demo-kagaz',
+        themeSlug: 'kagaz',
+        culture: 'universal.modern',
+        locales: ['en'],
+        calendars: [],
+        seed: 7307,
+        content: {
+            people: {
+                one: { name: t('Tara') },
+                two: { name: t('Neil') },
+            },
+            headline: t('invite you to a small, happy wedding'),
+            welcome: t('A garden, a long lunch and the people we love most.'),
+            story: t(
+                'We met at a paper-making workshop in Auroville and both made terrible paper. This invitation is our second attempt.',
+            ),
+            family: t('With love from the Iyers and the D’Souzas'),
+            closing: t('Come as you are.'),
+            gallery: [],
+        },
+        events: days(
+            [
+                {
+                    kind: 'ceremony',
+                    title: 'Ceremony in the garden',
+                    at: '2027-02-06T11:00',
+                },
+                {
+                    kind: 'lunch',
+                    title: 'Long lunch',
+                    at: '2027-02-06T13:00',
+                },
+            ],
+            'Botanical Garden Café',
+            'Auroville, Tamil Nadu',
+        ),
+        extras: { wishes: { enabled: true } },
+        sections: sections(wedding),
+    },
+    {
+        slug: 'demo-deepam',
+        themeSlug: 'deepam',
+        culture: 'hindu.south-indian',
+        locales: ['en'],
+        calendars: [],
+        seed: 7308,
+        content: {
+            people: {
+                one: {
+                    name: t('Karthik'),
+                    parents: t('Son of Smt. & Shri V. Raghavan'),
+                },
+                two: {
+                    name: t('Meenakshi'),
+                    parents: t('Daughter of Smt. & Shri S. Iyer'),
+                },
+            },
+            greetingKey: 'shree-ganeshay-namah',
+            headline,
+            welcome: t(
+                'With the lamp lit and the elders’ blessings, we begin a new life together.',
+            ),
+            story: t(
+                'Both our families have prayed at the same temple for three generations. We just took a little longer to notice each other.',
+            ),
+            family: t('Smt. Lakshmi & Shri V. Raghavan · Smt. Uma & Shri S. Iyer'),
+            closing: t('We seek your blessings.'),
+            gallery: [],
+        },
+        events: days(
+            [
+                {
+                    kind: 'mehndi',
+                    title: 'Nalangu',
+                    at: '2027-01-21T16:00',
+                },
+                {
+                    kind: 'pheras',
+                    title: 'Muhurtham',
+                    at: '2027-01-22T07:30',
+                },
+                {
+                    kind: 'reception',
+                    title: 'Reception',
+                    at: '2027-01-22T19:00',
+                },
+            ],
+            'Sri Kapaleeshwarar Kalyana Mandapam',
+            'Mylapore, Chennai',
+        ),
+        extras: { wishes: { enabled: true } },
+        sections: sections(wedding),
+    },
+];

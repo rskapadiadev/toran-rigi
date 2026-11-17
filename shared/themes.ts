@@ -2,6 +2,7 @@
 import type { BlockPreset } from './blocks';
 import type { CultureId } from './cultures';
 import type { OccasionCategory } from './occasions';
+import { luxuryLayouts, luxuryThemes } from './themes-luxury';
 import type { InvitationDesign } from './types';
 
 export interface ThemeDefinition {
@@ -497,7 +498,7 @@ export const themeCatalog: ThemeDefinition[] = [
         culture: 'universal',
         category: 'modern',
         description:
-            'Moonlight for a little one: powder blue, silver stars and a lantern that glows open.',
+            'Moonlight for a little one: powder blue and silver stars, and an instant photo that develops into the name as guests rub it.',
         suits: ['new-beginnings'],
         fromPackage: 'signature',
         featured: true,
@@ -516,7 +517,7 @@ export const themeCatalog: ThemeDefinition[] = [
                 body: 'manrope',
                 script: 'pinyon',
             },
-            opening: 'lantern',
+            opening: 'polaroid',
             generative: {
                 kind: 'botanical',
                 density: 0.5,
@@ -696,7 +697,7 @@ export const themeCatalog: ThemeDefinition[] = [
         culture: 'hindu',
         category: 'cultural',
         description:
-            'Kumkum red and turmeric: a lotus blooms open, a kalash on every arch, for the janoi, mundan or any sanskar.',
+            'Kumkum red and turmeric: molten gold drops fuse and flood the screen, then a kalash on every arch, for the janoi, mundan or any sanskar.',
         suits: ['faith', 'new-beginnings'],
         fromPackage: 'signature',
         featured: false,
@@ -714,7 +715,7 @@ export const themeCatalog: ThemeDefinition[] = [
                 display: 'cinzel',
                 body: 'cormorant',
             },
-            opening: 'lotus',
+            opening: 'liquid-gold',
             generative: {
                 kind: 'lotus',
                 density: 0.7,
@@ -825,6 +826,9 @@ export const themeCatalog: ThemeDefinition[] = [
         },
     },
 ];
+
+// The luxury collection joins the catalogue after the original designs.
+themeCatalog.push(...luxuryThemes);
 
 export const themeBySlug = (slug: string) => themeCatalog.find((t) => t.slug === slug);
 
@@ -2185,3 +2189,5 @@ export const themeLayouts: Record<string, BlockPreset> = {
         },
     },
 };
+
+Object.assign(themeLayouts, luxuryLayouts);

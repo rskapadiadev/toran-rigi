@@ -5,6 +5,7 @@ import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable, useEditing } from '../editing';
 import { Portraits } from '../luxury/hero/Portraits';
+import { Illuminated } from '../luxury/typography/Illuminated';
 import type { StringKey } from '../strings';
 import { BlessingsCard, LetterChapter, RangoliClosing } from './story';
 
@@ -47,6 +48,16 @@ function Chapter({ field, title, text, large = false, variant }: ChapterProps) {
         </Reveal>
     );
     if (variant === 'letter') return <LetterChapter text={raw} />;
+    if (variant === 'illuminated')
+        return (
+            <Illuminated
+                kicker={title ? copy(title) : undefined}
+                raw={raw}
+                body={body}
+                large={large}
+                initial={field !== 'family'}
+            />
+        );
     if (variant === 'blessings') return <BlessingsCard text={raw} />;
     const bodyClass = large
         ? 'inv-display text-[clamp(1.5rem,4.5cqw,2.6rem)]'

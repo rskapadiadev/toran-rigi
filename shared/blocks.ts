@@ -39,6 +39,11 @@ const textVariants: VariantInfo[] = [
         label: 'Editorial',
         hint: 'Magazine layout, drop cap and side rule',
     },
+    {
+        id: 'illuminated',
+        label: 'Illuminated',
+        hint: 'A manuscript page: filigree corners engrave in, a foil initial on your medallion, words settle like ink',
+    },
 ];
 
 export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
