@@ -297,6 +297,8 @@ export const extrasSchema = z.object({
             style: z.enum(brandingStyles),
             // A night-dark band behind the mark instead of the page's own colour.
             dark: z.boolean().optional(),
+            // The affiliate who referred this invitation: their logo sits beside Toran's.
+            affiliateId: z.string().max(64).optional(),
         })
         .optional(),
     // Credits for free stock media (Pixabay / Openverse). CC BY-style licences require them on the page.

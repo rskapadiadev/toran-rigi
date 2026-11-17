@@ -172,11 +172,17 @@ function PricingPage() {
     return (
         <>
             {isPending || rows.length === 0 ? (
-                <PanelCard title={TITLE} subtitle={SUBTITLE}>
+                <PanelCard
+                    fill
+                    contentClassName="flex min-h-[60svh] flex-col lg:min-h-0"
+                    title={TITLE}
+                    subtitle={SUBTITLE}
+                >
                     {isPending ? (
                         <PageSkeleton />
                     ) : (
                         <EmptyState
+                            className="flex-1"
                             icon={Tag}
                             title="No designs yet"
                             description="Create a template; it starts at ₹799 / $50."

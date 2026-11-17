@@ -20,6 +20,7 @@ import { generatePalette } from '@shared/palette';
 import { generativeKinds } from '@shared/schemas/invitation';
 import { themeCatalog, type ThemeDefinition, themeLayouts } from '@shared/themes';
 import type { LocalizedText, Palette, SectionType } from '@shared/types';
+import { useQuery } from '@tanstack/react-query';
 import {
     ArrowDown,
     ArrowUp,
@@ -55,6 +56,7 @@ import {
 } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
+import { type Affiliate, affiliatesQuery } from '@/admin/affiliates';
 import {
     Accordion,
     AccordionContent,
@@ -88,6 +90,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 import { FormField } from '../kit/form';
@@ -476,6 +479,49 @@ function ThemeGrid({ title, themes, selected, onPick }: ThemeGridProps) {
     );
 }
 
+const NO_AFFILIATE = '__none__';
+
+// "Referred by": the affiliate whose logo sits beside Toran's at the foot of the invitation.
+function AffiliatePicker({ draft, set }: PanelProps) {
+    const { data } = useQuery({
+        ...affiliatesQuery,
+        queryFn: () => api<Affiliate[]>('/admin/affiliates'),
+    });
+    const current = draft.extras.branding?.affiliateId;
+    const options = [
+        {
+            value: NO_AFFILIATE,
+            label: 'None (Toran only)',
+        },
+        ...(data ?? [])
+            .filter((a) => a.isActive || a.id === current)
+            .map((a) => ({
+                value: a.id,
+                label: a.isActive ? a.name : `${a.name} (paused)`,
+            })),
+    ];
+    return (
+        <SelectField
+            label="Referred by"
+            value={current ?? NO_AFFILIATE}
+            options={options}
+            onChange={(value) => {
+                set((d) => ({
+                    ...d,
+                    extras: {
+                        ...d.extras,
+                        branding: {
+                            ...d.extras.branding,
+                            style: d.extras.branding?.style ?? DEFAULT_BRANDING,
+                            affiliateId: value === NO_AFFILIATE ? undefined : value,
+                        },
+                    },
+                }));
+            }}
+        />
+    );
+}
+
 export function DesignPanel({ draft, set }: PanelProps) {
     const [colors, setColors] = useState<string[]>([
         draft.design.palette.primary,
@@ -814,6 +860,7 @@ export function DesignPanel({ draft, set }: PanelProps) {
                             );
                         })}
                     </div>
+                    <AffiliatePicker draft={draft} set={set} />
                     <SwitchRow
                         id="branding-dark"
                         label="Dark background"

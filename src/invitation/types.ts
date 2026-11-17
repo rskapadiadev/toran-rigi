@@ -64,4 +64,12 @@ export interface PublicInvitationData {
     themeSlug: string | null;
     diyaCount: number;
     wishes: PublicWishData[];
+    // Referring affiliate for the footer ("their logo × Toran"); absent when none.
+    affiliate?: PublicAffiliateData | null;
+}
+
+export interface PublicAffiliateData {
+    name: string;
+    logoKey: string | null;
+    website: string | null;
 }

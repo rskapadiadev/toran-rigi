@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { useNow } from '@/motion/hooks';
 
 export const Route = createFileRoute('/admin/orders/')({
-    validateSearch: z.object({ view: z.enum(['board', 'table']).optional() }),
+    validateSearch: z.object({ view: z.enum(['board', 'table']).optional().catch(undefined) }),
     component: OrdersPage,
 });
 
@@ -76,6 +76,7 @@ function OrdersPage() {
                 <PageSkeleton />
             ) : orders.length === 0 ? (
                 <EmptyState
+                    className="min-h-[60svh] flex-1"
                     icon={ShoppingBag}
                     title="No orders yet"
                     description="Create the first order to start the studio pipeline."

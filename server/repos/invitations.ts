@@ -2,6 +2,7 @@ import { and, asc, count, eq, sql } from 'drizzle-orm';
 
 import { invitationEvents, invitations, rsvps, themes, wishes } from '../db/schema';
 import { getPlatform } from '../platform/context';
+import { type PublicAffiliate, publicAffiliate } from './affiliates';
 
 export type InvitationRow = typeof invitations.$inferSelect;
 export type InvitationEventRow = typeof invitationEvents.$inferSelect;
@@ -19,13 +20,15 @@ export interface PublicInvitation {
     themeSlug: string | null;
     diyaCount: number;
     wishes: PublicWish[];
+    // The referring affiliate shown beside Toran in the footer, when there is one.
+    affiliate: PublicAffiliate | null;
 }
 
 const cacheKey = (slug: string, version: number) => `inv:${slug}:v${version}`;
 
 async function loadFull(row: InvitationRow): Promise<PublicInvitation> {
     const { db } = getPlatform();
-    const [events, theme, diya, approvedWishes] = await Promise.all([
+    const [events, theme, diya, approvedWishes, affiliate] = await Promise.all([
         db
             .select()
             .from(invitationEvents)
@@ -50,6 +53,7 @@ async function loadFull(row: InvitationRow): Promise<PublicInvitation> {
             .where(and(eq(wishes.invitationId, row.id), eq(wishes.status, 'approved')))
             .orderBy(asc(wishes.createdAt))
             .limit(60),
+        publicAffiliate(row.extras.branding?.affiliateId),
     ]);
     const { previewToken: _p, sheetId: _s, orderId: _o, ...publicRow } = row;
     return {
@@ -58,6 +62,7 @@ async function loadFull(row: InvitationRow): Promise<PublicInvitation> {
         themeSlug: theme?.slug ?? null,
         diyaCount: diya?.total ?? 0,
         wishes: approvedWishes,
+        affiliate,
     };
 }
 

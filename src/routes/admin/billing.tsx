@@ -88,7 +88,11 @@ const filters = [
 
 type FilterKey = (typeof filters)[number]['key'];
 
-const statusParam = z.enum(['unpaid', 'overdue', 'partially_paid', 'paid', 'all']).optional();
+// An unknown filter in a shared or mistyped link falls back to the default view, never an error.
+const statusParam = z
+    .enum(['unpaid', 'overdue', 'partially_paid', 'paid', 'all'])
+    .optional()
+    .catch(undefined);
 
 export const Route = createFileRoute('/admin/billing')({
     validateSearch: z.object({ status: statusParam }),

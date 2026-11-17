@@ -15,6 +15,7 @@ import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as DevMailRouteImport } from './routes/dev-mail'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAffiliatesRouteImport } from './routes/admin/affiliates'
 import { Route as AdminBillingRouteImport } from './routes/admin/billing'
 import { Route as AdminLibraryRouteImport } from './routes/admin/library'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
@@ -63,6 +64,11 @@ const DevMailRoute = DevMailRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAffiliatesRoute = AdminAffiliatesRouteImport.update({
+  id: '/affiliates',
+  path: '/affiliates',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminBillingRoute = AdminBillingRouteImport.update({
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof SlugRoute
   '/collections': typeof CollectionsRoute
   '/dev-mail': typeof DevMailRoute
+  '/admin/affiliates': typeof AdminAffiliatesRoute
   '/admin/billing': typeof AdminBillingRoute
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/$slug': typeof SlugRoute
   '/collections': typeof CollectionsRoute
   '/dev-mail': typeof DevMailRoute
+  '/admin/affiliates': typeof AdminAffiliatesRoute
   '/admin/billing': typeof AdminBillingRoute
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
@@ -222,6 +230,7 @@ export interface FileRoutesById {
   '/$slug': typeof SlugRoute
   '/collections': typeof CollectionsRoute
   '/dev-mail': typeof DevMailRoute
+  '/admin/affiliates': typeof AdminAffiliatesRoute
   '/admin/billing': typeof AdminBillingRoute
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
@@ -251,6 +260,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/collections'
     | '/dev-mail'
+    | '/admin/affiliates'
     | '/admin/billing'
     | '/admin/library'
     | '/admin/login'
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/collections'
     | '/dev-mail'
+    | '/admin/affiliates'
     | '/admin/billing'
     | '/admin/library'
     | '/admin/login'
@@ -304,6 +315,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/collections'
     | '/dev-mail'
+    | '/admin/affiliates'
     | '/admin/billing'
     | '/admin/library'
     | '/admin/login'
@@ -380,6 +392,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/affiliates': {
+      id: '/admin/affiliates'
+      path: '/affiliates'
+      fullPath: '/admin/affiliates'
+      preLoaderRoute: typeof AdminAffiliatesRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/billing': {
@@ -519,6 +538,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteRouteChildren {
+  AdminAffiliatesRoute: typeof AdminAffiliatesRoute
   AdminBillingRoute: typeof AdminBillingRoute
   AdminLibraryRoute: typeof AdminLibraryRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -538,6 +558,7 @@ interface AdminRouteRouteChildren {
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAffiliatesRoute: AdminAffiliatesRoute,
   AdminBillingRoute: AdminBillingRoute,
   AdminLibraryRoute: AdminLibraryRoute,
   AdminLoginRoute: AdminLoginRoute,

@@ -29,12 +29,13 @@ const stamp = Date.now().toString().slice(-6);
 await page.goto(`${base}/admin/orders/new`);
 await page.fill('input[name=name]', `Riya Shah ${stamp}`);
 await page.fill('input[name=phone]', `+9198${stamp}0`);
-await page.getByRole('radio', { name: /Essential/ }).click();
+// Orders start from a design: its own price is charged and the invitation is made from it.
+await page.getByPlaceholder('Search designs or occasions…').fill('rajwada');
+await page.getByRole('radio', { name: /Rajwada/ }).first().click();
 await page.getByRole('button', { name: /Create order/ }).click();
 await page.waitForURL(/\/admin\/orders\/[a-z0-9]+$/);
 step('order created from the New order form');
-await page.waitForSelector('button:has-text("Create invitation")');
-await page.getByRole('button', { name: /Create invitation/ }).click();
+await page.getByRole('link', { name: /Open editor/ }).first().click();
 // Invitations open straight into the full-screen visual editor.
 await page.waitForSelector('nav[aria-label="Editor panels"]');
 step('editor opened');

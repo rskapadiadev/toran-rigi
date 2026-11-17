@@ -79,8 +79,9 @@ type View = (typeof views)[number];
 
 export const Route = createFileRoute('/admin/templates/')({
     validateSearch: z.object({
-        family: z.enum(occasionCategories).optional(),
-        view: z.enum(views).optional(),
+        // Unknown values in an old or mistyped link fall back to the default view.
+        family: z.enum(occasionCategories).optional().catch(undefined),
+        view: z.enum(views).optional().catch(undefined),
     }),
     component: TemplatesPage,
 });
@@ -181,6 +182,8 @@ function TemplatesPage() {
     return (
         <>
             <PanelCard
+                fill
+                contentClassName="flex min-h-[60svh] flex-col lg:min-h-0 lg:overflow-y-auto"
                 title="Templates"
                 subtitle="Ready-made invitations a new order starts from: design, sample text, sections and ceremonies. Add as many as you like for each occasion."
                 actions={actions}
@@ -189,6 +192,7 @@ function TemplatesPage() {
                     <PageSkeleton />
                 ) : all.length === 0 ? (
                     <EmptyState
+                        className="flex-1"
                         icon={LayoutTemplate}
                         title="No templates yet"
                         description="Create the first one: pick an occasion and a theme, then design it in the editor."

@@ -1,5 +1,6 @@
 import type { Permission } from '@shared/permissions';
 import {
+    Handshake,
     LayoutDashboard,
     LayoutTemplate,
     Library,
@@ -20,6 +21,7 @@ export type NavPath =
     | '/admin/templates'
     | '/admin/library'
     | '/admin/pricing'
+    | '/admin/affiliates'
     | '/admin/music'
     | '/admin/customers'
     | '/admin/billing';
@@ -114,6 +116,20 @@ export const navGroups: NavGroup[] = [
                 icon: Tag,
                 permission: 'billing.view',
                 keywords: ['prices', 'packages', 'sale', 'discount', 'rates'],
+            },
+            {
+                to: '/admin/affiliates',
+                label: 'Affiliates',
+                icon: Handshake,
+                permission: 'orders.view',
+                keywords: [
+                    'partners',
+                    'referral',
+                    'planners',
+                    'photographers',
+                    'reference',
+                    'logo',
+                ],
             },
             {
                 to: '/admin/music',

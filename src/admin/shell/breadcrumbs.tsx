@@ -92,6 +92,7 @@ export function AdminBreadcrumbs() {
     if (routeId === '/admin/library') crumbs.push({ label: 'Library' });
     if (routeId === '/admin/music') crumbs.push({ label: 'Music' });
     if (routeId === '/admin/pricing') crumbs.push({ label: 'Pricing' });
+    if (routeId === '/admin/affiliates') crumbs.push({ label: 'Affiliates' });
     if (routeId === '/admin/templates/') crumbs.push({ label: 'Templates' });
     // The leaf is always the current page, never a link.
     const last = crumbs.at(-1);

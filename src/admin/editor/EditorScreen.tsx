@@ -38,6 +38,7 @@ import {
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { type Affiliate, affiliatesQuery } from '@/admin/affiliates';
 import { AutoTranslateProvider, useAutoTranslate } from '@/admin/composer/autoTranslate';
 import {
     type Draft,
@@ -91,8 +92,7 @@ const deviceWidth: Record<Device, number | null> = {
 };
 
 // 'section' is the selected section's own fields; it has no button of its own.
-type LeftTab =
-    'section' | 'sections' | 'photos' | 'design' | 'details' | 'ceremonies' | 'extras';
+type LeftTab = 'section' | 'sections' | 'photos' | 'design' | 'details' | 'ceremonies' | 'extras';
 const leftTabs: {
     id: Exclude<LeftTab, 'section'>;
     label: string;
@@ -369,10 +369,25 @@ function EditorPage({ id }: { id: string }) {
         [selected, selectedText, set, locale],
     );
 
-    const preview = useMemo(
-        () => (draft && data ? draftToPreview(draft, data) : null),
-        [draft, data],
-    );
+    const { data: affiliates } = useQuery({
+        ...affiliatesQuery,
+        queryFn: () => api<Affiliate[]>('/admin/affiliates'),
+    });
+    const preview = useMemo(() => {
+        if (!draft || !data) return null;
+        // The chosen affiliate's logo shows in the footer as it will for guests.
+        const chosen = affiliates?.find((a) => a.id === draft.extras.branding?.affiliateId);
+        return {
+            ...draftToPreview(draft, data),
+            affiliate: chosen?.isActive
+                ? {
+                      name: chosen.name,
+                      logoKey: chosen.logoKey,
+                      website: chosen.website,
+                  }
+                : null,
+        };
+    }, [draft, data, affiliates]);
 
     if (!data || !draft || !preview)
         return (

@@ -247,7 +247,7 @@ export function DataTable<TData>({
                                 colSpan={columns.length}
                                 className="h-40 text-center text-sm text-muted-foreground"
                             >
-                                {filtered ? 'No records found.' : empty}
+                                {filtered ? 'No records found.' : (empty ?? 'Nothing here yet.')}
                             </TableCell>
                         </TableRow>
                     )}

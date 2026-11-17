@@ -205,11 +205,18 @@ function MusicPage() {
     return (
         <>
             {isPending || rows.length === 0 ? (
-                <PanelCard title={TITLE} subtitle={SUBTITLE} actions={add}>
+                <PanelCard
+                    fill
+                    contentClassName="flex min-h-[60svh] flex-col lg:min-h-0"
+                    title={TITLE}
+                    subtitle={SUBTITLE}
+                    actions={add}
+                >
                     {isPending ? (
                         <PageSkeleton />
                     ) : (
                         <EmptyState
+                            className="flex-1"
                             icon={Music}
                             title="No music yet"
                             description="Upload licensed tracks — from Pixabay Music, Free Music Archive, Artlist or your own recordings — with a link to each licence."

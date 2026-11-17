@@ -86,6 +86,11 @@ export const partners = sqliteTable('partners', {
     phone: text('phone'),
     commissionBps: integer('commission_bps').notNull().default(1000),
     isActive: bool('is_active').notNull().default(true),
+    // Affiliates (planners, photographers, decorators) show their logo beside Toran's on the
+    // invitations they refer.
+    logoKey: text('logo_key'),
+    details: text('details'),
+    website: text('website'),
     createdAt: createdAt(),
 });
 
