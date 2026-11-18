@@ -533,6 +533,29 @@ interface DesignPanelProps extends PanelProps {
     invitationId?: string;
 }
 
+const playsBehind = (film: Draft['design']['film']) => Boolean(film?.behind && film.frames);
+
+// Switching the film behind the invitation on makes every section see-through over it; switching it
+// off gives each section back the backdrop its template gave it.
+function filmBackdrops(d: Draft, film: Draft['design']['film']): Draft['sections'] {
+    const on = playsBehind(film);
+    if (on === playsBehind(d.design.film)) return d.sections;
+    const layout = themeLayouts[d.themeSlug ?? ''];
+    return d.sections.map((section) => {
+        if (on)
+            return {
+                ...section,
+                scene: 'film',
+            };
+        if (section.scene !== 'film') return section;
+        const own = layout?.[section.type]?.scene;
+        return {
+            ...section,
+            scene: own === 'film' ? undefined : own,
+        };
+    });
+}
+
 export function DesignPanel({ draft, set, invitationId }: DesignPanelProps) {
     const [colors, setColors] = useState<string[]>([
         draft.design.palette.primary,
@@ -585,7 +608,14 @@ export function DesignPanel({ draft, set, invitationId }: DesignPanelProps) {
                                 invitationId={invitationId}
                                 film={draft.design.film}
                                 onChange={(film) => {
-                                    setDesign({ film });
+                                    set((d) => ({
+                                        ...d,
+                                        design: {
+                                            ...d.design,
+                                            film,
+                                        },
+                                        sections: filmBackdrops(d, film),
+                                    }));
                                 }}
                             />
                         </div>

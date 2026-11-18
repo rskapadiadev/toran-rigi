@@ -234,7 +234,9 @@ export function FilmPanel({ invitationId, film, onChange }: Props) {
         setBusy(true);
         try {
             onChange(await withFrames(film, photoUrl(film.src)));
-            toast.success('The film now plays behind the invitation');
+            toast.success(
+                'The film now plays behind the invitation, and every section shows it through',
+            );
         } catch (e) {
             toast.error(e instanceof Error ? e.message : 'Could not cut the frames');
         } finally {

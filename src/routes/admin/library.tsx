@@ -480,6 +480,41 @@ function sampleExtras(type: SectionType, data: PublicInvitationData): PublicInvi
     return null;
 }
 
+// "Over the film": the Deepmala Yatra film behind a stack of sections, each resting on its own
+// moment, so scrolling the preview moves the film exactly as guests will see it.
+const filmStack: SectionType[] = [
+    'cover',
+    'date',
+    'blessing',
+    'card',
+    'welcome',
+    'events',
+    'closing',
+];
+
+function overFilm(withSections: (sections: SectionConfig[]) => Preview): Preview {
+    const preview = withSections(
+        applyLayout(
+            filmStack.map((type) => section(type)),
+            themeLayouts['deepmala-yatra'],
+        ),
+    );
+    const film = themeCatalog.find((t) => t.slug === 'deepmala-yatra')?.design.film;
+    return {
+        ...preview,
+        data: {
+            ...preview.data,
+            invitation: {
+                ...preview.data.invitation,
+                design: {
+                    ...preview.data.invitation.design,
+                    film,
+                },
+            },
+        },
+    };
+}
+
 function previewFor(
     base: PublicInvitationData,
     category: CategoryId,
@@ -634,6 +669,7 @@ function previewFor(
             );
         }
         case 'backdrops':
+            if (key === 'film') return overFilm(withSections);
             return withSections([
                 section('welcome', {
                     scene: key as SceneKind,
