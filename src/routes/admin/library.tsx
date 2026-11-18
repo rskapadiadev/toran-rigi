@@ -200,6 +200,27 @@ const portraitSamples = {
     'story.together': '/kits/phoolwari/wedding-couples.webp',
 };
 
+// A story in chapters, and blessings for the wishes wall, when the sample invitation has none.
+const sampleChapters = [
+    'We met at a friend’s wedding in Udaipur and argued about the music all night.',
+    'Two years of long calls between Mumbai and London, and one very expensive bouquet.',
+    'He proposed on the same terrace where we first argued. She said yes before he finished.',
+    'And now, with our families beside us, we begin our next chapter. Come and be part of it.',
+].join('\n\n');
+const sampleWishes = [
+    ['Priya Mehta', 'So happy for you both! Can’t wait to dance at the sangeet.'],
+    ['Nani & Nanaji', 'May your home always be full of laughter and good food.'],
+    ['The Shah family', 'Wishing you a lifetime of love, patience and adventure.'],
+    ['Rohan', 'Finally! Save me a seat next to the dessert counter.'],
+    ['Aunty Meera', 'Blessings to you both. You were made for each other.'],
+    ['Kabir & Zoya', 'Here’s to the best love story we know.'],
+].map(([name = '', message = ''], i) => ({
+    id: `sample-${String(i)}`,
+    name,
+    message,
+    createdAt: '2026-11-01T10:00:00.000Z',
+}));
+
 // Gallery layouts are empty without pictures, so the preview borrows illustrated scenes when the
 // sample invitation has none of its own.
 const SAMPLE_PHOTOS = [
@@ -449,6 +470,34 @@ function previewFor(
         case 'sections': {
             const [type, variant] = key.split(':') as [SectionType, string];
             const preview = withSections([section(type, { variant })]);
+            // Memory chapters need a story told in several paragraphs, and photos to pair with them.
+            if (type === 'story' && variant === 'chapters')
+                return {
+                    ...preview,
+                    data: {
+                        ...preview.data,
+                        invitation: {
+                            ...preview.data.invitation,
+                            content: {
+                                ...invitation.content,
+                                story: { en: sampleChapters },
+                                gallery:
+                                    invitation.content.gallery.length > 0
+                                        ? invitation.content.gallery
+                                        : SAMPLE_PHOTOS,
+                            },
+                        },
+                    },
+                };
+            // The wishes wall needs blessings on it.
+            if (type === 'wishes' && preview.data.wishes.length === 0)
+                return {
+                    ...preview,
+                    data: {
+                        ...preview.data,
+                        wishes: sampleWishes,
+                    },
+                };
             // Text sections hide themselves when empty; preview them with sample words instead.
             const field = textFields[type];
             if (field && !Object.values(invitation.content[field] ?? {}).some(Boolean))

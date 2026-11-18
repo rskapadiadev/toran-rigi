@@ -10,6 +10,8 @@ import { type CSSProperties, type ReactNode, useMemo } from 'react';
 import { EnterContext } from '../motion/Reveal';
 import { useInvite } from './context';
 import { type TextPath, useEditing } from './editing';
+import { LightRays } from './luxury/effects/LightRays';
+import { Petals } from './luxury/effects/Petals';
 import { DividerContext } from './luxury/typography/dividers';
 import { BEAT, Heartbeat, isProcession, Procession } from './procession';
 
@@ -19,6 +21,8 @@ interface SceneStyle {
     dappled: boolean;
     spotlight?: boolean;
     starry?: boolean;
+    /** An animated layer painted over the backdrop, behind the words. */
+    effect?: 'petals' | 'rays';
 }
 
 // A field of tiny stars tiled across night scenes.
@@ -230,6 +234,46 @@ function buildScene(
                 },
                 dappled: false,
                 spotlight: true,
+            };
+        }
+        case 'petals': {
+            // Soft paper with the faintest blush of the palette, so the petals read as fallen on it.
+            const base = mixHex(
+                mixHex('#f8f1e6', p.bg, isDark(p.bg) ? 0.04 : 0.22),
+                p.primary,
+                0.035,
+            );
+            return {
+                background: materialBackground({
+                    kind: 'paper',
+                    base,
+                    seed: seed + 2,
+                }),
+                vars: {
+                    ...light(base),
+                    '--inv-primary': isDark(p.primary)
+                        ? p.primary
+                        : mixHex(p.primary, '#000000', 0.3),
+                },
+                dappled: false,
+                effect: 'petals',
+            };
+        }
+        case 'rays': {
+            const base = mixHex(p.primary, '#0d0805', 0.84);
+            // mixHex normalises to 6-digit hex, so the alpha suffix is valid.
+            const glow = mixHex(p.gold, '#ffd9a0', 0.4);
+            return {
+                background: `radial-gradient(ellipse 75% 40% at 8% -4%, ${glow}55, ${glow}00 70%), radial-gradient(ellipse 90% 60% at 50% 115%, #00000066, #00000000 70%), ${materialBackground(
+                    {
+                        kind: 'velvet',
+                        base,
+                        seed: seed + 15,
+                    },
+                )}`,
+                vars: dark(base),
+                dappled: false,
+                effect: 'rays',
             };
         }
         case 'plain': {
@@ -671,6 +715,8 @@ export function Scene({ block, index, children }: SceneProps) {
                 <Dappled lattice={cultureOf(culture).id === 'islamic'} />
             )}
             {scene.starry && tier !== 'static' && <Twinkle seed={seed} />}
+            {scene.effect === 'petals' && <Petals />}
+            {scene.effect === 'rays' && <LightRays />}
             {scene.spotlight && (
                 // Plain silk pooled behind the text: embroidery frames the words instead of crossing them.
                 <div

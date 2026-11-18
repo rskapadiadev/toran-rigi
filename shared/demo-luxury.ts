@@ -9,6 +9,16 @@ const sections = (types: SectionType[]): SectionConfig[] =>
         enabled: true,
     }));
 
+// Illustrated scenes standing in for the couple's photos.
+const scenes = [
+    '/kits/phoolwari/wedding-stage.webp',
+    '/kits/phoolwari/wedding-couples.webp',
+    '/kits/phoolwari/sangeet-stage.webp',
+    '/kits/phoolwari/haldi-stage.webp',
+    '/kits/phoolwari/wedding-florals.webp',
+    '/kits/phoolwari/shanti-stage.webp',
+];
+
 const portraits = {
     'story.one': '/kits/phoolwari/haldi-1.webp',
     'story.two': '/kits/phoolwari/sangeet-2.webp',
@@ -80,7 +90,7 @@ export const luxuryDemos: DemoInvitation[] = [
             closing: t('Save us a seat in the front row.'),
             coverPhotoKey: '/kits/phoolwari/wedding-stage.webp',
             photoSlots: portraits,
-            gallery: [],
+            gallery: scenes,
         },
         events: days(
             [
@@ -236,7 +246,7 @@ export const luxuryDemos: DemoInvitation[] = [
             family: t('Smt. Hema & Shri Kirit Shah · Smt. Bina & Shri Nimesh Patel'),
             closing: t('Come ready to dance.'),
             photoSlots: portraits,
-            gallery: [],
+            gallery: scenes,
         },
         events: days(
             [
@@ -281,7 +291,7 @@ export const luxuryDemos: DemoInvitation[] = [
             ),
             family: t('With love from the Khannas and the Mirzas'),
             closing: t('See you on the dance floor.'),
-            gallery: [],
+            gallery: scenes,
         },
         events: days(
             [
@@ -326,11 +336,11 @@ export const luxuryDemos: DemoInvitation[] = [
                 'Stitched together by family, love and a great deal of food. Join us as we begin.',
             ),
             story: t(
-                'Our mothers met at a tailor’s shop arguing over the same bolt of silk. They both lost: it was made into this wedding.',
+                'Our mothers met at a tailor’s shop arguing over the same bolt of silk.\n\nThey both lost, and their children met at the fitting, laughing about it.\n\nThree Diwalis, one Lohri and many family dinners later, he asked her on a terrace full of fairy lights.\n\nThe silk was finally made into this wedding.',
             ),
             family: t('Smt. Gurpreet & Shri Harpreet Bedi · Smt. Manpreet & Shri Jaspal Ahuja'),
             closing: t('Balle balle, see you there.'),
-            gallery: [],
+            gallery: scenes,
         },
         events: days(
             [

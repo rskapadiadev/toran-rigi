@@ -3,6 +3,7 @@ import { zonedToUtc } from '@shared/time';
 import { useNow } from '../../motion/hooks';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
+import { CalendarCountdown } from '../luxury/events/CalendarCountdown';
 import { s, type StringKey } from '../strings';
 
 const units: [StringKey, number][] = [
@@ -52,6 +53,7 @@ export function Countdown({ variant }: { variant: string }) {
     const parts = split(now === null ? 0 : target - now);
     if (variant === 'rings') return <Rings parts={parts} ready={now !== null} />;
     if (variant === 'line') return <Line days={parts[0]?.value ?? 0} ready={now !== null} />;
+    if (variant === 'calendar') return <CalendarCountdown />;
 
     return (
         <section className="px-6 py-20 text-center">

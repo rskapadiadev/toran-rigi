@@ -251,8 +251,8 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
             edgeMotion: true,
         },
         gallery: {
-            variant: 'film',
             scene: 'night',
+            variant: 'reel',
         },
         rsvp: { scene: 'velvet' },
         closing: {
@@ -274,9 +274,9 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
             scene: 'velvet',
         },
         countdown: {
-            variant: 'flip',
             scene: 'jacquard',
             edge: 'cusped',
+            variant: 'calendar',
         },
         welcome: {
             variant: 'framed',
@@ -309,6 +309,7 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
             scene: 'silk',
             edge: 'cusped',
         },
+        wishes: { variant: 'wall' },
     },
     patra: {
         cover: {
@@ -367,7 +368,7 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
         },
         welcome: {
             variant: 'illuminated',
-            scene: 'paper',
+            scene: 'petals',
         },
         story: {
             variant: 'portraits',
@@ -385,8 +386,8 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
             edgeMotion: true,
         },
         gallery: {
-            variant: 'polaroid',
-            scene: 'paper',
+            variant: 'masks',
+            scene: 'petals',
         },
         rsvp: {
             scene: 'velvet',
@@ -422,9 +423,9 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
         },
         story: {
             variant: 'framed',
-            scene: 'terrazzo',
             edge: 'heartbeat',
             edgeMotion: true,
+            scene: 'rays',
         },
         events: {
             variant: 'tickets',
@@ -432,8 +433,8 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
             edge: 'slant',
         },
         gallery: {
-            variant: 'film',
             scene: 'plain',
+            variant: 'masks',
         },
         rsvp: {
             scene: 'aurora',
@@ -463,8 +464,8 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
             edge: 'lace',
         },
         story: {
-            variant: 'letter',
             scene: 'paper',
+            variant: 'chapters',
         },
         events: {
             variant: 'stack',
@@ -485,6 +486,7 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
             edge: 'bagghi',
             edgeMotion: true,
         },
+        wishes: { variant: 'wall' },
     },
     kagaz: {
         cover: {
@@ -545,9 +547,9 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
             edge: 'lotus',
         },
         countdown: {
-            variant: 'line',
             scene: 'paper',
             edge: 'lotus',
+            variant: 'calendar',
         },
         welcome: {
             variant: 'framed',

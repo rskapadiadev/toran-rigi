@@ -12,12 +12,12 @@ plugs into the existing engine: the `OpeningProps` contract, the `useInvite()` c
 | 01 | Opening & entry experiences | Approved: Jewellery Box |
 | 02 | Envelope & invitation reveal | Approved: Sealed Letter, WaxSeal, Stationery Suite |
 | 03 | Cinematic hero & couple introduction | Approved and live: Premiere cover, Two portraits (also as cover and opening); on Mehfil |
-| 04 | Typography & decorative components | **Done: ornaments, Illuminated, Letterpress, Calligraphy, Dividers. Waiting for approval** |
-| 05 | Photo & memory experiences | Not started |
-| 06 | Wedding events & countdown | Not started |
-| 07 | Interactive guest experiences | Not started |
-| 08 | Advanced effects & transitions | Not started |
-| 09 | Integration, optimisation & final polish | Not started |
+| 04 | Typography & decorative components | Approved: ornaments, Illuminated, Letterpress, Calligraphy, Dividers |
+| 05 | Photo & memory experiences | **Done: Story reel, Shaped windows, Memory chapters. Waiting for review** |
+| 06 | Wedding events & countdown | **Done: Calendar countdown. Waiting for review** |
+| 07 | Interactive guest experiences | **Done: Wishes wall. Waiting for review** |
+| 08 | Advanced effects & transitions | **Done: Falling petals and Light rays backdrops. Waiting for review** |
+| 09 | Integration, optimisation & final polish | **Done: placed on templates, Library, docs; hand-off measured. Waiting for review** |
 
 Next session: read this file and `CLAUDE.md`, then continue at the first stage that isn't done.
 
@@ -398,3 +398,64 @@ The ornament between a chapter's title and its words, chosen per section:
 - **Editor:** a "Divider" picker in the section settings. It appears only for welcome, story and family in the layouts that draw one (centred, framed, illuminated).
 - **Library:** the **Dividers** category previews each one on a centred welcome and an illuminated page.
 - **Adding one:** draw it in `dividers.tsx`, add its id to `dividerKinds` (`shared/schemas/invitation.ts`), and add a label to `dividerInfo` (`shared/blocks.ts`).
+
+---
+
+## Stages 05 to 09 (built together, reviewed together)
+
+### Stage 05: photos and memories
+- **`Reel`** (gallery layout `reel`, `luxury/gallery/Reel.tsx`)
+  - **The reel:** a pinned full-screen film reel. Vertical scroll moves framed ivory prints sideways, and each print rests at the centre.
+  - **Prints:** the photo drifts inside its frame (parallax), and prints shrink, tilt and dim as they leave the centre.
+  - **Frame:** gold sprocket rows, the couple's initials and a "03 / 06" counter with a progress hairline.
+  - **RTL and still:** right-to-left reverses travel. The still and PDF version lays the prints out two by two.
+  - **Shared helpers:** it also exports `GalleryTap` and `GalleryViewer`: tap to open full screen, double-tap to heart.
+- **`MaskGallery`** (gallery layout `masks`)
+  - **Shapes:** photos revealed through a repeating jharokha arch, full moon and three-petal lotus, alternating sides. The window grows from a seed while the photo settles, and a gold outline draws itself.
+  - **Numbering:** an italic gold numeral and a counter sit beside each.
+- **`Chapters`** (story layout `chapters`, `luxury/gallery/Chapters.tsx`)
+  - **The timeline:** the story is split on blank lines into chapters. Each gets a foil numeral (Roman in English, the locale's own digits otherwise) and a gallery photo in an album mount.
+  - **The golden thread:** it draws itself with scroll, with a glowing bead at its tip, and ties off in the couple's medallion.
+  - **Layout:** it alternates sides on wide screens and runs along the start edge on phones (right side in RTL).
+  - **Editor:** the whole story is one editable text.
+
+### Stage 06: events and countdown
+- **`CalendarCountdown`** (countdown layout `calendar`, `luxury/events/CalendarCountdown.tsx`)
+  - **The calendar:** a leather desk calendar with brass rings. The two previous months tear off over the rings, then the wedding day is circled in a hand-drawn gold-ink stroke.
+  - **Language:** month, weekdays and digits are in the guest's language, and the grid runs right to left in RTL.
+  - **Countdown:** a foil day count ("64 days to go"), with hours, minutes and seconds on a soft plate.
+  - **Null cases:** it returns nothing without an event or once the date has passed.
+
+### Stage 07: guest experiences
+- **`WishWall`** (wishes layout `wall`, `luxury/guests/WishWall.tsx`)
+  - **The board:** approved blessings pinned as handwritten notes on a linen board.
+  - **Notes:** cotton, kraft or blush paper, a brass pin or washi tape, and a per-note tilt seeded from the wish id. They pin in one by one, then sway gently. Signatures are in script.
+  - **Hearts:** double-tap or the heart button, tested on a published invitation; the server counts the heart.
+  - **Form:** the leave-a-wish form is now one shared `WishForm` in `sections/Extras.tsx`, used by both wishes layouts.
+
+### Stage 08: effects
+- **Scene `petals`:** 16 to 24 shaded rose and marigold petals falling with sway and 3D flutter, in three depth bands, on soft paper. The timing is seeded.
+- **Scene `rays`:** 4 soft diagonal gold shafts that breathe slowly, plus 22 glinting dust motes, on dark warm velvet with light ink. The light comes from the top right in RTL.
+- **Shared rules for both:** transform and opacity only, CSS keyframes, no blur or blend modes. Still on the `static` tier, with reduced motion and in print. Files: `luxury/effects/Petals.tsx`, `luxury/effects/LightRays.tsx`; the layers render inside `Scene` (`scenes.tsx`).
+
+### Stage 09: integration and polish
+- **On templates:**
+
+| Template | New pieces |
+|---|---|
+| Sitara | reel |
+| Heera | calendar + wishes wall |
+| Roshni | petals welcome and gallery + shaped windows |
+| Sona | light-rays story + shaped windows |
+| Zari | memory chapters + wishes wall |
+| Deepam | calendar |
+| Mehfil | wishes wall |
+
+  The luxury demos carry the illustrated sample scenes as gallery photos.
+- **Library:** every new piece is listed and renders in English and Urdu. Sample chapters and sample wishes are injected when a sample invitation has none.
+- **Bug fixed (affected 5 live templates):** the Illuminated layout's words never appeared. Their in-view trigger watched an element that was clipped to nothing, which never registers as on screen. The visible page now triggers the reveal.
+  - **Rule:** never put `whileInView` on an element that starts fully clipped; trigger from a visible parent.
+- **Hand-off from opening to invitation:** I tested starting the sections two frames after the opening lifts.
+  - **Result:** the worst frame on a 4×-slowed phone went from 433 to 350 ms, but desktop gained an extra small stutter.
+  - **Decision:** not worth the complexity, so I reverted it. It remains open; the next idea is to mount sections progressively as they near the viewport.
+- **Performance:** each new layout and backdrop holds about 58 to 60 fps on a 4×-slowed phone (measured by each builder). All 32 templates pass the desktop and phone check with no errors and no sideways scroll.

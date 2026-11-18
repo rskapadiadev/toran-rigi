@@ -3,6 +3,7 @@ import type { LocalizedText } from '@shared/types';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable, useEditing } from '../editing';
+import { Chapters } from '../luxury/gallery/Chapters';
 import { Portraits } from '../luxury/hero/Portraits';
 import { SectionDivider } from '../luxury/typography/dividers';
 import { Illuminated } from '../luxury/typography/Illuminated';
@@ -134,6 +135,7 @@ export const Story = ({ variant }: VariantProps) => {
     const { data } = useInvite();
     // The couple introduced as a magazine feature: two portraits that part onto the two of them.
     if (variant === 'portraits') return <Portraits />;
+    if (variant === 'chapters') return <Chapters />;
     return (
         <Chapter
             field="story"

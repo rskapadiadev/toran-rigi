@@ -8,6 +8,9 @@ import { formString } from '../../motion/hooks';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { HeartBurst, HeartIcon, HeartPill, useDoubleTap, useHearts } from '../hearts';
+import { MaskGallery } from '../luxury/gallery/MaskGallery';
+import { Reel } from '../luxury/gallery/Reel';
+import { WishWall } from '../luxury/guests/WishWall';
 import type { PublicWishData } from '../types';
 
 const field =
@@ -63,11 +66,47 @@ function WishCard({ wish, hearts }: WishCardProps) {
     );
 }
 
-export function Wishes() {
-    const { data, guest, copy } = useInvite();
-    const [sent, setSent] = useState(false);
+export function Wishes({ variant }: { variant: string }) {
+    if (variant === 'wall') return <WishWall />;
+    return <WishRow />;
+}
+
+function WishRow() {
+    const { data, copy } = useInvite();
     const hearts = useHearts();
     if (data.invitation.extras.wishes?.enabled === false) return null;
+
+    return (
+        <section className="px-5 py-20">
+            <Reveal className="mb-10 text-center">
+                <h2 className="inv-display text-[clamp(1.8rem,5cqw,3rem)]">
+                    {copy('wishesTitle')}
+                </h2>
+            </Reveal>
+            {data.wishes.length > 0 && (
+                <div className="mx-auto mb-10 flex max-w-5xl snap-x gap-4 overflow-x-auto pb-4">
+                    {data.wishes.map((w) => (
+                        <WishCard key={w.id} wish={w} hearts={hearts} />
+                    ))}
+                </div>
+            )}
+            <div className="mx-auto max-w-xl">
+                <WishForm />
+            </div>
+        </section>
+    );
+}
+
+interface WishFormProps {
+    // The form's own card; the wishes wall dresses it as paper.
+    className?: string;
+    style?: CSSProperties;
+}
+
+// "Leave a wish": posts to the invitation; the couple approves it before it shows.
+export function WishForm({ className = 'inv-card rounded-3xl p-6', style }: WishFormProps) {
+    const { data, guest, copy } = useInvite();
+    const [sent, setSent] = useState(false);
 
     const submit = async (e: SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -85,57 +124,35 @@ export function Wishes() {
         if (res?.ok) setSent(true);
     };
 
+    if (sent) return <p className="text-center">{copy('wishPending')}</p>;
     return (
-        <section className="px-5 py-20">
-            <Reveal className="mb-10 text-center">
-                <h2 className="inv-display text-[clamp(1.8rem,5cqw,3rem)]">
-                    {copy('wishesTitle')}
-                </h2>
-            </Reveal>
-            {data.wishes.length > 0 && (
-                <div className="mx-auto mb-10 flex max-w-5xl snap-x gap-4 overflow-x-auto pb-4">
-                    {data.wishes.map((w) => (
-                        <WishCard key={w.id} wish={w} hearts={hearts} />
-                    ))}
-                </div>
-            )}
-            <div className="mx-auto max-w-xl">
-                {sent ? (
-                    <p className="text-center">{copy('wishPending')}</p>
-                ) : (
-                    <form
-                        onSubmit={(e) => void submit(e)}
-                        className="inv-card space-y-4 rounded-3xl p-6"
-                    >
-                        <input
-                            name="name"
-                            required
-                            maxLength={120}
-                            defaultValue={guest?.name}
-                            placeholder={copy('yourName')}
-                            aria-label={copy('yourName')}
-                            className={field}
-                        />
-                        <textarea
-                            name="message"
-                            required
-                            minLength={2}
-                            maxLength={600}
-                            rows={3}
-                            placeholder={copy('leaveWish')}
-                            aria-label={copy('leaveWish')}
-                            className={field}
-                        />
-                        <button
-                            type="submit"
-                            className="w-full rounded-full border border-(--inv-gold) px-6 py-3 text-xs tracking-[0.3em] uppercase"
-                        >
-                            {copy('leaveWish')}
-                        </button>
-                    </form>
-                )}
-            </div>
-        </section>
+        <form onSubmit={(e) => void submit(e)} className={`space-y-4 ${className}`} style={style}>
+            <input
+                name="name"
+                required
+                maxLength={120}
+                defaultValue={guest?.name}
+                placeholder={copy('yourName')}
+                aria-label={copy('yourName')}
+                className={field}
+            />
+            <textarea
+                name="message"
+                required
+                minLength={2}
+                maxLength={600}
+                rows={3}
+                placeholder={copy('leaveWish')}
+                aria-label={copy('leaveWish')}
+                className={field}
+            />
+            <button
+                type="submit"
+                className="w-full rounded-full border border-(--inv-gold) px-6 py-3 text-xs tracking-[0.3em] uppercase"
+            >
+                {copy('leaveWish')}
+            </button>
+        </form>
     );
 }
 
@@ -236,6 +253,12 @@ export function Travel() {
 }
 
 export function Gallery({ variant }: { variant: string }) {
+    if (variant === 'reel') return <Reel />;
+    if (variant === 'masks') return <MaskGallery />;
+    return <PhotoGallery variant={variant} />;
+}
+
+function PhotoGallery({ variant }: { variant: string }) {
     const { data } = useInvite();
     const photos = data.invitation.content.gallery;
     const [open, setOpen] = useState<string | null>(null);

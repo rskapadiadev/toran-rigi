@@ -79,13 +79,15 @@ export function Illuminated({
         boxShadow: '0 30px 60px -28px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.08)',
     };
     const text = `${large ? 'inv-display text-[clamp(1.3rem,4.6cqw,2.1rem)] leading-snug' : 'text-[clamp(1rem,3.8cqw,1.2rem)] leading-relaxed'} text-start`;
-    const ink = {
-        clipPath: 'inset(0 0 100% 0)',
-        opacity: 0.2,
-    };
-    const dry = {
-        clipPath: 'inset(0 0 -10% 0)',
-        opacity: 1,
+    const inkStates = {
+        ink: {
+            clipPath: 'inset(0 0 100% 0)',
+            opacity: 0.2,
+        },
+        dry: {
+            clipPath: 'inset(0 0 -10% 0)',
+            opacity: 1,
+        },
     };
     const soak = {
         duration: 1.8,
@@ -111,9 +113,12 @@ export function Illuminated({
     );
     return (
         <section className="px-[5cqw] py-20">
-            <div
+            <m.div
                 className="relative mx-auto max-w-2xl px-[10cqw] py-[clamp(3rem,14cqw,5rem)]"
                 style={page}
+                initial="ink"
+                whileInView="dry"
+                viewport={once}
             >
                 <Filigree at="top-start" />
                 <Filigree at="top-end" delay={0.2} />
@@ -133,12 +138,14 @@ export function Illuminated({
                 {tier === 'static' ? (
                     words
                 ) : (
-                    <m.div initial={ink} whileInView={dry} viewport={once} transition={soak}>
+                    // The page (always visible) watches the viewport; a fully clipped child never
+                    // registers as on screen, so its words would never appear.
+                    <m.div variants={inkStates} transition={soak}>
                         {words}
                     </m.div>
                 )}
                 <SectionDivider fallback="flourish" />
-            </div>
+            </m.div>
         </section>
     );
 }

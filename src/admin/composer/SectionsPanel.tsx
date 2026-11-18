@@ -48,6 +48,8 @@ const sceneSwatch: Record<SceneKind, string> = {
     leheriya:
         'repeating-linear-gradient(135deg,#e9a8b4 0 4px,#efd08c 4px 8px,#9fcfbf 8px 12px,#fbf3e4 12px 16px)',
     aurora: 'radial-gradient(circle at 25% 30%,#b3261eaa,transparent 60%),radial-gradient(circle at 75% 70%,#2f6f5eaa,transparent 60%),#0d0610',
+    petals: 'radial-gradient(ellipse 4px 2.5px at 30% 30%,#e8778f 0 99%,transparent),radial-gradient(ellipse 4px 2.5px at 68% 62%,#f0a636 0 99%,transparent),#fbf4ec',
+    rays: 'linear-gradient(115deg,transparent 30%,#f3d58a66 40%,transparent 50%,#f3d58a44 62%,transparent 70%),#15100c',
     confetti:
         'radial-gradient(circle at 20% 25%,#b3261e 0 1.6px,transparent 2px),radial-gradient(circle at 65% 40%,#c18f2f 0 1.6px,transparent 2px),radial-gradient(circle at 40% 75%,#2f6f5e 0 1.6px,transparent 2px),#fffdf8',
     plain: 'linear-gradient(135deg,#ffffff,#f4f4f4)',

@@ -138,6 +138,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             label: 'One line',
             hint: '“128 days to go” in display type',
         },
+        {
+            id: 'calendar',
+            label: 'Calendar',
+            hint: 'A calendar page turns to your month and the day is circled in gold ink',
+        },
     ],
     welcome: textVariants,
     story: [
@@ -146,6 +151,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             id: 'letter',
             label: 'A note from us',
             hint: 'Handwritten letter on torn paper, with polaroids and pressed flowers',
+        },
+        {
+            id: 'chapters',
+            label: 'Memory chapters',
+            hint: 'Your story as a timeline: each paragraph a chapter with its own photo, joined by a golden thread',
         },
         {
             id: 'portraits',
@@ -203,6 +213,28 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             id: 'film',
             label: 'Film strip',
             hint: 'A sideways-scrolling film reel',
+        },
+        {
+            id: 'reel',
+            label: 'Story reel',
+            hint: 'A cinematic reel: photos glide sideways as guests scroll, one caption at a time',
+        },
+        {
+            id: 'masks',
+            label: 'Shaped windows',
+            hint: 'Each photo revealed through an arch, a circle or a lotus as it scrolls in',
+        },
+    ],
+    wishes: [
+        {
+            id: 'default',
+            label: 'Card row',
+            hint: 'Blessings on cards in a gentle sideways row',
+        },
+        {
+            id: 'wall',
+            label: 'Wishes wall',
+            hint: 'Blessings pinned up as handwritten notes, each with its own heart',
         },
     ],
     closing: [
@@ -604,6 +636,16 @@ export const sceneInfo: Record<SceneKind, VariantInfo> = {
         id: 'confetti',
         label: 'Confetti',
         hint: 'Scattered dots, strips and squiggles',
+    },
+    petals: {
+        id: 'petals',
+        label: 'Falling petals',
+        hint: 'Rose and marigold petals drifting down on soft paper',
+    },
+    rays: {
+        id: 'rays',
+        label: 'Light rays',
+        hint: 'Cinematic shafts of warm light through a dark room, with floating dust',
     },
     plain: {
         id: 'plain',

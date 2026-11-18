@@ -2187,6 +2187,10 @@ export const themeLayouts: Record<string, BlockPreset> = {
             edge: 'doli',
             edgeMotion: true,
         },
+        wishes: {
+            variant: 'wall',
+            scene: 'blush',
+        },
     },
 };
 

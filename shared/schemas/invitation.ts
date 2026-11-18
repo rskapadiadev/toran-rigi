@@ -202,6 +202,8 @@ export const sceneKinds = [
     'leheriya',
     'aurora',
     'confetti',
+    'petals',
+    'rays',
     'plain',
 ] as const;
 

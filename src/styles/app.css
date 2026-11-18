@@ -2372,3 +2372,124 @@ body:has([data-opening]) [data-preview-bar] {
         display: none !important;
     }
 }
+
+/* Falling petals backdrop: one element per petal. `translate` carries the fall, `transform` the
+   sway and 3D flutter, so each petal is a single composited layer. cqh = the section's height. */
+.fx-petals {
+    container-type: size;
+    overflow: hidden;
+}
+.fx-petal {
+    position: absolute;
+    top: 0;
+    translate: 0 var(--rest-y);
+    transform: perspective(420px) rotateX(38deg) rotateY(-24deg) rotateZ(var(--spin));
+    backface-visibility: visible;
+}
+.fx-petal-live {
+    translate: 0 -60px;
+    animation:
+        fx-petal-fall var(--fall) linear var(--delay) infinite,
+        fx-petal-sway var(--sway) ease-in-out var(--sway-delay) infinite alternate;
+}
+/* Petals fade in below the top edge and out above the bottom one, so none is cut by a boundary. */
+@keyframes fx-petal-fall {
+    0% {
+        translate: 0 -60px;
+        opacity: 0;
+    }
+    12% {
+        opacity: var(--alpha);
+    }
+    78% {
+        opacity: var(--alpha);
+    }
+    90% {
+        opacity: 0;
+    }
+    100% {
+        translate: 0 calc(100cqh + 20px);
+        opacity: 0;
+    }
+}
+@keyframes fx-petal-sway {
+    0% {
+        transform: perspective(420px) translateX(calc(var(--amp) * -1))
+            rotateZ(calc(var(--spin) - 28deg)) rotateX(8deg) rotateY(-34deg);
+    }
+    50% {
+        transform: perspective(420px) translateX(0) rotateZ(var(--spin)) rotateX(42deg)
+            rotateY(6deg);
+    }
+    100% {
+        transform: perspective(420px) translateX(var(--amp)) rotateZ(calc(var(--spin) + 28deg))
+            rotateX(14deg) rotateY(36deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .fx-petal-live {
+        animation: none;
+        translate: 0 var(--rest-y);
+    }
+    .fx-petal-live[data-rest='off'] {
+        display: none;
+    }
+}
+
+/* Light rays backdrop: tall soft shafts hinged at the top, breathing slowly; dust drifting in them. */
+.fx-ray {
+    position: absolute;
+    top: -12%;
+    height: 150%;
+    transform-origin: 50% 0;
+    transform: rotate(var(--ray-a));
+    opacity: var(--ray-o);
+}
+.fx-ray-live {
+    animation: fx-ray-breathe var(--breathe) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes fx-ray-breathe {
+    from {
+        transform: rotate(calc(var(--ray-a) - 2deg)) scaleX(0.85);
+        opacity: calc(var(--ray-o) * 0.55);
+    }
+    to {
+        transform: rotate(calc(var(--ray-a) + 2deg)) scaleX(1.12);
+        opacity: var(--ray-o);
+    }
+}
+.fx-mote {
+    position: absolute;
+    border-radius: 9999px;
+    opacity: 0.6;
+}
+.fx-mote-live {
+    animation:
+        fx-mote-drift var(--drift) ease-in-out var(--delay) infinite alternate,
+        fx-mote-glint var(--glint) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes fx-mote-drift {
+    from {
+        translate: 0 0;
+    }
+    to {
+        translate: var(--dx) var(--dy);
+    }
+}
+@keyframes fx-mote-glint {
+    0% {
+        opacity: 0.1;
+    }
+    60% {
+        opacity: 0.85;
+    }
+    100% {
+        opacity: 0.35;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .fx-ray-live,
+    .fx-mote-live {
+        animation: none;
+    }
+}
