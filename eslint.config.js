@@ -40,6 +40,7 @@ export default tseslint.config(
             'migrations',
             'src/routeTree.gen.ts',
             'src/paraglide',
+            'references',
             'worker-configuration.d.ts',
         ],
     },

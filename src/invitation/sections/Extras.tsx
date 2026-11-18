@@ -11,6 +11,7 @@ import { HeartBurst, HeartIcon, HeartPill, useDoubleTap, useHearts } from '../he
 import { MaskGallery } from '../luxury/gallery/MaskGallery';
 import { Reel } from '../luxury/gallery/Reel';
 import { WishWall } from '../luxury/guests/WishWall';
+import { SectionTitle, useScriptTitles } from '../luxury/typography/SectionTitle';
 import type { PublicWishData } from '../types';
 
 const field =
@@ -74,15 +75,20 @@ export function Wishes({ variant }: { variant: string }) {
 function WishRow() {
     const { data, copy } = useInvite();
     const hearts = useHearts();
+    const script = useScriptTitles();
     if (data.invitation.extras.wishes?.enabled === false) return null;
 
     return (
         <section className="px-5 py-20">
-            <Reveal className="mb-10 text-center">
-                <h2 className="inv-display text-[clamp(1.8rem,5cqw,3rem)]">
-                    {copy('wishesTitle')}
-                </h2>
-            </Reveal>
+            {script ? (
+                <SectionTitle className="mb-10 text-center">{copy('wishesTitle')}</SectionTitle>
+            ) : (
+                <Reveal className="mb-10 text-center">
+                    <h2 className="inv-display text-[clamp(1.8rem,5cqw,3rem)]">
+                        {copy('wishesTitle')}
+                    </h2>
+                </Reveal>
+            )}
             {data.wishes.length > 0 && (
                 <div className="mx-auto mb-10 flex max-w-5xl snap-x gap-4 overflow-x-auto pb-4">
                     {data.wishes.map((w) => (
@@ -158,6 +164,7 @@ export function WishForm({ className = 'inv-card rounded-3xl p-6', style }: Wish
 
 export function Shagun() {
     const { data, copy } = useInvite();
+    const script = useScriptTitles();
     const shagun = data.invitation.extras.shagun;
     const link = shagun ? upiLink(shagun.upiId, shagun.payeeName, shagun.note) : '';
     const qr = useMemo(
@@ -174,11 +181,15 @@ export function Shagun() {
     if (!shagun) return null;
     return (
         <section className="px-5 py-20 text-center">
-            <Reveal>
-                <h2 className="inv-display text-[clamp(1.8rem,5cqw,3rem)]">
-                    {copy('shagunTitle')}
-                </h2>
-            </Reveal>
+            {script ? (
+                <SectionTitle>{copy('shagunTitle')}</SectionTitle>
+            ) : (
+                <Reveal>
+                    <h2 className="inv-display text-[clamp(1.8rem,5cqw,3rem)]">
+                        {copy('shagunTitle')}
+                    </h2>
+                </Reveal>
+            )}
             <Reveal
                 delay={120}
                 className="inv-card mx-auto mt-8 flex max-w-sm flex-col items-center gap-5 rounded-3xl p-7"
@@ -201,6 +212,7 @@ export function Shagun() {
 
 export function Live() {
     const { data, copy } = useInvite();
+    const [playing, setPlaying] = useState(false);
     const live = data.invitation.extras.live;
     if (!live) return null;
     const id = /(?:v=|youtu\.be\/|live\/)([\w-]{11})/.exec(live.youtubeUrl)?.[1];
@@ -211,23 +223,72 @@ export function Live() {
                 {copy('happeningNow')}
             </p>
             <div className="mx-auto aspect-video max-w-3xl overflow-hidden rounded-3xl">
-                <iframe
-                    className="size-full"
-                    src={`https://www.youtube-nocookie.com/embed/${id}`}
-                    title="Live stream"
-                    allow="autoplay; encrypted-media; picture-in-picture"
-                    allowFullScreen
-                    loading="lazy"
-                />
+                {playing ? (
+                    <iframe
+                        className="size-full"
+                        src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1`}
+                        title="Live stream"
+                        allow="autoplay; encrypted-media; picture-in-picture"
+                        allowFullScreen
+                    />
+                ) : (
+                    // YouTube loads only on a tap: the page stays light and nothing is sent first.
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setPlaying(true);
+                        }}
+                        aria-label={copy('watchLive')}
+                        className="group relative flex size-full flex-col items-center justify-center gap-4 bg-[radial-gradient(circle_at_50%_40%,color-mix(in_oklab,var(--inv-gold)_22%,#111),#0b0b0f_70%)] text-white"
+                    >
+                        <span className="flex size-16 items-center justify-center rounded-full bg-(--inv-gold) text-(--inv-bg) shadow-[0_0_0_10px_color-mix(in_oklab,var(--inv-gold)_25%,transparent)] transition-transform group-hover:scale-105 motion-reduce:transition-none">
+                            <svg viewBox="0 0 24 24" className="ms-1 size-7" aria-hidden>
+                                <path d="M7 4.5v15l13-7.5z" fill="currentColor" />
+                            </svg>
+                        </span>
+                        <span className="flex items-center gap-2 text-[11px] tracking-[0.35em] uppercase">
+                            <span className="size-2 animate-pulse rounded-full bg-red-500 motion-reduce:animate-none" />
+                            {copy('watchLive')}
+                        </span>
+                    </button>
+                )}
             </div>
         </section>
     );
 }
 
 export function Travel() {
-    const { data, t } = useInvite();
+    const { data, t, copy } = useInvite();
+    const script = useScriptTitles();
     const blocks = data.invitation.extras.travel;
     if (!blocks?.length) return null;
+    // Night invitations keep travel notes as plain centred text under a script title, no cards.
+    if (script)
+        return (
+            <section className="px-6 py-20 text-center">
+                <SectionTitle>{copy('travelTitle')}</SectionTitle>
+                <div className="mx-auto max-w-md space-y-8">
+                    {blocks.map((b, i) => (
+                        <Reveal key={i} delay={i * 100}>
+                            <h3 className="text-[11px] tracking-[0.4em] text-(--inv-gold) uppercase">
+                                {t(b.title)}
+                            </h3>
+                            <p className="mt-3 text-lg leading-relaxed opacity-80">{t(b.body)}</p>
+                            {b.link && (
+                                <a
+                                    href={b.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-3 inline-block text-sm text-(--inv-gold) italic underline underline-offset-4"
+                                >
+                                    {copy('directions')}
+                                </a>
+                            )}
+                        </Reveal>
+                    ))}
+                </div>
+            </section>
+        );
     return (
         <section className="px-5 py-20">
             <div className="mx-auto grid max-w-5xl gap-5 @3xl:grid-cols-3">

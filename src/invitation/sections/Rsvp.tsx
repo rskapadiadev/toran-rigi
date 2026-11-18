@@ -6,6 +6,7 @@ import { formString } from '../../motion/hooks';
 import { Reveal } from '../../motion/Reveal';
 import { Confetti } from '../Confetti';
 import { useInvite } from '../context';
+import { SectionTitle, useScriptTitles } from '../luxury/typography/SectionTitle';
 import { dietaryLabels } from '../strings';
 import { BreakTheGlass, LightSky } from './Celebration';
 
@@ -50,6 +51,7 @@ function Select({ className = '', children, ...props }: ComponentProps<'select'>
 
 export function Rsvp() {
     const { data, t, locale, culture, guest, copy, occasion } = useInvite();
+    const script = useScriptTitles();
     const { invitation, events } = data;
     const [attending, setAttending] = useState(true);
     const [status, setStatus] = useState<Status>('idle');
@@ -89,9 +91,15 @@ export function Rsvp() {
 
     return (
         <section className="px-5 py-24" id="rsvp">
-            <Reveal className="mb-10 text-center">
-                <h2 className="inv-display text-[clamp(2rem,6cqw,3.4rem)]">{copy('rsvpTitle')}</h2>
-            </Reveal>
+            {script ? (
+                <SectionTitle className="mb-10 text-center">{copy('rsvpTitle')}</SectionTitle>
+            ) : (
+                <Reveal className="mb-10 text-center">
+                    <h2 className="inv-display text-[clamp(2rem,6cqw,3.4rem)]">
+                        {copy('rsvpTitle')}
+                    </h2>
+                </Reveal>
+            )}
             <div className="mx-auto max-w-xl">
                 {status === 'done' ? (
                     <div className="space-y-6 text-center">

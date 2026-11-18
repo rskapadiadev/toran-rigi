@@ -52,6 +52,8 @@ const sceneSwatch: Record<SceneKind, string> = {
     rays: 'linear-gradient(115deg,transparent 30%,#f3d58a66 40%,transparent 50%,#f3d58a44 62%,transparent 70%),#15100c',
     confetti:
         'radial-gradient(circle at 20% 25%,#b3261e 0 1.6px,transparent 2px),radial-gradient(circle at 65% 40%,#c18f2f 0 1.6px,transparent 2px),radial-gradient(circle at 40% 75%,#2f6f5e 0 1.6px,transparent 2px),#fffdf8',
+    midnight:
+        'radial-gradient(circle at 30% 35%,#d9b36a 0 1px,transparent 1.6px),radial-gradient(circle at 70% 70%,#d9b36a 0 1px,transparent 1.6px),#101a3c',
     plain: 'linear-gradient(135deg,#ffffff,#f4f4f4)',
 };
 

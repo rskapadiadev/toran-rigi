@@ -7,6 +7,7 @@ import { Chapters } from '../luxury/gallery/Chapters';
 import { Portraits } from '../luxury/hero/Portraits';
 import { SectionDivider } from '../luxury/typography/dividers';
 import { Illuminated } from '../luxury/typography/Illuminated';
+import { SectionTitle, useScriptTitles } from '../luxury/typography/SectionTitle';
 import type { StringKey } from '../strings';
 import { BlessingsCard, LetterChapter, RangoliClosing } from './story';
 
@@ -24,6 +25,7 @@ interface ChapterProps {
 function Chapter({ field, title, text, large = false, variant }: ChapterProps) {
     const { t, copy, locale } = useInvite();
     const editing = useEditing();
+    const script = useScriptTitles();
     const raw = t(text);
     // Empty chapters vanish for guests but stay visible (as a placeholder) in the editor.
     if (!raw && !editing) return null;
@@ -32,11 +34,7 @@ function Chapter({ field, title, text, large = false, variant }: ChapterProps) {
             {raw}
         </Editable>
     );
-    const kicker = title && (
-        <Reveal>
-            <p className="text-xs tracking-[0.4em] text-(--inv-gold) uppercase">{copy(title)}</p>
-        </Reveal>
-    );
+    const kicker = title && <SectionTitle ownDivider>{copy(title)}</SectionTitle>;
     if (variant === 'letter') return <LetterChapter text={raw} />;
     if (variant === 'illuminated')
         return (
@@ -82,7 +80,8 @@ function Chapter({ field, title, text, large = false, variant }: ChapterProps) {
             </section>
         );
 
-    if (variant === 'editorial') {
+    // Script titles need the centred page; the editorial spine has no room for them.
+    if (variant === 'editorial' && !script) {
         // Drop caps only for Latin script; they break joining in Arabic and Indic scripts.
         const dropCap = locale === 'en';
         return (

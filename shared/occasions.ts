@@ -145,7 +145,13 @@ const remembranceSections: SectionType[] = [
     'closing',
 ];
 // Nothing festive, transactional or time-pressured beside grief.
-const remembranceForbidden: SectionType[] = ['countdown', 'shagun', 'card', 'photoWall'];
+const remembranceForbidden: SectionType[] = [
+    'countdown',
+    'date',
+    'shagun',
+    'card',
+    'photoWall',
+];
 
 const coupleRoles = {
     one: {

@@ -35,29 +35,42 @@ interface PaperCardProps {
     children: ReactNode;
     tilt: number;
     corners?: boolean;
+    // Night stationery: the card is cut from the invitation's own dark paper, not ivory.
+    night?: boolean;
 }
 
 // Cotton-paper card with a foil double border; sticky so the next card slides over it like real stationery.
-function PaperCard({ children, tilt, corners = false }: PaperCardProps) {
+function PaperCard({ children, tilt, corners = false, night = false }: PaperCardProps) {
     const { data } = useInvite();
-    const gold = data.invitation.design.palette.gold;
+    const { gold, bg, ink, muted } = data.invitation.design.palette;
+    const base = night ? mixHex(bg, '#ffffff', 0.05) : '#fbf6ec';
     const paper = useMemo(
         () =>
             materialBackground({
                 kind: 'paper',
-                base: '#fbf6ec',
+                base,
                 seed: data.invitation.seed + 11,
             }),
-        [data.invitation.seed],
+        [data.invitation.seed, base],
     );
-    const style: CSSProperties = {
+    const nightStyle = {
         backgroundImage: paper,
-        transform: `rotate(${tilt}deg)`,
-        boxShadow: '0 30px 60px -20px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.15)',
-        '--inv-ink': '#2b1d18',
-        '--inv-muted': '#6f5e54',
-        color: '#2b1d18',
+        transform: `rotate(${String(tilt)}deg)`,
+        boxShadow: `0 0 0 6px ${mixHex(bg, '#ffffff', 0.16)}, 0 30px 60px -24px rgba(0,0,0,0.7)`,
+        '--inv-ink': ink,
+        '--inv-muted': muted,
+        color: ink,
     } as CSSProperties;
+    const style: CSSProperties = night
+        ? nightStyle
+        : ({
+              backgroundImage: paper,
+              transform: `rotate(${String(tilt)}deg)`,
+              boxShadow: '0 30px 60px -20px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.15)',
+              '--inv-ink': '#2b1d18',
+              '--inv-muted': '#6f5e54',
+              color: '#2b1d18',
+          } as CSSProperties);
     return (
         <div
             className="relative mx-auto w-[min(88%,460px)] p-[clamp(1.4rem,6cqw,2.6rem)]"
@@ -82,6 +95,14 @@ function PaperCard({ children, tilt, corners = false }: PaperCardProps) {
     );
 }
 
+function Parents({ text }: { text: string }) {
+    return (
+        <p className="mx-auto mb-2 max-w-[22ch] text-[clamp(0.7rem,3cqw,0.85rem)] leading-relaxed tracking-[0.2em] uppercase opacity-80">
+            {text}
+        </p>
+    );
+}
+
 export function InvitationCard({ variant }: { variant: string }) {
     const { data, t, locale, copy, names } = useInvite();
     const { content } = data.invitation;
@@ -89,6 +110,11 @@ export function InvitationCard({ variant }: { variant: string }) {
     const start = first ? zonedToUtc(first.startsAt, first.timezone) : undefined;
     const gold = data.invitation.design.palette.gold;
     const buttonBg = mixHex(data.invitation.design.palette.primary, '#000000', 0.1);
+    const night = variant === 'night';
+    // Night cards name the families beneath each name, as a printed card would.
+    const parentsOne = night ? t(content.people.one.parents) : '';
+    const parentsTwo = night ? t(content.people.two?.parents) : '';
+    const nameInk = night ? { color: gold } : undefined;
 
     const details = (
         <>
@@ -97,17 +123,25 @@ export function InvitationCard({ variant }: { variant: string }) {
                     {t(content.headline)}
                 </Editable>
             </p>
-            <p className="inv-script my-4 text-[clamp(2.6rem,12cqw,4rem)] leading-none">
+            <p
+                className="inv-script my-4 text-[clamp(2.6rem,12cqw,4rem)] leading-none"
+                style={nameInk}
+            >
                 <Editable path="people.one.name">{names.one}</Editable>
             </p>
+            {parentsOne && <Parents text={parentsOne} />}
             {names.two && (
                 <>
                     <p className="inv-script text-3xl" style={{ color: gold }}>
                         {copy('and')}
                     </p>
-                    <p className="inv-script my-4 text-[clamp(2.6rem,12cqw,4rem)] leading-none">
+                    <p
+                        className="inv-script my-4 text-[clamp(2.6rem,12cqw,4rem)] leading-none"
+                        style={nameInk}
+                    >
                         <Editable path="people.two.name">{names.two}</Editable>
                     </p>
+                    {parentsTwo && <Parents text={parentsTwo} />}
                 </>
             )}
             <div className="mx-auto my-6 h-px w-24" style={{ background: gold }} />
@@ -188,11 +222,11 @@ export function InvitationCard({ variant }: { variant: string }) {
             </EnvelopeCard>
         );
 
-    if (variant === 'single')
+    if (variant === 'single' || night)
         return (
             <section className="relative py-[10svh]">
                 <Reveal>
-                    <PaperCard tilt={-0.6} corners>
+                    <PaperCard tilt={night ? 0 : -0.6} corners={!night} night={night}>
                         {details}
                         <div className="mx-auto my-8 h-px w-24" style={{ background: gold }} />
                         {celebrations}

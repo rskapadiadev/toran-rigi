@@ -6,6 +6,7 @@ import { createContext, type ReactNode, use } from 'react';
 
 import { GenerativeOrnament } from '../../../motion/GenerativeOrnament';
 import { useInvite } from '../../context';
+import { DiyaGarland } from './DiyaGarland';
 import { Bead, Flourish, Line } from './ornaments';
 
 // Set by each section's Scene; undefined means "the layout's own default".
@@ -128,6 +129,8 @@ export function SectionDivider({ fallback = 'medallion' }: DividerProps) {
             return <Deco />;
         case 'line':
             return <Hairline />;
+        case 'diya':
+            return <DiyaGarland />;
         case 'medallion':
             return <Medallion />;
     }

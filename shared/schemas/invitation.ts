@@ -43,6 +43,7 @@ export const openingKinds = [
     'jewellery-box',
     'sealed-letter',
     'portraits',
+    'film',
 ] as const;
 
 export const generativeKinds = [
@@ -67,6 +68,8 @@ export const sectionTypes = [
     'cover',
     'names',
     'card',
+    'blessing',
+    'date',
     'countdown',
     'welcome',
     'story',
@@ -102,12 +105,37 @@ export const designSchema = z.object({
         script: z.string().optional(),
     }),
     opening: z.enum(openingKinds),
+    // A filmed opening (the 'film' kind): the studio's clip plus stills of its first and last frames.
+    film: z
+        .object({
+            src: z.string(),
+            first: z.string().optional(),
+            last: z.string().optional(),
+            // Seconds into the clip when the names rise, timed to the scene's big moment.
+            namesAt: z.number().min(0).optional(),
+        })
+        .optional(),
     generative: z.object({
         kind: z.enum(generativeKinds),
         density: z.number().min(0.2).max(1).default(0.6),
     }),
     texture: z.enum(['paper', 'silk', 'linen', 'none']).default('paper'),
     motion: z.enum(['calm', 'rich', 'cinematic']).default('rich'),
+    // How chapters are titled: a small gold kicker, or a large gold script title over its divider.
+    titles: z.enum(['kicker', 'script']).optional(),
+    // Painted art the studio sets per design (media keys or /kits paths). Each piece is optional:
+    // sections draw their own ornament where a painting is missing.
+    art: z
+        .object({
+            // Vetted sacred art shown in the blessing arch (studio-set, never generated per guest).
+            blessing: z.string().optional(),
+            divider: z.string().optional(),
+            venue: z.string().optional(),
+            dress: z.string().optional(),
+            // One painting per ceremony kind (mehndi, sangeet, pheras…), used by Pavilions.
+            pavilions: z.record(z.string(), z.string()).optional(),
+        })
+        .optional(),
 });
 
 const isoDate = z.iso.date();
@@ -204,6 +232,7 @@ export const sceneKinds = [
     'confetti',
     'petals',
     'rays',
+    'midnight',
     'plain',
 ] as const;
 
@@ -269,7 +298,15 @@ export const motifIds = [
 ] as const;
 
 // The ornament between a chapter's title and its words (see src/invitation/luxury/typography/dividers.tsx).
-export const dividerKinds = ['medallion', 'flourish', 'lotus', 'paisley', 'deco', 'line'] as const;
+export const dividerKinds = [
+    'medallion',
+    'flourish',
+    'lotus',
+    'paisley',
+    'deco',
+    'line',
+    'diya',
+] as const;
 
 export const sectionConfigSchema = z.object({
     type: z.enum(sectionTypes),

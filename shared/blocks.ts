@@ -75,6 +75,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             hint: 'Illustrated paper page: Ganesha, a gold monogram, the letter, and a meadow that grows as guests scroll',
         },
         {
+            id: 'film',
+            label: 'Film still',
+            hint: 'The last frame of the film opening, full screen, with your names in its sky: the film settles into the page',
+        },
+        {
             id: 'photo',
             label: 'Photo story',
             hint: 'Your photo fills the screen, then settles into a torn-paper frame as you scroll',
@@ -112,6 +117,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             hint: 'One deckle-edge card with every detail',
         },
         {
+            id: 'night',
+            label: 'Night card',
+            hint: 'One card cut from the invitation’s own dark paper, a gold frame and each family named',
+        },
+        {
             id: 'envelope',
             label: 'From the envelope',
             hint: 'The card slides out of a silk envelope as guests scroll',
@@ -142,6 +152,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             id: 'calendar',
             label: 'Calendar',
             hint: 'A calendar page turns to your month and the day is circled in gold ink',
+        },
+        {
+            id: 'diyas',
+            label: 'Row of diyas',
+            hint: 'Plain gold numerals over a row of lamps that light one by one',
         },
     ],
     welcome: textVariants,
@@ -197,6 +212,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             label: 'Stacked arches',
             hint: 'Arch cards that stick and stack as guests scroll, each with its own prop',
         },
+        {
+            id: 'pavilions',
+            label: 'Pavilions',
+            hint: 'A gold spine with each ceremony’s prop on one side and its time in jewel-toned script on the other',
+        },
     ],
     gallery: [
         {
@@ -235,6 +255,63 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             id: 'wall',
             label: 'Wishes wall',
             hint: 'Blessings pinned up as handwritten notes, each with its own heart',
+        },
+    ],
+    // Sections with one design so far: listed so the Library and the editor can show them.
+    blessing: [
+        {
+            id: 'default',
+            label: 'Blessing arch',
+            hint: 'A cusped jharokha arch holding the studio’s vetted sacred art, or the greeting and a lit diya',
+        },
+    ],
+    date: [
+        {
+            id: 'default',
+            label: 'Scratch to reveal',
+            hint: 'Three gold-foil cards, day, month and year, that guests scratch away to find the date',
+        },
+    ],
+    venue: [
+        {
+            id: 'default',
+            label: 'Location',
+            hint: 'The city in spaced capitals, the venue and address, a gold maps button and the venue painting',
+        },
+    ],
+    dressCode: [
+        {
+            id: 'default',
+            label: 'Dress code',
+            hint: 'Each ceremony’s look as a row of colour swatches, under the studio’s painting of the family',
+        },
+    ],
+    travel: [
+        {
+            id: 'default',
+            label: 'Travel & stay',
+            hint: 'Arrival and stay notes as cards, or centred text under script titles',
+        },
+    ],
+    live: [
+        {
+            id: 'default',
+            label: 'Live stream',
+            hint: 'The wedding’s YouTube live stream behind a play card; it loads only when a guest taps',
+        },
+    ],
+    rsvp: [
+        {
+            id: 'default',
+            label: 'RSVP form',
+            hint: 'Accept or decline, guests, ceremonies and food preference',
+        },
+    ],
+    shagun: [
+        {
+            id: 'default',
+            label: 'Shagun',
+            hint: 'A UPI link and QR code for gifts',
         },
     ],
     closing: [
@@ -278,6 +355,13 @@ export const openingChoices: OpeningInfo[] = [
         label: 'Sealed letter',
         hint: 'Press and hold the wax seal until it cracks; the flap peels open on a gold liner and the card slides out under vellum',
         gesture: 'Press the seal',
+        gentle: true,
+    },
+    {
+        id: 'film',
+        label: 'Film',
+        hint: 'A short cinematic film the studio uploads: a tap plays it, the names rise at its brightest moment and it settles into the cover',
+        gesture: 'Tap',
         gentle: true,
     },
     {
@@ -647,6 +731,11 @@ export const sceneInfo: Record<SceneKind, VariantInfo> = {
         label: 'Light rays',
         hint: 'Cinematic shafts of warm light through a dark room, with floating dust',
     },
+    midnight: {
+        id: 'midnight',
+        label: 'Midnight paper',
+        hint: 'Handmade paper dyed in the night colour, with fine gold flecks: made for night-sky films',
+    },
     plain: {
         id: 'plain',
         label: 'Plain',
@@ -829,6 +918,11 @@ export const dividerInfo: Record<DividerKind, VariantInfo> = {
         label: 'Hairline',
         hint: 'One fine gold line with a bead at its heart',
     },
+    diya: {
+        id: 'diya',
+        label: 'Diya garland',
+        hint: 'A lit diya between marigolds and paisley scrolls, painted in gold and saffron',
+    },
 };
 
 const sectionDefaults: Partial<Record<SectionType, BlockDefaults>> = {
@@ -926,16 +1020,20 @@ export const calmEntrances: readonly EnterPreset[] = ['rise', 'ink', 'glow', 'wo
 export const settleEnter = (preset: EnterPreset, calm: boolean): EnterPreset =>
     calm && !calmEntrances.includes(preset) ? 'ink' : preset;
 
-// Sections with their own design. Others in the schema (names, venue, dressCode, photoWall) are
-// shown inside these: names on the cover, venue and dress code on each ceremony card.
+// Sections with their own design. Others in the schema (names, photoWall) are shown inside these:
+// names on the cover. Venue and dress code also appear on each ceremony card.
 export const renderedSections = [
     'cover',
     'card',
+    'blessing',
+    'date',
     'countdown',
     'welcome',
     'story',
     'family',
     'events',
+    'venue',
+    'dressCode',
     'gallery',
     'travel',
     'live',

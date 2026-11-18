@@ -14,6 +14,7 @@ import { usePrint } from '../../print';
 import { useSectionScroll } from '../../scroll';
 import { foilInk, paperGrain } from '../materials';
 import { Flourish } from '../typography/ornaments';
+import { SectionTitle, useScriptTitles } from '../typography/SectionTitle';
 
 const roman = (n: number) => {
     const marks: [number, string][] = [
@@ -263,6 +264,7 @@ function ChapterRow({ index, body, photo, still }: ChapterProps) {
 
 export function Chapters() {
     const { data, t, copy, names, tier } = useInvite();
+    const script = useScriptTitles();
     const editing = useEditing();
     const print = usePrint();
     const ref = useRef<HTMLOListElement>(null);
@@ -299,17 +301,22 @@ export function Chapters() {
     };
     return (
         <section className="relative px-[6cqw] py-24" data-print-page={print || undefined}>
-            <header className="mb-16 text-center">
-                <p className="text-[11px] tracking-[0.5em] text-(--inv-gold) uppercase">
-                    {copy('ourStory')}
-                </p>
-                {names.title && (
-                    <h2 className="inv-script mt-4 text-[clamp(2.4rem,11cqw,4.4rem)] leading-[1.05] text-(--inv-primary)">
-                        {names.title}
-                    </h2>
-                )}
-                <Flourish className="mx-auto mt-5 w-[min(56cqw,240px)]" />
-            </header>
+            {script ? (
+                // Script titles: "Our story" in gold script over the section's divider, as elsewhere.
+                <SectionTitle className="mb-16 text-center">{copy('ourStory')}</SectionTitle>
+            ) : (
+                <header className="mb-16 text-center">
+                    <p className="text-[11px] tracking-[0.5em] text-(--inv-gold) uppercase">
+                        {copy('ourStory')}
+                    </p>
+                    {names.title && (
+                        <h2 className="inv-script mt-4 text-[clamp(2.4rem,11cqw,4.4rem)] leading-[1.05] text-(--inv-primary)">
+                            {names.title}
+                        </h2>
+                    )}
+                    <Flourish className="mx-auto mt-5 w-[min(56cqw,240px)]" />
+                </header>
+            )}
             <div className="relative mx-auto max-w-4xl">
                 <ol
                     ref={ref}

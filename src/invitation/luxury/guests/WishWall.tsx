@@ -15,6 +15,7 @@ import { WishForm } from '../../sections/Extras';
 import type { PublicWishData } from '../../types';
 import { cottonGrain, deckled, paperGrain } from '../materials';
 import { Flourish } from '../typography/ornaments';
+import { SectionTitle, useScriptTitles } from '../typography/SectionTitle';
 
 type Hearts = ReturnType<typeof useHearts>;
 
@@ -266,6 +267,7 @@ function Note({ wish, hearts, index, still }: NoteProps) {
 
 export function WishWall() {
     const { data, copy, tier } = useInvite();
+    const script = useScriptTitles();
     const print = usePrint();
     const hearts = useHearts();
     const { palette } = data.invitation.design;
@@ -290,12 +292,16 @@ export function WishWall() {
     return (
         <section className="@container px-4 py-20">
             <style>{swayKeyframes}</style>
-            <Reveal className="mb-8 text-center">
-                <h2 className="inv-display text-[clamp(1.8rem,5cqw,3rem)]">
-                    {copy('wishesTitle')}
-                </h2>
-                <Flourish className="mx-auto mt-4 w-[min(48cqw,200px)]" />
-            </Reveal>
+            {script ? (
+                <SectionTitle className="mb-8 text-center">{copy('wishesTitle')}</SectionTitle>
+            ) : (
+                <Reveal className="mb-8 text-center">
+                    <h2 className="inv-display text-[clamp(1.8rem,5cqw,3rem)]">
+                        {copy('wishesTitle')}
+                    </h2>
+                    <Flourish className="mx-auto mt-4 w-[min(48cqw,200px)]" />
+                </Reveal>
+            )}
             {data.wishes.length > 0 && (
                 <div className="mx-auto mb-12 max-w-5xl rounded-md border p-1.5" style={frame}>
                     <div

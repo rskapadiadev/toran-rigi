@@ -13,6 +13,7 @@ import { useInvite } from '../../context';
 import { usePrint } from '../../print';
 import { s, type StringKey } from '../../strings';
 import { foilInk, grain, paperGrain } from '../materials';
+import { SectionTitle, useScriptTitles } from '../typography/SectionTitle';
 
 const units: [StringKey, number][] = [
     ['days', 86_400_000],
@@ -284,6 +285,7 @@ function Desk({ page, day, still }: DeskProps) {
 export function CalendarCountdown() {
     const { data, locale, copy, t, tier } = useInvite();
     const print = usePrint();
+    const script = useScriptTitles();
     const now = useNow(1000);
     const first = data.events[0];
     const target = first ? zonedToUtc(first.startsAt, first.timezone).getTime() : 0;
@@ -318,9 +320,13 @@ export function CalendarCountdown() {
     const once = { once: true };
     return (
         <section className="px-6 py-20 text-center" data-print-page={print || undefined}>
-            <p className="mb-3 text-[11px] tracking-[0.5em] text-(--inv-gold) uppercase">
-                {copy('saveTheDate')}
-            </p>
+            {script ? (
+                <SectionTitle className="mb-2">{copy('saveTheDate')}</SectionTitle>
+            ) : (
+                <p className="mb-3 text-[11px] tracking-[0.5em] text-(--inv-gold) uppercase">
+                    {copy('saveTheDate')}
+                </p>
+            )}
             <p className="mx-auto mb-10 max-w-[32ch] text-[clamp(0.8rem,3.4cqw,0.95rem)] tracking-[0.12em] opacity-90">
                 <bdi className="whitespace-nowrap">{t(first.title)}</bdi>
                 <span className="mx-2 text-(--inv-gold)" aria-hidden>

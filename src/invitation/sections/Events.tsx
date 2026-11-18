@@ -1,5 +1,6 @@
 import { eventLabel } from '@shared/cultures';
 import { buildIcs, googleCalendarUrl } from '@shared/ics';
+import { photoUrl } from '@shared/photos';
 import { propFor } from '@shared/props';
 import { formatEventDate, formatEventTime, sameOffset, zonedToUtc, zoneLabel } from '@shared/time';
 import { m, useScroll, useSpring } from 'motion/react';
@@ -12,6 +13,7 @@ import { useScrollProgress } from '../../motion/useScrollProgress';
 import { useInvite } from '../context';
 import { Editable, eventPath } from '../editing';
 import { LazyCeremonyProp } from '../LazyCeremonyProp';
+import { SectionTitle } from '../luxury/typography/SectionTitle';
 import type { PublicInvitationEvent } from '../types';
 import { WardrobeEvents } from './phoolwari';
 
@@ -80,20 +82,26 @@ function useEventFacts(event: PublicInvitationEvent) {
     };
 }
 
-export function EventActions({ event }: { event: PublicInvitationEvent }) {
+interface ActionsProps {
+    event: PublicInvitationEvent;
+    // Underlined italic links instead of pills, for programme-style layouts.
+    plain?: boolean;
+}
+
+export function EventActions({ event, plain = false }: ActionsProps) {
     const { data, copy } = useInvite();
     const facts = useEventFacts(event);
     const [picking, setPicking] = useState(false);
-    const pill = 'rounded-full border border-(--inv-gold) px-4 py-2 tracking-[0.18em]';
+    const pill = plain
+        ? 'py-1 text-(--inv-gold) italic underline decoration-(--inv-gold)/60 underline-offset-4'
+        : 'rounded-full border border-(--inv-gold) px-4 py-2 tracking-[0.18em]';
+    const row = plain
+        ? 'mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[clamp(0.85rem,3.8cqw,1rem)]'
+        : 'mt-4 flex flex-wrap justify-center gap-2 text-[11px] tracking-[0.18em] uppercase';
     return (
-        <div className="mt-4 flex flex-wrap justify-center gap-2 text-[11px] tracking-[0.18em] uppercase">
+        <div className={row}>
             {event.mapsUrl && (
-                <a
-                    href={event.mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-full border border-(--inv-gold) px-4 py-2"
-                >
+                <a href={event.mapsUrl} target="_blank" rel="noopener noreferrer" className={pill}>
                     {copy('directions')}
                 </a>
             )}
@@ -482,6 +490,100 @@ function Ticket({ event, index }: EventCardProps) {
     );
 }
 
+// Each ceremony's time is painted in its own jewel tone, drawn from the palette.
+const pavilionInks = [
+    'color-mix(in oklab, var(--inv-primary) 80%, white)',
+    'color-mix(in oklab, var(--inv-accent) 55%, white)',
+    'var(--inv-gold)',
+    'color-mix(in oklab, var(--inv-accent) 35%, var(--inv-gold))',
+];
+
+// Pavilions: a gold spine down the page, each ceremony's prop on one side and its time in large
+// script on the other, swapping sides as guests scroll, like a hand-painted programme.
+function Pavilions() {
+    const { data } = useInvite();
+    return (
+        <div className="relative mx-auto max-w-2xl">
+            <div className="absolute inset-y-0 start-1/2 w-px bg-(--inv-gold) opacity-60" />
+            <ol className="space-y-[12cqw] @2xl:space-y-20">
+                {data.events.map((event, i) => (
+                    <Pavilion key={event.id} event={event} index={i} />
+                ))}
+            </ol>
+        </div>
+    );
+}
+
+function Pavilion({ event, index }: EventCardProps) {
+    const { data, culture, locale } = useInvite();
+    const facts = useEventFacts(event);
+    const flip = index % 2 === 1;
+    const day = new Intl.DateTimeFormat(locale, {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        timeZone: event.timezone,
+    }).format(facts.start);
+    const second = data.invitation.locales.find((l) => l !== locale);
+    const native = second ? eventLabel(data.invitation.culture, event.kind, second) : '';
+    const ink = { color: pavilionInks[index % pavilionInks.length] };
+    // The studio's painted pavilion for this kind of ceremony, else the prop drawing.
+    const painting = data.invitation.design.art?.pavilions?.[event.kind];
+    return (
+        <li data-event-index={index} className="relative grid grid-cols-2 items-center gap-[7cqw]">
+            <span className="absolute start-1/2 top-1/2 size-3.5 -translate-1/2 rotate-45 border border-(--inv-gold) bg-(--inv-bg) rtl:translate-x-1/2" />
+            <Reveal
+                className={`flex justify-center ${flip ? 'col-start-2' : 'col-start-1'} row-start-1`}
+            >
+                {painting ? (
+                    <img
+                        src={photoUrl(painting)}
+                        alt=""
+                        loading="lazy"
+                        className="w-full max-w-72"
+                    />
+                ) : (
+                    <LazyCeremonyProp
+                        kind={propFor(event.kind, culture.id)}
+                        className="w-[96%] max-w-64"
+                    />
+                )}
+            </Reveal>
+            <Reveal
+                delay={120}
+                className={`row-start-1 ${flip ? 'col-start-1 text-end' : 'col-start-2 text-start'}`}
+            >
+                <p className="text-[clamp(0.6rem,2.6cqw,0.75rem)] tracking-[0.3em] uppercase opacity-75">
+                    {day}
+                </p>
+                <p
+                    className="inv-script mt-1 text-[clamp(1.9rem,9cqw,3rem)] leading-tight"
+                    style={ink}
+                    dir="ltr"
+                >
+                    {formatEventTime(facts.start, event.timezone, locale)}
+                </p>
+                {facts.live && <LiveBadge />}
+                <h3 className="inv-display mt-1 text-[clamp(1.25rem,6cqw,1.9rem)] leading-tight">
+                    <Editable path={eventPath(index, 'title')}>{facts.title}</Editable>
+                </h3>
+                {native && native !== facts.title && (
+                    <p className="text-[clamp(0.95rem,4.4cqw,1.2rem)] text-(--inv-gold)">
+                        {native}
+                    </p>
+                )}
+                <p className="mt-1 text-[clamp(0.85rem,3.8cqw,1.05rem)] italic opacity-75">
+                    <Editable path={eventPath(index, 'venue')}>{event.venue}</Editable>
+                </p>
+                {facts.guestTime && <p className="text-xs opacity-60">{facts.guestTime}</p>}
+                <div className={flip ? '[&>div]:justify-end' : '[&>div]:justify-start'}>
+                    <EventActions event={event} plain />
+                </div>
+            </Reveal>
+        </li>
+    );
+}
+
 export function Events({ variant }: { variant: string }) {
     const { data, copy } = useInvite();
     if (data.events.length === 0) return null;
@@ -489,15 +591,12 @@ export function Events({ variant }: { variant: string }) {
     if (variant === 'wardrobe') return <WardrobeEvents />;
     return (
         <section className="px-5 py-24">
-            <Reveal className="mb-14 text-center">
-                <p className="text-xs tracking-[0.4em] text-(--inv-gold) uppercase">
-                    {copy('celebrations')}
-                </p>
-            </Reveal>
+            <SectionTitle className="mb-14 text-center">{copy('celebrations')}</SectionTitle>
             {variant === 'timeline' && <Timeline />}
             {variant === 'tickets' && <Tickets />}
             {variant === 'stack' && <StackedArches />}
-            {variant !== 'timeline' && variant !== 'tickets' && variant !== 'stack' && (
+            {variant === 'pavilions' && <Pavilions />}
+            {!['timeline', 'tickets', 'stack', 'pavilions'].includes(variant) && (
                 <div className="mx-auto grid max-w-5xl gap-20 @3xl:grid-cols-2">
                     {data.events.map((event, i) => (
                         <EventCard key={event.id} event={event} index={i} />

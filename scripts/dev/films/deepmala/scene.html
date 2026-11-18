@@ -1,0 +1,453 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+// Deepmala opening film: an original painted night scene, rendered frame by frame.
+// render(t) draws the frame at t seconds. Fully deterministic so every render matches.
+const W = 1080, H = 1920;
+const HORIZON = 1430;             // where the ghats meet the water
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const ease = (x) => { x = clamp(x); return x * x * (3 - 2 * x); };
+const easeOut = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const mix = (a, b, k) => a + (b - a) * k;
+function mixColor(a, b, k) {
+  const pa = a.match(/\w\w/g).map((h) => parseInt(h, 16)), pb = b.match(/\w\w/g).map((h) => parseInt(h, 16));
+  return `rgb(${pa.map((v, i) => Math.round(mix(v, pb[i], k))).join(',')})`;
+}
+
+// ---------- the building: a riverside haveli (original design) ----------
+const PLINTH_TOP = 1170, PLINTH_BOTTOM = 1205;
+const wings = [
+  { x0: 120, x1: 395, top: 985 },
+  { x0: 685, x1: 960, top: 985 },
+];
+const centre = { x0: 395, x1: 685, top: 930 };
+const DOME = { cx: 540, base: 930, r: 118, tip: 742 };
+const chhatris = [
+  { cx: 160, base: 985, r: 34 }, { cx: 355, base: 985, r: 30 },
+  { cx: 725, base: 985, r: 30 }, { cx: 920, base: 985, r: 34 },
+  { cx: 430, base: 930, r: 26 }, { cx: 650, base: 930, r: 26 },
+];
+
+// Windows: arched openings in rows.
+const windows = [];
+for (const w of wings) {
+  const n = 4, gap = (w.x1 - w.x0) / n;
+  for (let i = 0; i < n; i++) {
+    const cx = w.x0 + gap * (i + 0.5);
+    windows.push({ cx, y: 1012, w: 30, h: 58 });
+    windows.push({ cx, y: 1092, w: 34, h: 66 });
+  }
+}
+for (let i = 0; i < 3; i++) windows.push({ cx: 455 + i * 85, y: 975, w: 44, h: 78 });
+for (let i = 0; i < 5; i++) windows.push({ cx: 425 + i * 57.5, y: 1078, w: 30, h: 74 });
+
+function archPath(x, y, w, h) {
+  ctx.beginPath();
+  ctx.moveTo(x - w / 2, y + h);
+  ctx.lineTo(x - w / 2, y + w / 2);
+  ctx.quadraticCurveTo(x - w / 2, y, x, y - w * 0.28);
+  ctx.quadraticCurveTo(x + w / 2, y, x + w / 2, y + w / 2);
+  ctx.lineTo(x + w / 2, y + h);
+  ctx.closePath();
+}
+function domePath(cx, base, r, tip) {
+  ctx.beginPath();
+  ctx.moveTo(cx - r, base);
+  ctx.bezierCurveTo(cx - r * 1.08, base - r * 0.9, cx - r * 0.35, tip + r * 0.35, cx, tip);
+  ctx.bezierCurveTo(cx + r * 0.35, tip + r * 0.35, cx + r * 1.08, base - r * 0.9, cx + r, base);
+  ctx.closePath();
+}
+
+// Rim lamps: points along rooflines and the dome, lit at the bloom.
+const rim = [];
+{
+  const add = (x, y) => rim.push({ x, y, p: rim.length });
+  for (const w of wings) for (let x = w.x0; x <= w.x1; x += 18) add(x, w.top);
+  for (let x = centre.x0; x <= centre.x1; x += 18) add(x, centre.top);
+  for (let x = 90; x <= 990; x += 18) add(x, PLINTH_TOP);
+  for (let a = 0; a <= 1; a += 1 / 22) {
+    // sample the dome outline (both sides)
+    const s = a;
+    const bx = (t, p0, p1, p2, p3) => (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + 3 * (1 - t) * t * t * p2 + t ** 3 * p3;
+    const r = DOME.r, cx = DOME.cx, base = DOME.base, tip = DOME.tip;
+    add(bx(s, cx - r, cx - r * 1.08, cx - r * 0.35, cx), bx(s, base, base - r * 0.9, tip + r * 0.35, tip));
+    add(bx(s, cx + r, cx + r * 1.08, cx + r * 0.35, cx), bx(s, base, base - r * 0.9, tip + r * 0.35, tip));
+  }
+}
+
+// ---------- the ghats: steps down to the river, a diya on every step ----------
+const STEPS = 9;
+const steps = [];
+for (let i = 0; i < STEPS; i++) {
+  const y0 = PLINTH_BOTTOM + i * ((HORIZON - PLINTH_BOTTOM) / STEPS);
+  const y1 = y0 + (HORIZON - PLINTH_BOTTOM) / STEPS;
+  const spread = mix(70, -40, i / (STEPS - 1));
+  steps.push({ y0, y1, x0: spread, x1: W - spread });
+}
+const lamps = [];
+{
+  const r = rng(77);
+  steps.forEach((s, i) => {
+    const count = Math.round((s.x1 - s.x0) / 50);
+    for (let k = 0; k < count; k++) {
+      const x = s.x0 + 14 + k * ((s.x1 - s.x0 - 28) / (count - 1)) + (r() - 0.5) * 6;
+      // From the water upwards, each step catches from its centre outwards.
+      const order = STEPS - 1 - i;
+      const fromCentre = Math.abs(x - W / 2) / (W / 2);
+      lamps.push({ x, y: s.y0 + 6, size: mix(0.8, 1.15, i / (STEPS - 1)), at: 1.0 + order * 0.34 + fromCentre * 0.32 + r() * 0.12, ph: r() * 10 });
+    }
+  });
+}
+// A few leaf-boat diyas drifting on the water.
+const boats = [];
+{ const r = rng(91); for (let i = 0; i < 26; i++) boats.push({ x: r() * W, y: HORIZON + 60 + r() * 420, s: 0.8 + r() * 0.9, at: 0.9 + r() * 3.2, ph: r() * 10, v: 4 + r() * 6 }); }
+const stars = [];
+{ const r = rng(13); for (let i = 0; i < 140; i++) stars.push({ x: r() * W, y: r() * 1000, s: r() * 1.4 + 0.3, ph: r() * 6 }); }
+
+// Painterly grain, made once.
+const grain = document.createElement('canvas'); grain.width = 540; grain.height = 960;
+{ const g = grain.getContext('2d'); const img = g.createImageData(540, 960); const r = rng(5);
+  for (let i = 0; i < img.data.length; i += 4) { const v = 128 + (r() - 0.5) * 70; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 255; }
+  g.putImageData(img, 0, 0); }
+
+const scene = document.createElement('canvas'); scene.width = W; scene.height = H;
+const sctx = scene.getContext('2d');
+
+function glow(g, x, y, r, color, alpha) {
+  const gr = g.createRadialGradient(x, y, 0, x, y, r);
+  gr.addColorStop(0, color.replace('A', alpha)); gr.addColorStop(1, color.replace('A', 0));
+  g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+}
+
+function flame(g, x, y, s, t, ph, lit) {
+  if (lit <= 0) return;
+  const f = 1 + Math.sin(t * 9 + ph) * 0.08 + Math.sin(t * 23 + ph * 2) * 0.05;
+  g.save(); g.globalCompositeOperation = 'lighter';
+  glow(g, x, y - 7 * s, 19 * s * f, 'rgba(255,165,70,A)', 0.32 * lit);
+  g.restore();
+  g.save(); g.globalAlpha = lit;
+  const h = 15 * s * f, w = 5 * s;
+  const gr = g.createLinearGradient(x, y, x, y - h);
+  gr.addColorStop(0, '#ff8a1e'); gr.addColorStop(0.5, '#ffcf55'); gr.addColorStop(1, '#fff7dc');
+  g.fillStyle = gr; g.beginPath(); g.moveTo(x, y);
+  g.bezierCurveTo(x - w, y - h * 0.35, x - w * 0.4, y - h * 0.8, x + Math.sin(t * 5 + ph) * 1.2, y - h);
+  g.bezierCurveTo(x + w * 0.4, y - h * 0.8, x + w, y - h * 0.35, x, y); g.fill();
+  g.restore();
+}
+function bowl(g, x, y, s, warm) {
+  g.fillStyle = mixColor('2a1f2e', 'b8682e', warm);
+  g.beginPath(); g.ellipse(x, y + 2 * s, 9 * s, 4.2 * s, 0, 0, Math.PI); g.fill();
+  g.fillStyle = mixColor('1d1626', 'e09a52', warm);
+  g.beginPath(); g.ellipse(x, y + 1.5 * s, 9 * s, 1.6 * s, 0, 0, Math.PI * 2); g.fill();
+}
+
+// Draws building + ghats (everything that reflects) into the scene canvas.
+function drawScene(t, bloom, kindleWarm) {
+  const g = sctx;
+  g.clearRect(0, 0, W, H);
+  ctx.save();
+  // Reuse path helpers on the scene canvas.
+  const real = ctx; window.ctxSwap = g;
+  const stone = (y) => {
+    const lit = bloom;
+    const gr = g.createLinearGradient(0, y - 260, 0, PLINTH_BOTTOM);
+    gr.addColorStop(0, mixColor('121935', '6e3f26', lit));
+    gr.addColorStop(0.6, mixColor('161e40', 'a8683c', Math.max(lit, kindleWarm * 0.2)));
+    gr.addColorStop(1, mixColor('1b2348', 'd8935a', Math.max(lit, kindleWarm * 0.3)));
+    return gr;
+  };
+  // Back haze glow behind the building at the bloom.
+  if (bloom > 0) { g.save(); g.globalCompositeOperation = 'lighter'; glow(g, 540, 1040, 620, 'rgba(255,150,60,A)', 0.12 * bloom); g.restore(); }
+
+  // Dome and chhatris.
+  g.fillStyle = stone(DOME.tip);
+  swap(g, () => domePath(DOME.cx, DOME.base, DOME.r, DOME.tip)); g.fill();
+  // Dome shading and ribs, lit from the lamps below.
+  { const hl = g.createRadialGradient(DOME.cx - 30, DOME.base - 70, 10, DOME.cx, DOME.base - 60, DOME.r * 1.3);
+    hl.addColorStop(0, `rgba(255,220,160,${0.28 * bloom})`); hl.addColorStop(1, 'rgba(40,20,40,0.25)');
+    swap(g, () => domePath(DOME.cx, DOME.base, DOME.r, DOME.tip)); g.fillStyle = hl; g.fill();
+    g.strokeStyle = mixColor('10163a', '7a4628', bloom); g.lineWidth = 2;
+    for (const k of [-0.55, 0, 0.55]) { g.beginPath(); g.moveTo(DOME.cx + k * DOME.r, DOME.base); g.quadraticCurveTo(DOME.cx + k * DOME.r * 0.9, DOME.base - DOME.r * 0.9, DOME.cx, DOME.tip + 6); g.stroke(); } }
+  // finial
+  g.fillStyle = mixColor('2a2c48', 'ffd98a', bloom);
+  g.fillRect(DOME.cx - 2.5, DOME.tip - 34, 5, 36);
+  g.beginPath(); g.arc(DOME.cx, DOME.tip - 38, 6, 0, Math.PI * 2); g.fill();
+  for (const ch of chhatris) {
+    g.fillStyle = stone(ch.base - 120);
+    g.fillRect(ch.cx - ch.r * 0.85, ch.base - ch.r * 1.1, ch.r * 0.18, ch.r * 1.1);
+    g.fillRect(ch.cx + ch.r * 0.67, ch.base - ch.r * 1.1, ch.r * 0.18, ch.r * 1.1);
+    g.fillRect(ch.cx - ch.r * 1.05, ch.base - ch.r * 1.2, ch.r * 2.1, ch.r * 0.16);
+    swap(g, () => domePath(ch.cx, ch.base - ch.r * 1.2, ch.r, ch.base - ch.r * 2.25)); g.fill();
+    g.fillRect(ch.cx - 1.5, ch.base - ch.r * 2.25 - 12, 3, 13);
+  }
+  // Walls.
+  g.fillStyle = stone(centre.top);
+  g.fillRect(centre.x0, centre.top, centre.x1 - centre.x0, PLINTH_TOP - centre.top);
+  for (const w of wings) { g.fillStyle = stone(w.top); g.fillRect(w.x0, w.top, w.x1 - w.x0, PLINTH_TOP - w.top); }
+  // Cornices.
+  g.fillStyle = mixColor('0e1430', '7a4626', bloom);
+  for (const y of [1000, 1074]) g.fillRect(wings[0].x0, y, wings[1].x1 - wings[0].x0, 5);
+  g.fillRect(centre.x0 - 6, centre.top, centre.x1 - centre.x0 + 12, 7);
+  // Kangura crenellations along every parapet.
+  g.fillStyle = mixColor('121935', '8a5230', bloom);
+  for (const w of [...wings, centre]) {
+    for (let x = w.x0 + 7; x < w.x1 - 4; x += 15) {
+      g.beginPath(); g.moveTo(x - 5, w.top); g.lineTo(x - 5, w.top - 7); g.quadraticCurveTo(x, w.top - 15, x + 5, w.top - 7); g.lineTo(x + 5, w.top); g.fill();
+    }
+  }
+  // Pilasters between bays, darker so the facade has depth.
+  g.fillStyle = mixColor('0f1532', '5e3520', bloom);
+  for (const w of wings) { const gap = (w.x1 - w.x0) / 4; for (let i = 0; i <= 4; i++) g.fillRect(w.x0 + gap * i - 4, w.top + 4, 8, PLINTH_TOP - w.top - 4); }
+  for (let i = 0; i <= 3; i++) g.fillRect(centre.x0 + i * ((centre.x1 - centre.x0) / 3) - 4, centre.top + 6, 8, PLINTH_TOP - centre.top - 6);
+  // Side shading on each block.
+  for (const w of [...wings, centre]) {
+    const sh = g.createLinearGradient(w.x0, 0, w.x1, 0);
+    sh.addColorStop(0, 'rgba(10,8,30,0.35)'); sh.addColorStop(0.5, 'rgba(10,8,30,0)'); sh.addColorStop(1, 'rgba(10,8,30,0.35)');
+    g.fillStyle = sh; g.fillRect(w.x0, w.top, w.x1 - w.x0, PLINTH_TOP - w.top);
+  }
+  // Plinth.
+  g.fillStyle = stone(PLINTH_TOP);
+  g.fillRect(80, PLINTH_TOP, W - 160, PLINTH_BOTTOM - PLINTH_TOP);
+
+  // Windows.
+  windows.forEach((wd, i) => {
+    const on = ease((bloom - (i % 7) * 0.04) / 0.7);
+    swap(g, () => archPath(wd.cx, wd.y, wd.w, wd.h));
+    const gr = g.createRadialGradient(wd.cx, wd.y + wd.h * 0.6, 2, wd.cx, wd.y + wd.h * 0.5, wd.h);
+    gr.addColorStop(0, mixColor('0a0f2a', 'fff0b8', on));
+    gr.addColorStop(1, mixColor('080c22', 'e0782a', on));
+    g.fillStyle = gr; g.fill();
+    if (on > 0) {
+      g.save(); g.globalCompositeOperation = 'lighter'; glow(g, wd.cx, wd.y + wd.h * 0.55, wd.h * 0.8, 'rgba(255,170,80,A)', 0.22 * on); g.restore();
+      // A jharokha ledge under each window.
+      g.save(); g.globalAlpha = 1; g.fillStyle = mixColor('10163a', '6a3c22', bloom); g.fillRect(wd.cx - wd.w * 0.7, wd.y + wd.h, wd.w * 1.4, 5); g.restore();
+      // marigold toran across the arch top
+      g.save(); g.globalAlpha = on; g.fillStyle = '#f29a2e';
+      for (let k = -2; k <= 2; k++) { g.beginPath(); g.arc(wd.cx + k * wd.w * 0.2, wd.y + wd.w * 0.1 + Math.abs(k) * -1.5 + 4, 2.6, 0, Math.PI * 2); g.fill(); }
+      g.restore();
+    }
+  });
+
+  // Ghat steps.
+  steps.forEach((s, i) => {
+    const warm = clamp(kindleWarm * 1.2 - (STEPS - 1 - i) * 0.02);
+    g.fillStyle = mixColor(i % 2 ? '141a38' : '182042', i % 2 ? '4e2f1e' : '5c3824', warm * 0.8);
+    g.beginPath(); g.moveTo(s.x0, s.y0); g.lineTo(s.x1, s.y0); g.lineTo(s.x1 + 6, s.y1); g.lineTo(s.x0 - 6, s.y1); g.fill();
+    g.fillStyle = mixColor('0c1128', '5a3220', warm * 0.75);
+    g.fillRect(s.x0, s.y0, s.x1 - s.x0, 3);
+  });
+
+  // Lamps on the steps.
+  for (const l of lamps) {
+    const lit = ease((t - l.at) / 0.35);
+    bowl(g, l.x, l.y, l.size, lit);
+    flame(g, l.x, l.y, l.size, t, l.ph, lit);
+  }
+  // Rim lamps at the bloom.
+  for (const p of rim) {
+    const on = ease((bloom - (p.p % 11) * 0.03) / 0.6);
+    if (on <= 0) continue;
+    g.save(); g.globalCompositeOperation = 'lighter';
+    glow(g, p.x, p.y - 3, 11, 'rgba(255,190,90,A)', 0.38 * on);
+    g.fillStyle = `rgba(255,236,180,${on})`; g.beginPath(); g.arc(p.x, p.y - 3, 2.2, 0, Math.PI * 2); g.fill();
+    g.restore();
+  }
+  ctx.restore();
+}
+function swap(g, fn) { const keep = ctxRef; ctxRef = g; fn(); ctxRef = keep; }
+// Path helpers draw on whichever context ctxRef points to.
+let ctxRef = ctx;
+Object.defineProperty(window, 'ctxPath', { get: () => ctxRef });
+// Re-bind the helpers to ctxRef.
+archPath = function (x, y, w, h) { const g = ctxRef; g.beginPath(); g.moveTo(x - w / 2, y + h); g.lineTo(x - w / 2, y + w / 2); g.quadraticCurveTo(x - w / 2, y, x, y - w * 0.28); g.quadraticCurveTo(x + w / 2, y, x + w / 2, y + w / 2); g.lineTo(x + w / 2, y + h); g.closePath(); };
+domePath = function (cx, base, r, tip) { const g = ctxRef; g.beginPath(); g.moveTo(cx - r, base); g.bezierCurveTo(cx - r * 1.08, base - r * 0.9, cx - r * 0.35, tip + r * 0.35, cx, tip); g.bezierCurveTo(cx + r * 0.35, tip + r * 0.35, cx + r * 1.08, base - r * 0.9, cx + r, base); g.closePath(); };
+
+// ---------- fireworks: rise from behind the haveli once every diya is lit ----------
+// Bursts stay below the top third (the names live there) and are gone before the last frame.
+const fwc = document.createElement('canvas'); fwc.width = W; fwc.height = H;
+const fctx = fwc.getContext('2d');
+const FW_COLOURS = [['fff0c4', 'f2b544'], ['fff6e4', 'ffd27a'], ['ffd08a', 'f2822e'], ['ffd6de', 'f08aa0'], ['fff2c8', 'e0b867']];
+const rgba = (hex, a) => { const p = hex.match(/\w\w/g).map((h) => parseInt(h, 16)); return `rgba(${p.join(',')},${a})`; };
+const shells = [];
+{
+  const r = rng(2027);
+  // Last bursts land by ~7.2 s so every spark is out before the final, still second.
+  const times = [5.35, 5.6, 5.85, 6.1, 6.3, 6.5, 6.62, 6.68];
+  const xs = [300, 780, 540, 220, 860, 420, 300, 780];
+  times.forEach((at, i) => {
+    const ring = i % 3 === 2;
+    const n = 84 + Math.floor(r() * 24);
+    const sparks = [];
+    for (let k = 0; k < n; k++) sparks.push({ a: (k / n) * Math.PI * 2 + r() * 0.1, sp: ring ? 0.94 + r() * 0.1 : 0.35 + r() * 0.7, tw: r() * 10, life: 0.85 + r() * 0.3 });
+    // Gold glitter that crackles in the middle of the burst.
+    const glitter = [];
+    for (let k = 0; k < 40; k++) glitter.push({ a: r() * Math.PI * 2, sp: 0.15 + r() * 0.45, tw: r() * 10, life: 0.9 + r() * 0.25 });
+    shells.push({ at, x: xs[i] + (r() - 0.5) * 40, from: 1010, y: 805 + r() * 55, R: 118 + r() * 32, rise: 0.5 + r() * 0.12, col: FW_COLOURS[i % FW_COLOURS.length], sparks, glitter });
+  });
+  // Tall rockets that climb up the sides and burst beside the names, framing them, never on them.
+  // x stays within ~230–850 so phones (which crop the sides) show each burst whole.
+  const high = [{ at: 5.75, x: 235, y: 330 }, { at: 6.0, x: 845, y: 380 }, { at: 6.4, x: 850, y: 290 }, { at: 6.55, x: 230, y: 400 }];
+  high.forEach((h, i) => {
+    const n = 80;
+    const sparks = [];
+    for (let k = 0; k < n; k++) sparks.push({ a: (k / n) * Math.PI * 2 + r() * 0.1, sp: i % 2 ? 0.94 + r() * 0.1 : 0.35 + r() * 0.7, tw: r() * 10, life: 0.85 + r() * 0.3 });
+    const glitter = [];
+    for (let k = 0; k < 30; k++) glitter.push({ a: r() * Math.PI * 2, sp: 0.15 + r() * 0.45, tw: r() * 10, life: 0.9 + r() * 0.2 });
+    shells.push({ at: h.at, x: h.x, from: 1010, y: h.y, R: 74 + r() * 10, rise: 0.85, col: FW_COLOURS[(i + 1) % FW_COLOURS.length], sparks, glitter });
+  });
+}
+function sparkAt(s, p, b) {
+  const d = s.R * p.sp * (1 - Math.exp(-b * 3.4)) / (1 - Math.exp(-3.4));
+  return [s.x + Math.cos(p.a) * d, s.y + Math.sin(p.a) * d + 34 * b * b];
+}
+function drawFireworks(t) {
+  const g = fctx;
+  g.clearRect(0, 0, W, H);
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (const s of shells) {
+    const age = t - s.at;
+    if (age < 0) continue;
+    if (age < s.rise) {
+      const y = mix(s.from, s.y, easeOut(age / s.rise));
+      const tail = mix(s.from, s.y, easeOut(Math.max(0, age - 0.14) / s.rise)) + 30;
+      const tr = g.createLinearGradient(0, tail, 0, y);
+      tr.addColorStop(0, 'rgba(255,210,140,0)'); tr.addColorStop(1, 'rgba(255,232,190,0.75)');
+      g.strokeStyle = tr; g.lineWidth = 2; g.beginPath(); g.moveTo(s.x, tail); g.lineTo(s.x, y); g.stroke();
+      g.fillStyle = 'rgba(255,244,220,0.95)'; g.beginPath(); g.arc(s.x, y, 2.4, 0, Math.PI * 2); g.fill();
+      continue;
+    }
+    const b = age - s.rise;
+    if (b > 1.4) continue;
+    // The burst lights the sky around it, then fades.
+    glow(g, s.x, s.y, s.R * 2.2, 'rgba(255,190,120,A)', 0.16 * Math.exp(-b * 3));
+    glow(g, s.x, s.y, s.R * 0.35, 'rgba(255,240,210,A)', 0.3 * Math.exp(-b * 16));
+    for (const p of s.sparks) {
+      const life = b / p.life;
+      if (life >= 1) continue;
+      const fade = Math.pow(1 - life, 1.4) * (life > 0.55 ? 0.55 + 0.45 * Math.sin(b * 38 + p.tw) : 1);
+      const [x, y] = sparkAt(s, p, b);
+      const [px, py] = sparkAt(s, p, Math.max(0, b - 0.1));
+      const [qx, qy] = sparkAt(s, p, Math.max(0, b - 0.22));
+      const tr = g.createLinearGradient(qx, qy, x, y);
+      tr.addColorStop(0, rgba(s.col[1], 0)); tr.addColorStop(1, rgba(s.col[1], 0.7 * fade));
+      g.strokeStyle = tr; g.lineWidth = 2.4 - life;
+      g.beginPath(); g.moveTo(qx, qy); g.lineTo(px, py); g.lineTo(x, y); g.stroke();
+      g.fillStyle = rgba(s.col[0], fade);
+      g.beginPath(); g.arc(x, y, 3.2 - life * 1.6, 0, Math.PI * 2); g.fill();
+    }
+    for (const p of s.glitter) {
+      const life = b / p.life;
+      if (life >= 1 || b < 0.25) continue;
+      const on = Math.sin(b * 55 + p.tw * 7) > 0.2 ? 1 : 0.15;
+      const [x, y] = sparkAt(s, p, b);
+      g.fillStyle = rgba('fff2c8', on * Math.pow(1 - life, 1.2));
+      g.beginPath(); g.arc(x, y, 1.8, 0, Math.PI * 2); g.fill();
+    }
+  }
+  g.restore();
+}
+// How bright the fireworks are right now: warms the water under them.
+function fireworkLight(t) {
+  let sum = 0;
+  for (const s of shells) { const b = t - s.at - s.rise; if (b > 0 && b < 1.4) sum += Math.exp(-b * 3); }
+  return sum;
+}
+
+window.render = function (t) {
+  const kindle = ease((t - 1.0) / 3.2);          // steps catching, 1–4.2 s
+  const bloom = ease((t - 4.2) / 1.1);           // building lights, 4.2–5.3 s
+  const flash = Math.exp(-Math.pow((t - 4.8) / 0.45, 2)); // the bright breath at the bloom
+  const push = easeOut(t / 8);                    // slow push-in that settles by 8 s
+  const scale = 1 + push * 0.075;
+
+  // Sky.
+  const sky = ctx.createLinearGradient(0, 0, 0, HORIZON);
+  sky.addColorStop(0, '#050820');
+  sky.addColorStop(0.45, '#0b1438');
+  sky.addColorStop(0.8, mixColor('16245a', '2b2a5e', bloom));
+  sky.addColorStop(1, mixColor('1e2c63', '6b4a5e', bloom * 0.8));
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  for (const s of stars) {
+    const a = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(t * 1.3 + s.ph));
+    ctx.fillStyle = `rgba(255,240,215,${a * (1 - bloom * 0.35)})`;
+    ctx.fillRect(s.x, s.y, s.s, s.s);
+  }
+  // Horizon glow.
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  glow(ctx, 540, 1180, 760, 'rgba(255,140,60,A)', 0.06 + 0.16 * bloom + 0.05 * kindle);
+  ctx.restore();
+
+  drawScene(t, bloom, kindle);
+
+  // Camera: push in around the building.
+  ctx.save();
+  ctx.translate(540, 1150); ctx.scale(scale, scale); ctx.translate(-540, -1150);
+
+  // Fireworks sit in the sky behind the building, which is drawn over them.
+  if (t > 5.3) {
+    drawFireworks(t);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(fwc, 0, 0); ctx.restore();
+  }
+
+  // Water.
+  const water = ctx.createLinearGradient(0, HORIZON, 0, H);
+  water.addColorStop(0, '#0d1638'); water.addColorStop(1, '#03050f');
+  ctx.fillStyle = water; ctx.fillRect(-200, HORIZON, W + 400, H - HORIZON + 300);
+  // Reflection: the scene flipped and broken into rippling strips.
+  ctx.save(); ctx.globalAlpha = 0.34; ctx.filter = 'blur(4px)';
+  for (let y = HORIZON; y < H + 200; y += 2) {
+    const d = y - HORIZON;
+    const src = HORIZON - d * 0.92;
+    if (src < 600) break;
+    const off = Math.sin(d * 0.07 + t * 2.2) * (0.8 + d * 0.008) + Math.sin(d * 0.023 - t * 1.1) * (d * 0.005);
+    ctx.drawImage(scene, 0, src, W, 2, off, y, W, 2);
+  }
+  ctx.restore();
+  // Darken the far water a little so lights read as reflections.
+  const fade = ctx.createLinearGradient(0, HORIZON, 0, H);
+  fade.addColorStop(0, 'rgba(3,5,15,0.05)'); fade.addColorStop(1, 'rgba(3,5,15,0.6)');
+  ctx.fillStyle = fade; ctx.fillRect(-200, HORIZON, W + 400, H - HORIZON + 300);
+  // Each burst flickers warm on the river.
+  const fl = fireworkLight(t);
+  if (fl > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; glow(ctx, 540, HORIZON + 120, 620, 'rgba(255,180,110,A)', Math.min(0.1, 0.05 * fl)); ctx.restore(); }
+
+  // Drifting leaf-boat diyas.
+  for (const b of boats) {
+    const lit = ease((t - b.at) / 0.5);
+    const x = (b.x + t * b.v) % W, y = b.y + Math.sin(t * 1.2 + b.ph) * 2;
+    ctx.fillStyle = mixColor('0f1a1a', '3e5a2a', lit);
+    ctx.beginPath(); ctx.ellipse(x, y + 3, 13 * b.s, 4 * b.s, 0, 0, Math.PI * 2); ctx.fill();
+    flame(ctx, x, y, b.s * 0.9, t, b.ph, lit);
+    if (lit > 0) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; const sh = ctx.createLinearGradient(0, y + 6, 0, y + 46 * b.s); sh.addColorStop(0, `rgba(255,170,80,${0.14 * lit})`); sh.addColorStop(1, 'rgba(255,170,80,0)'); ctx.fillStyle = sh; ctx.beginPath(); ctx.ellipse(x, y + 6 + 9 * b.s, 4 * b.s, 9 * b.s, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+  }
+
+  // The building and ghats on top.
+  ctx.drawImage(scene, 0, 0);
+  ctx.restore();
+
+  // Bloom flash and warm haze.
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  glow(ctx, 540, 1080, 900, 'rgba(255,170,90,A)', 0.09 * flash + 0.02 * bloom);
+  ctx.restore();
+
+  // Painterly grain and vignette.
+  ctx.save(); ctx.globalAlpha = 0.07; ctx.globalCompositeOperation = 'overlay';
+  ctx.drawImage(grain, 0, 0, W, H); ctx.restore();
+  const vig = ctx.createRadialGradient(540, 1100, 400, 540, 1000, 1300);
+  vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+};
+render(0);
+</script>
+</body>
+</html>

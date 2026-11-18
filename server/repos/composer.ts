@@ -26,6 +26,7 @@ import { invoicesForOrder, setOrderAddon } from './billing';
 import { invalidateInvitationCache } from './invitations';
 import { resolveMusic } from './music';
 import { OrderError } from './orders';
+import { pruneFilm } from './photos';
 import { isSlugFree, starterContent, uniqueSlug } from './slugs';
 import {
     copyInvitation,
@@ -244,6 +245,11 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
     if (wasLive)
         await invalidateInvitationCache(current.invitation.slug, current.invitation.version);
     if (current.template) await syncTemplateFromInvitation(id);
+    // A replaced or removed film leaves storage once nothing uses it (after the template syncs).
+    // Awaited, and never allowed to fail the save: a leftover file is harmless, a lost save isn't.
+    await pruneFilm(id, current.invitation.design.film, input.design.film).catch((e: unknown) => {
+        console.warn('film cleanup failed', e);
+    });
     if (current.order && pdfBefore !== pdfAfter)
         await setOrderAddon(current.order.id, PDF_ADDON, pdfAfter);
     return invitationForEdit(id);

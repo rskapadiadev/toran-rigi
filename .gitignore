@@ -13,3 +13,7 @@ coverage
 playwright-report
 test-results
 src/paraglide
+
+# Third-party reference material: stays on this machine, never committed or shipped.
+references/*
+!references/README.md

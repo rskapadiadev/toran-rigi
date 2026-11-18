@@ -27,6 +27,7 @@ import {
     Brush,
     CalendarClock,
     Check,
+    Clapperboard,
     Coins,
     Dices,
     DoorOpen,
@@ -94,6 +95,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
+import { FilmPanel } from '../editor/FilmPanel';
 import { FormField } from '../kit/form';
 import { OccasionSelect } from '../kit/occasion';
 import { cultureLabel } from '../labels';
@@ -130,14 +132,16 @@ export const sectionNames: Record<SectionType, string> = {
     cover: 'Cover & names',
     names: 'Names (in cover)',
     card: 'Invitation card (stacked stationery)',
+    blessing: 'Blessing arch',
+    date: 'The date (scratch to reveal)',
     countdown: 'Countdown',
     welcome: 'Welcome',
     story: 'Our story',
     gallery: 'Gallery',
     events: 'Ceremonies',
-    venue: 'Venue (in ceremonies)',
+    venue: 'Location',
     family: 'Family',
-    dressCode: 'Dress code (in ceremonies)',
+    dressCode: 'Dress code',
     travel: 'Travel & stay',
     live: 'Live stream',
     rsvp: 'RSVP',
@@ -361,6 +365,7 @@ const openingIcon: Record<string, LucideIcon> = {
     lantern: Lamp,
     chuppah: Tent,
     diya: Flame,
+    film: Clapperboard,
     scratch: Coins,
     'liquid-gold': Droplets,
     ink: Brush,
@@ -523,7 +528,12 @@ function AffiliatePicker({ draft, set }: PanelProps) {
     );
 }
 
-export function DesignPanel({ draft, set }: PanelProps) {
+interface DesignPanelProps extends PanelProps {
+    // Where uploads (the film opening's clip) are stored; absent where uploads aren't offered.
+    invitationId?: string;
+}
+
+export function DesignPanel({ draft, set, invitationId }: DesignPanelProps) {
     const [colors, setColors] = useState<string[]>([
         draft.design.palette.primary,
         draft.design.palette.accent,
@@ -568,6 +578,18 @@ export function DesignPanel({ draft, set }: PanelProps) {
                     Opening · the entry screen guests see first
                 </AccordionTrigger>
                 <AccordionContent>
+                    {/* Above the picker: the long list would otherwise push it out of sight. */}
+                    {draft.design.opening === 'film' && invitationId && (
+                        <div className="mb-4">
+                            <FilmPanel
+                                invitationId={invitationId}
+                                film={draft.design.film}
+                                onChange={(film) => {
+                                    setDesign({ film });
+                                }}
+                            />
+                        </div>
+                    )}
                     <OpeningPicker
                         value={draft.design.opening}
                         gentleOnly={isSolemn(occasion)}
@@ -735,6 +757,30 @@ export function DesignPanel({ draft, set }: PanelProps) {
                             </p>
                         )}
                     </div>
+                    <div className="space-y-2">
+                        <p className="text-[13px] font-medium text-foreground/80">Titles</p>
+                        <ToggleGroup
+                            type="single"
+                            variant="outline"
+                            size="sm"
+                            className="w-full bg-card"
+                            aria-label="Titles"
+                            value={draft.design.titles ?? 'kicker'}
+                            onValueChange={(v) => {
+                                if (v === 'kicker' || v === 'script') setDesign({ titles: v });
+                            }}
+                        >
+                            <ToggleGroupItem value="kicker" className="flex-1 text-xs">
+                                Small caps
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="script" className="flex-1 text-xs">
+                                Gold script
+                            </ToggleGroupItem>
+                        </ToggleGroup>
+                        <p className="text-xs text-muted-foreground">
+                            Gold script sets each chapter under a large hand-lettered title.
+                        </p>
+                    </div>
                     <div className="space-y-2 @md:col-span-2">
                         <p className="text-[13px] font-medium text-foreground/80">Paper texture</p>
                         <ToggleGroup
@@ -790,6 +836,7 @@ export function DesignPanel({ draft, set }: PanelProps) {
                         </div>
                         <Slider
                             id="density"
+                            aria-label="Density"
                             min={0.2}
                             max={1}
                             step={0.05}

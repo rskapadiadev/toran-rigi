@@ -1,9 +1,14 @@
-import { zonedToUtc } from '@shared/time';
+import { eventLabel } from '@shared/cultures';
+import { formatEventDate, zonedToUtc } from '@shared/time';
+import { useInView } from 'motion/react';
+import { useRef } from 'react';
 
 import { useNow } from '../../motion/hooks';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { CalendarCountdown } from '../luxury/events/CalendarCountdown';
+import { DiyaLamp } from '../luxury/typography/DiyaGarland';
+import { SectionTitle } from '../luxury/typography/SectionTitle';
 import { s, type StringKey } from '../strings';
 
 const units: [StringKey, number][] = [
@@ -54,14 +59,11 @@ export function Countdown({ variant }: { variant: string }) {
     if (variant === 'rings') return <Rings parts={parts} ready={now !== null} />;
     if (variant === 'line') return <Line days={parts[0]?.value ?? 0} ready={now !== null} />;
     if (variant === 'calendar') return <CalendarCountdown />;
+    if (variant === 'diyas') return <Diyas parts={parts} ready={now !== null} />;
 
     return (
         <section className="px-6 py-20 text-center">
-            <Reveal>
-                <p className="mb-8 text-xs tracking-[0.4em] text-(--inv-gold) uppercase">
-                    {copy('countdown')}
-                </p>
-            </Reveal>
+            <SectionTitle className="mb-8">{copy('countdown')}</SectionTitle>
             <Reveal
                 className="mx-auto flex max-w-3xl flex-wrap items-start justify-center gap-5 @2xl:gap-8"
                 delay={120}
@@ -106,11 +108,7 @@ function Rings({ parts, ready }: RingsProps) {
     const c = 2 * Math.PI * 42;
     return (
         <section className="px-6 py-20 text-center">
-            <Reveal>
-                <p className="mb-10 text-xs tracking-[0.4em] text-(--inv-gold) uppercase">
-                    {copy('countdown')}
-                </p>
-            </Reveal>
+            <SectionTitle className="mb-10">{copy('countdown')}</SectionTitle>
             <Reveal delay={120} className="mx-auto grid max-w-2xl grid-cols-4 gap-3 @2xl:gap-6">
                 {parts.map((p) => {
                     const max = ringMax[p.key] ?? 60;
@@ -184,6 +182,78 @@ function Line({ days, ready }: LineProps) {
                     {copy('countdown')}
                 </p>
             </Reveal>
+        </section>
+    );
+}
+
+const LAMPS = 9;
+
+interface DiyasProps {
+    parts: Part[];
+    ready: boolean;
+}
+
+// Plain gold numerals over a row of diyas that are lit one by one as the row comes into view.
+function Diyas({ parts, ready }: DiyasProps) {
+    const { data, locale, copy, t } = useInvite();
+    const row = useRef<SVGSVGElement>(null);
+    const seen = useInView(row, {
+        once: true,
+        margin: '-60px',
+    });
+    const first = data.events[0];
+    const until = first
+        ? `${t(first.title) || eventLabel(data.invitation.culture, first.kind, locale)} · ${formatEventDate(zonedToUtc(first.startsAt, first.timezone), first.timezone, locale)}`
+        : '';
+    return (
+        <section className="px-5 py-20 text-center">
+            <SectionTitle className="mb-8">{copy('countdown')}</SectionTitle>
+            <Reveal delay={120}>
+                <div className="mx-auto flex max-w-xl items-start justify-center" dir="ltr">
+                    {parts.map((p, i) => (
+                        <div key={p.key} className="flex items-start">
+                            {i > 0 && (
+                                <span className="inv-display px-[1.5cqw] pt-[0.15em] text-[clamp(1.4rem,7cqw,2.6rem)] text-(--inv-gold) opacity-60">
+                                    :
+                                </span>
+                            )}
+                            <div className="flex w-[17cqw] max-w-28 flex-col items-center">
+                                <span className="inv-display text-[clamp(2.4rem,12cqw,4.4rem)] leading-none text-(--inv-gold) [font-variant-numeric:lining-nums_tabular-nums]">
+                                    {ready ? String(p.value).padStart(2, '0') : '··'}
+                                </span>
+                                <span className="mt-2 text-[clamp(0.7rem,3cqw,0.9rem)] tracking-[0.08em] opacity-75">
+                                    {s(p.key, locale)}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </Reveal>
+            {until && (
+                <Reveal delay={200}>
+                    <p className="mt-6 text-[clamp(0.95rem,3.6cqw,1.15rem)] italic opacity-75">
+                        {until}
+                    </p>
+                </Reveal>
+            )}
+            <svg
+                ref={row}
+                viewBox={`0 0 ${String(LAMPS * 30)} 40`}
+                className="mx-auto mt-12 w-full max-w-xl overflow-visible"
+                aria-hidden
+            >
+                {Array.from({ length: LAMPS }, (_, i) => (
+                    <DiyaLamp
+                        key={i}
+                        x={15 + i * 30}
+                        y={30}
+                        size={1.05}
+                        lit={seen}
+                        phase={i}
+                        delay={i * 140}
+                    />
+                ))}
+            </svg>
         </section>
     );
 }

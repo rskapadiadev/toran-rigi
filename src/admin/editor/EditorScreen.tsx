@@ -665,7 +665,9 @@ function EditorPage({ id }: { id: string }) {
                                         photoLimit={data.order?.limits.photos}
                                     />
                                 )}
-                                {tab === 'design' && <DesignPanel draft={draft} set={set} />}
+                                {tab === 'design' && (
+                                    <DesignPanel draft={draft} set={set} invitationId={id} />
+                                )}
                                 {tab === 'details' && <ContentPanel draft={draft} set={set} />}
                                 {tab === 'ceremonies' && (
                                     <EventsPanel

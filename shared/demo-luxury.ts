@@ -44,6 +44,32 @@ function days(list: Day[], venue: string, address: string, timezone = 'Asia/Kolk
     }));
 }
 
+// Deepmala's looks, one per ceremony kind, so the dress code page has something to show.
+const deepmalaLooks: Record<string, DemoEvent['dressCode']> = {
+    haldi: {
+        note: t('Yellows and whites you don’t mind staining'),
+        swatches: ['#f2c230', '#fff4d6', '#e8892b'],
+    },
+    mehndi: {
+        note: t('Greens and soft pinks'),
+        swatches: ['#4f7d3a', '#e8a3b0', '#f5ead2'],
+    },
+    sangeet: {
+        note: t('Jewel tones and sparkle'),
+        swatches: ['#3d2a6b', '#a3163a', '#c9a24a'],
+    },
+    pheras: {
+        note: t('Traditional Indian, in any colour you love'),
+        swatches: ['#a3163a', '#e8892b', '#f5ead2'],
+    },
+};
+
+const dressed = (list: Day[], venue: string, address: string) =>
+    days(list, venue, address).map((e) => ({
+        ...e,
+        dressCode: deepmalaLooks[e.kind],
+    }));
+
 const headline = t('request the pleasure of your company at the celebration of their marriage');
 const wedding: SectionType[] = [
     'cover',
@@ -459,5 +485,96 @@ export const luxuryDemos: DemoInvitation[] = [
         ),
         extras: { wishes: { enabled: true } },
         sections: sections(wedding),
+    },
+    {
+        slug: 'demo-deepmala',
+        themeSlug: 'deepmala',
+        culture: 'hindu',
+        locales: ['en', 'hi'],
+        calendars: [],
+        seed: 7342,
+        content: {
+            people: {
+                one: {
+                    name: t('Raghav', 'hi', 'राघव'),
+                    parents: t('Son of Smt. Meera & Shri Alok Tandon'),
+                },
+                two: {
+                    name: t('Sia', 'hi', 'सिया'),
+                    parents: t('Daughter of Smt. Rekha & Shri Vinod Mishra'),
+                },
+            },
+            greetingKey: 'shree-ganeshay-namah',
+            headline,
+            welcome: t(
+                'On a night when every step of the ghat is lit, we begin our life together. Come and light a diya with us.',
+            ),
+            story: t(
+                'We met at a friend’s Dev Deepawali on the river, both trying to light the same stubborn lamp. Four winters and many cups of malaiyo later, we are getting married.',
+            ),
+            family: t(
+                'With the blessings of Late Smt. Kamla & Shri Ram Tandon · Smt. Shanti & Shri Om Mishra',
+            ),
+            closing: t('We seek your blessings.'),
+            gallery: [],
+        },
+        events: dressed(
+            [
+                {
+                    kind: 'haldi',
+                    title: 'Haldi',
+                    at: '2027-11-18T10:00',
+                },
+                {
+                    kind: 'mehndi',
+                    title: 'Mehndi',
+                    at: '2027-11-18T17:00',
+                },
+                {
+                    kind: 'sangeet',
+                    title: 'Sangeet',
+                    at: '2027-11-19T19:30',
+                },
+                {
+                    kind: 'pheras',
+                    title: 'Pheras',
+                    at: '2027-11-20T20:00',
+                },
+            ],
+            'The Ghat Haveli',
+            'Assi Ghat, Varanasi',
+        ),
+        extras: {
+            wishes: { enabled: true },
+            travel: [
+                {
+                    title: t('Arriving'),
+                    body: t(
+                        'Varanasi airport is 40 minutes from the haveli. Family will meet every flight on the 17th.',
+                    ),
+                },
+                {
+                    title: t('Where to stay'),
+                    body: t('Rooms are held for family at the haveli from the 17th to the 21st.'),
+                },
+            ],
+        },
+        sections: sections([
+            'cover',
+            'date',
+            'blessing',
+            'card',
+            'welcome',
+            'story',
+            'events',
+            'countdown',
+            'venue',
+            'travel',
+            'dressCode',
+            'family',
+            'rsvp',
+            'wishes',
+            'closing',
+        ]),
     },
 ];

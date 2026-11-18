@@ -18,6 +18,8 @@ interface Spec {
     opening: InvitationDesign['opening'];
     generative: InvitationDesign['generative']['kind'];
     texture: InvitationDesign['texture'];
+    titles?: InvitationDesign['titles'];
+    film?: InvitationDesign['film'];
 }
 
 const theme = (s: Spec): ThemeDefinition => ({
@@ -43,6 +45,8 @@ const theme = (s: Spec): ThemeDefinition => ({
         },
         texture: s.texture,
         motion: 'cinematic',
+        ...(s.titles && { titles: s.titles }),
+        ...(s.film && { film: s.film }),
     },
 });
 
@@ -223,9 +227,94 @@ export const luxuryThemes: ThemeDefinition[] = [
         generative: 'lotus',
         texture: 'silk',
     }),
+    theme({
+        slug: 'deepmala',
+        name: 'Deepmala',
+        culture: 'hindu',
+        category: 'luxury',
+        description:
+            'A night of a thousand diyas: a short film lights the ghats and your names rise into the sky, then every page is handmade midnight paper with gold script and lamps that light as guests scroll.',
+        palette: {
+            bg: '#0e1838',
+            surface: '#152150',
+            ink: '#f4e9d2',
+            muted: '#b8ac93',
+            primary: '#e0b867',
+            accent: '#9c3b3b',
+            gold: '#d9b36a',
+        },
+        display: 'cormorant',
+        body: 'cormorant',
+        opening: 'film',
+        generative: 'lotus',
+        texture: 'paper',
+        titles: 'script',
+        // Our own illustrated film (scripts/dev/films/deepmala), shipped with the app.
+        film: {
+            src: '/kits/deepmala/film.mp4',
+            first: '/kits/deepmala/film-first.webp',
+            last: '/kits/deepmala/film-last.webp',
+            namesAt: 4.6,
+        },
+    }),
 ];
 
+// Every Deepmala page sits on the same midnight paper, so no seams are drawn between them.
+const night = {
+    scene: 'midnight',
+    edge: 'none',
+    divider: 'diya',
+} as const;
+
 export const luxuryLayouts: Record<string, BlockPreset> = {
+    deepmala: {
+        cover: {
+            variant: 'film',
+            scene: 'midnight',
+        },
+        card: {
+            ...night,
+            variant: 'night',
+        },
+        countdown: {
+            ...night,
+            variant: 'diyas',
+        },
+        welcome: {
+            ...night,
+            variant: 'centered',
+        },
+        story: {
+            ...night,
+            variant: 'centered',
+        },
+        family: {
+            ...night,
+            variant: 'centered',
+        },
+        events: {
+            ...night,
+            variant: 'pavilions',
+        },
+        gallery: {
+            ...night,
+            variant: 'masks',
+        },
+        blessing: night,
+        date: night,
+        venue: night,
+        dressCode: night,
+        travel: night,
+        rsvp: night,
+        wishes: {
+            ...night,
+            variant: 'default',
+        },
+        closing: {
+            ...night,
+            variant: 'rangoli',
+        },
+    },
     sitara: {
         cover: {
             variant: 'premiere',

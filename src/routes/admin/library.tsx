@@ -424,6 +424,62 @@ interface Preview {
 }
 
 // Turns the sample invitation into a focused demo of one library item.
+const sampleLooks = [
+    ['#f2c230', '#fff4d6', '#e8892b'],
+    ['#4f7d3a', '#e8a3b0', '#f5ead2'],
+    ['#3d2a6b', '#a3163a', '#c9a24a'],
+];
+
+// Sample content for the sections that hide themselves when an invitation has none of it.
+function sampleExtras(type: SectionType, data: PublicInvitationData): PublicInvitationData | null {
+    const extras = data.invitation.extras;
+    const withExtras = (more: Partial<typeof extras>) => ({
+        ...data,
+        invitation: {
+            ...data.invitation,
+            extras: {
+                ...extras,
+                ...more,
+            },
+        },
+    });
+    if (type === 'dressCode' && !data.events.some((e) => e.dressCode))
+        return {
+            ...data,
+            events: data.events.map((e, i) => ({
+                ...e,
+                dressCode: {
+                    note: { en: 'Jewel tones and soft pastels' },
+                    swatches: sampleLooks[i % sampleLooks.length] ?? [],
+                },
+            })),
+        };
+    if (type === 'travel' && !extras.travel?.length)
+        return withExtras({
+            travel: [
+                {
+                    title: { en: 'Arriving' },
+                    body: { en: 'The airport is 30 minutes away. We’ll meet every flight.' },
+                },
+                {
+                    title: { en: 'Where to stay' },
+                    body: { en: 'Rooms are held for family at the venue for three nights.' },
+                },
+            ],
+        });
+    // A sample stream: the play card stands in, and nothing loads from YouTube unless tapped.
+    if (type === 'live' && !extras.live)
+        return withExtras({ live: { youtubeUrl: 'https://www.youtube.com/watch?v=sampleLive0' } });
+    if (type === 'shagun' && !extras.shagun)
+        return withExtras({
+            shagun: {
+                upiId: 'sample@upi',
+                payeeName: 'The couple',
+            },
+        });
+    return null;
+}
+
 function previewFor(
     base: PublicInvitationData,
     category: CategoryId,
@@ -488,6 +544,13 @@ function previewFor(
                             },
                         },
                     },
+                };
+            // Dress code, travel, live and shagun stay hidden until there is something to show.
+            const sample = sampleExtras(type, preview.data);
+            if (sample)
+                return {
+                    ...preview,
+                    data: sample,
                 };
             // The wishes wall needs blessings on it.
             if (type === 'wishes' && preview.data.wishes.length === 0)

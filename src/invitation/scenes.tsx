@@ -40,6 +40,45 @@ const starField = (() => {
     );
 })();
 
+// Gold flecks pressed into handmade paper: tiny and sparse, so text over them stays clean.
+const goldFlecks = (gold: string) => {
+    const r = rng(5151);
+    const dots = Array.from({ length: 34 }, () => {
+        const cx = r.range(0, 240).toFixed(1);
+        const cy = r.range(0, 240).toFixed(1);
+        const radius = r.range(0.35, 1.1).toFixed(2);
+        const alpha = r.range(0.25, 0.75).toFixed(2);
+        return `<circle cx='${cx}' cy='${cy}' r='${radius}' fill='${gold}' opacity='${alpha}'/>`;
+    }).join('');
+    return svgDataUrl(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'>${dots}</svg>`,
+    );
+};
+
+// Handmade paper's long fibres: fine pale strands curling through the pulp, with soft mottling.
+const paperFibres = () => {
+    const r = rng(8123);
+    const size = 420;
+    const strands = Array.from({ length: 46 }, () => {
+        const x = r.range(0, size);
+        const y = r.range(0, size);
+        const a = r.range(0, Math.PI * 2);
+        const len = r.range(18, 70);
+        const bend = r.range(-14, 14);
+        const ex = x + Math.cos(a) * len;
+        const ey = y + Math.sin(a) * len;
+        const mx = (x + ex) / 2 + Math.sin(a) * bend;
+        const my = (y + ey) / 2 - Math.cos(a) * bend;
+        const width = r.range(0.4, 1).toFixed(2);
+        const alpha = r.range(0.05, 0.13).toFixed(3);
+        return `<path d='M${x.toFixed(1)} ${y.toFixed(1)} Q${mx.toFixed(1)} ${my.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}' stroke='#ffffff' stroke-width='${width}' stroke-opacity='${alpha}' fill='none' stroke-linecap='round'/>`;
+    }).join('');
+    const mottle = `<filter id='m'><feTurbulence type='fractalNoise' baseFrequency='0.024' numOctaves='2' seed='4' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.05 -0.012'/></filter><rect width='${String(size)}' height='${String(size)}' filter='url(#m)'/>`;
+    return svgDataUrl(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='${String(size)}' height='${String(size)}'>${mottle}${strands}</svg>`,
+    );
+};
+
 function buildScene(
     kind: SceneKind,
     design: InvitationDesign,
@@ -274,6 +313,22 @@ function buildScene(
                 vars: dark(base),
                 dappled: false,
                 effect: 'rays',
+            };
+        }
+        case 'midnight': {
+            // The invitation's own night colour when it has one, else its main colour taken to midnight.
+            const base = isDark(p.bg) ? p.bg : mixHex(p.primary, '#0a0d24', 0.85);
+            return {
+                background: `${goldFlecks(p.gold)}, ${paperFibres()}, ${materialBackground({
+                    kind: 'paper',
+                    base,
+                    seed: seed + 16,
+                })}`,
+                vars: {
+                    ...dark(base),
+                    '--inv-primary': mixHex(p.gold, '#ffffff', 0.1),
+                },
+                dappled: false,
             };
         }
         case 'plain': {

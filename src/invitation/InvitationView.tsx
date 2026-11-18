@@ -23,6 +23,10 @@ import { useMotionTier } from '../motion/capability';
 import { StageContext } from '../motion/Reveal';
 import { Branding } from './Branding';
 import { InviteProvider, useInvite } from './context';
+import { BlessingArch } from './luxury/night/BlessingArch';
+import { DressCode } from './luxury/night/DressCode';
+import { ScratchDate } from './luxury/night/ScratchDate';
+import { Venue } from './luxury/night/Venue';
 import { createPlayer, type MusicPlan, type MusicPlayer } from './music/player';
 import { Opening } from './openings/Opening';
 import { PrintContext, usePrintFit } from './print';
@@ -36,6 +40,7 @@ import { Hero } from './sections/Hero';
 import { InvitationCard } from './sections/InvitationCard';
 import { Rsvp } from './sections/Rsvp';
 import { Closing, Family, Story, Welcome } from './sections/TextSections';
+import { StudioPreviewContext } from './studio';
 import { designStyle } from './tokens';
 import type { GuestIdentity, PublicInvitationData } from './types';
 
@@ -56,11 +61,15 @@ interface BlockProps {
 const sectionRegistry: Record<RenderedSection, ComponentType<BlockProps>> = {
     cover: Hero,
     card: InvitationCard,
+    blessing: BlessingArch,
+    date: ScratchDate,
     countdown: Countdown,
     welcome: Welcome,
     story: Story,
     family: Family,
     events: Events,
+    venue: Venue,
+    dressCode: DressCode,
     gallery: Gallery,
     travel: Travel,
     live: Live,
@@ -354,14 +363,16 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
             lang={locale}
         >
             {!opened && (
-                <Opening
-                    kind={invitation.design.opening}
-                    onBegin={begin}
-                    onOpened={() => {
-                        setOpened(true);
-                        if (!embedded) window.scrollTo({ top: 0 });
-                    }}
-                />
+                <StudioPreviewContext value={embedded}>
+                    <Opening
+                        kind={invitation.design.opening}
+                        onBegin={begin}
+                        onOpened={() => {
+                            setOpened(true);
+                            if (!embedded) window.scrollTo({ top: 0 });
+                        }}
+                    />
+                </StudioPreviewContext>
             )}
             <main
                 aria-hidden={!opened}

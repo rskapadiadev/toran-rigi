@@ -188,12 +188,14 @@ export const ceremonyProps = [
         label: 'Champagne flutes',
         hint: 'Two flutes meeting in a toast, for receptions and cocktails',
         match: ['reception', 'cocktail', 'party', 'dinner', 'brunch'],
+        // A toast is out of place where weddings are alcohol-free (Hindu, Jain, Sikh, Muslim).
+        cultures: ['christian', 'jewish', 'universal'],
     },
     {
         id: 'varmala',
         label: 'Varmala',
         hint: 'Rose and marigold garlands for the jaimala',
-        match: ['varmala', 'jaimala', 'wedding', 'shaadi', 'ceremony'],
+        match: ['varmala', 'jaimala', 'wedding', 'shaadi', 'ceremony', 'reception'],
         cultures: dharmic,
     },
     {

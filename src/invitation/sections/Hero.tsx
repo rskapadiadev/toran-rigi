@@ -5,6 +5,7 @@ import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
 import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable } from '../editing';
+import { FilmCover } from '../luxury/hero/FilmCover';
 import { Portraits } from '../luxury/hero/Portraits';
 import { PremiereCover } from '../luxury/hero/PremiereCover';
 import { CalligraphyCover } from '../luxury/typography/CalligraphyCover';
@@ -31,6 +32,7 @@ export function Hero({ variant }: { variant: string }) {
     if (variant === 'monogram') return <MonogramCover />;
     if (variant === 'editorial') return <EditorialCover />;
     if (variant === 'photo') return <PhotoCover />;
+    if (variant === 'film') return <FilmCover />;
     if (variant === 'garden') return <GardenCover />;
     if (variant === 'premiere') return <PremiereCover />;
     if (variant === 'letterpress') return <LetterpressCover />;

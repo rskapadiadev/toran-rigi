@@ -25,6 +25,12 @@ describe('propFor', () => {
         ['prayer-meet', 'hindu.gujarati', 'lily'],
         ['lunch', 'hindu', 'diya'],
         ['lunch', 'islamic', 'lantern'],
+        ['reception', 'hindu.south-indian', 'varmala'],
+        ['reception', 'jain', 'varmala'],
+        ['reception', 'sikh', 'varmala'],
+        ['reception', 'islamic', 'lantern'],
+        ['reception', 'christian', 'flutes'],
+        ['cocktail', 'universal', 'flutes'],
     ])('%s (%s) → %s', (kind, culture, prop) => {
         expect(propFor(kind, culture)).toBe(prop);
     });
