@@ -533,7 +533,8 @@ interface DesignPanelProps extends PanelProps {
     invitationId?: string;
 }
 
-const playsBehind = (film: Draft['design']['film']) => Boolean(film?.behind && film.frames);
+const playsBehind = (film: Draft['design']['film']) =>
+    Boolean(film?.behind && (film.frames ?? film.scenes?.length));
 
 // Switching the film behind the invitation on makes every section see-through over it; switching it
 // off gives each section back the backdrop its template gave it.
@@ -607,6 +608,7 @@ export function DesignPanel({ draft, set, invitationId }: DesignPanelProps) {
                             <FilmPanel
                                 invitationId={invitationId}
                                 film={draft.design.film}
+                                locales={draft.locales}
                                 onChange={(film) => {
                                     set((d) => ({
                                         ...d,

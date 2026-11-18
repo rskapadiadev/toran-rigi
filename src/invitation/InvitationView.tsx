@@ -5,7 +5,7 @@ import {
     resolveBlock,
     type ResolvedBlock,
 } from '@shared/blocks';
-import { chaptersOf } from '@shared/film';
+import { chaptersOf, timelineOf } from '@shared/film';
 import { localeNames } from '@shared/locales';
 import { creditLine } from '@shared/stock';
 import Lenis from 'lenis';
@@ -297,16 +297,20 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
     // A film behind the whole invitation: chapters of sections hold on its moments, and travel
     // spacers between them move it. The PDF prints the sections alone.
     const film = invitation.design.film;
-    const frames = film?.behind && print === undefined ? film.frames : undefined;
+    const scenes = useMemo(
+        () => (film?.behind && print === undefined ? timelineOf(film) : []),
+        [film, print],
+    );
+    const behind = scenes.length > 0;
     const chapters = useMemo(
         () =>
-            frames
+            behind
                 ? chaptersOf(
                       blocks.map((b) => b.filmAt),
                       film?.namesAt ?? 0,
                   )
                 : [],
-        [frames, blocks, film?.namesAt],
+        [behind, blocks, film?.namesAt],
     );
     // Under the cover's names the film stays bright; behind other chapters' words it dims.
     const veilOf = (start: number) => (blocks[start]?.type === 'cover' ? 0 : 1);
@@ -400,7 +404,7 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
                 data-staging={opened ? undefined : ''}
                 // Over a film the opening hands straight to the cover's names: no fade, so the hand-off is invisible.
                 className={
-                    frames
+                    behind
                         ? opened
                             ? 'relative'
                             : 'relative opacity-0'
@@ -458,9 +462,11 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
             dir={dir}
             lang={locale}
         >
-            {frames ? (
+            {behind ? (
                 <FilmStage
-                    frames={frames}
+                    scenes={scenes}
+                    moments={film?.moments}
+                    settle={film?.settle}
                     poster={film?.first}
                     first={chapters[0]?.at ?? 0}
                     firstVeil={veilOf(0)}

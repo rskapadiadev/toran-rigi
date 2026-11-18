@@ -1,10 +1,17 @@
 import {
+    cameraAt,
     chaptersOf,
+    exitAt,
     type FilmFrames,
     filmLength,
     frameAt,
     frameCell,
+    momentAlpha,
+    sceneAt,
+    timelineLength,
+    timelineOf,
     travelScreens,
+    viewOf,
 } from '@shared/film';
 import { describe, expect, it } from 'vitest';
 
@@ -99,5 +106,111 @@ describe('film chapters', () => {
         expect(travelScreens(1.5)).toBeCloseTo(0.9);
         expect(travelScreens(0.1)).toBe(0.5);
         expect(travelScreens(20)).toBe(2.4);
+    });
+});
+
+describe('film scenes', () => {
+    const scenes = timelineOf({
+        scenes: [
+            {
+                kind: 'film',
+                frames,
+                exit: 'zoom',
+                portal: {
+                    x: 0.5,
+                    y: 0.5,
+                    zoom: 4,
+                },
+            },
+            {
+                kind: 'still',
+                image: 'courtyard.webp',
+                length: 4,
+            },
+            // A still without a picture is skipped.
+            { kind: 'still' },
+        ],
+    });
+
+    it('lays scenes end to end', () => {
+        expect(scenes).toHaveLength(2);
+        expect(scenes[1]?.start).toBeCloseTo(134 / 15);
+        expect(timelineLength(scenes)).toBeCloseTo(134 / 15 + 4);
+    });
+
+    it('treats a film without scenes as one scene', () => {
+        expect(timelineOf({ frames })).toHaveLength(1);
+        expect(timelineOf(undefined)).toEqual([]);
+    });
+
+    it('finds the scene and the time inside it', () => {
+        expect(sceneAt(scenes, 2)).toEqual({
+            index: 0,
+            local: 2,
+        });
+        const inCourtyard = sceneAt(scenes, 134 / 15 + 1);
+        expect(inCourtyard.index).toBe(1);
+        expect(inCourtyard.local).toBeCloseTo(1);
+    });
+
+    it('runs the exit over the last stretch of a scene', () => {
+        const end = 134 / 15;
+        expect(exitAt(scenes, sceneAt(scenes, end - 1)).progress).toBeNull();
+        expect(exitAt(scenes, sceneAt(scenes, end - 0.35)).progress).toBeCloseTo(0.5);
+        // The last scene has nothing to hand over to.
+        expect(exitAt(scenes, sceneAt(scenes, end + 3.9)).progress).toBeNull();
+    });
+
+    it('moves the camera and keeps its view inside the picture', () => {
+        expect(cameraAt('push', 0).zoom).toBe(1);
+        expect(cameraAt('push', 1).zoom).toBeCloseTo(1.18);
+        expect(cameraAt(undefined, 0.5).zoom).toBe(1);
+        const corner = viewOf({
+            x: 0,
+            y: 1,
+            zoom: 4,
+        });
+        expect(corner).toEqual({
+            x: 0,
+            y: 0.75,
+            w: 0.25,
+            h: 0.25,
+        });
+    });
+});
+
+describe('words on the film', () => {
+    const moment = {
+        from: 2,
+        to: 4,
+    };
+
+    it('fades in, holds and fades out', () => {
+        expect(momentAlpha(moment, 1.9)).toBe(0);
+        expect(momentAlpha(moment, 2.15)).toBeCloseTo(0.5);
+        expect(momentAlpha(moment, 3)).toBe(1);
+        expect(momentAlpha(moment, 3.85)).toBeCloseTo(0.5);
+        expect(momentAlpha(moment, 4.1)).toBe(0);
+    });
+
+    it('keeps a very short moment visible at its middle', () => {
+        expect(
+            momentAlpha(
+                {
+                    from: 1,
+                    to: 1.2,
+                },
+                1.1,
+            ),
+        ).toBeCloseTo(1);
+        expect(
+            momentAlpha(
+                {
+                    from: 2,
+                    to: 2,
+                },
+                2,
+            ),
+        ).toBe(0);
     });
 });

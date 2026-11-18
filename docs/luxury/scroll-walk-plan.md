@@ -89,17 +89,17 @@ What the walk adds on top:
 
 ## 4. Plan
 
-**Stage 1, finish the film behind the invitation** (in progress)
+**Stage 1, finish the film behind the invitation** (done, 2026-11-18)
 - FilmStage canvas, travel between moments, film scene, the editor's Film moment control, the
   Deepmala Yatra template on our 9 s film.
 
-**Stage 2, scenes**
+**Stage 2, scenes** (done, 2026-11-19: Deepmala Yatra flies through the haveli door into the mandap courtyard)
 - `design.film.scenes[]`: each scene is `{ kind: 'film' | 'still', frames | image, camera?, exit? }`.
   The stage plays them end to end on one timeline, so `filmAt` still works across scenes.
 - Camera boxes for stills, zoom-portal and fade exits.
 - The editor gets a scene list (add a film or a still, reorder, set the exit) in the Film panel.
 
-**Stage 3, the walk feel**
+**Stage 3, the walk feel** (words on the film and opt-in settling done, 2026-11-19; settling is off by default)
 - **Moment text**: short lines with a zone and a time window, placed in the editor by dragging a box over the frame.
 - Gentle rest settling, a chapter bar with Next and progress ticks, and "Read the invitation".
 - Lean loading: skip every other frame on Save-Data or 2G, and free far frames.

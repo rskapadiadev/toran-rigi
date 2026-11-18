@@ -1,3 +1,4 @@
+import { timelineOf } from '@shared/film';
 import { localeNames } from '@shared/locales';
 import { cappedMotion, occasionOf } from '@shared/occasions';
 import { titleOf } from '@shared/people';
@@ -823,7 +824,7 @@ function EditorPage({ id }: { id: string }) {
                                             calm={calm}
                                             film={
                                                 draft.design.film?.behind
-                                                    ? draft.design.film.frames
+                                                    ? timelineOf(draft.design.film)
                                                     : undefined
                                             }
                                             update={patchSection}

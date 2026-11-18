@@ -1,13 +1,6 @@
 // The Film opening's clip: uploaded by the studio, with stills of its first and last frames drawn
 // here in the browser (the server never decodes video), and the moment the names rise.
-import {
-    FILM_MAX_BYTES,
-    FILM_STILL_MAX_WIDTH,
-    filmMimes,
-    FRAME_WIDTH,
-    FRAMES_FPS,
-    FRAMES_GRID,
-} from '@shared/film';
+import { FILM_MAX_BYTES, FILM_STILL_MAX_WIDTH, filmMimes } from '@shared/film';
 import { photoUrl } from '@shared/photos';
 import { Clapperboard, Loader2, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -16,52 +9,25 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { ApiError } from '@/lib/api';
 
 import type { Draft } from '../composer/draft';
 import { FormField } from '../kit/form';
+import { cutFrames, seek, send } from './film-cut';
+import { FilmScenes } from './FilmScenes';
+import { FilmWords } from './FilmWords';
 
 type Film = NonNullable<Draft['design']['film']>;
 
 interface Props {
     invitationId: string;
     film: Film | undefined;
+    // The invitation's languages: words on the film are written in each.
+    locales: string[];
     onChange: (film: Film | undefined) => void;
 }
 
 const DEFAULT_NAMES_AT = 0.55;
 const EDGE = 0.05;
-
-interface UploadResult {
-    key: string;
-}
-
-async function send(endpoint: string, file: Blob, name: string) {
-    const body = new FormData();
-    body.append('file', file, name);
-    const res = await fetch(endpoint, {
-        method: 'POST',
-        body,
-        credentials: 'include',
-    });
-    if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new ApiError(err.error ?? 'Upload failed', res.status);
-    }
-    return (await res.json<UploadResult>()).key;
-}
-
-function seek(video: HTMLVideoElement, time: number) {
-    return new Promise<void>((resolve, reject) => {
-        video.onseeked = () => {
-            resolve();
-        };
-        video.onerror = () => {
-            reject(new Error('This browser cannot read the film'));
-        };
-        video.currentTime = time;
-    });
-}
 
 interface Stills {
     first: Blob;
@@ -117,78 +83,7 @@ async function stillsOf(file: File): Promise<Stills> {
     }
 }
 
-function loadVideo(src: string) {
-    const video = document.createElement('video');
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = 'auto';
-    video.src = src;
-    return new Promise<HTMLVideoElement>((resolve, reject) => {
-        video.onloadeddata = () => {
-            resolve(video);
-        };
-        video.onerror = () => {
-            reject(new Error('This browser cannot play the film; try an H.264 MP4'));
-        };
-    });
-}
-
-const toWebp = (canvas: HTMLCanvasElement) =>
-    new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-            (blob) => {
-                if (blob) resolve(blob);
-                else reject(new Error('Could not draw the frames'));
-            },
-            'image/webp',
-            0.8,
-        );
-    });
-
-interface CutFrames {
-    sheets: Blob[];
-    count: number;
-    height: number;
-}
-
-// Cuts the film into frames (15 a second, 540 wide) packed 3×3 per sheet, for the film behind the
-// invitation: guests scroll through pictures, which every phone handles smoothly.
-async function framesOf(src: string, progress: (done: number, total: number) => void) {
-    const video = await loadVideo(src);
-    const count = Math.max(1, Math.floor(video.duration * FRAMES_FPS));
-    const height = Math.round((FRAME_WIDTH * video.videoHeight) / video.videoWidth);
-    const per = FRAMES_GRID * FRAMES_GRID;
-    const canvas = document.createElement('canvas');
-    canvas.width = FRAME_WIDTH * FRAMES_GRID;
-    canvas.height = height * FRAMES_GRID;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Could not draw the frames');
-    const sheets: Blob[] = [];
-    for (let s = 0; s * per < count; s++) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (let k = 0; k < per && s * per + k < count; k++) {
-            const i = s * per + k;
-            await seek(video, i / FRAMES_FPS);
-            ctx.drawImage(
-                video,
-                (k % FRAMES_GRID) * FRAME_WIDTH,
-                Math.floor(k / FRAMES_GRID) * height,
-                FRAME_WIDTH,
-                height,
-            );
-            progress(i + 1, count);
-        }
-        sheets.push(await toWebp(canvas));
-    }
-    const cut: CutFrames = {
-        sheets,
-        count,
-        height,
-    };
-    return cut;
-}
-
-export function FilmPanel({ invitationId, film, onChange }: Props) {
+export function FilmPanel({ invitationId, film, locales, onChange }: Props) {
     const input = useRef<HTMLInputElement>(null);
     const preview = useRef<HTMLVideoElement>(null);
     const [busy, setBusy] = useState(false);
@@ -197,27 +92,21 @@ export function FilmPanel({ invitationId, film, onChange }: Props) {
 
     // Cuts and uploads the frame sheets, returning the film with them attached.
     const withFrames = async (base: Film, src: string): Promise<Film> => {
-        const cut = await framesOf(src, (done, total) => {
-            setCutting(`Cutting frames ${String(done)} of ${String(total)}`);
-        });
-        setCutting('Uploading frames');
-        const sheets: string[] = [];
-        for (const [i, blob] of cut.sheets.entries())
-            sheets.push(
-                await send(`/api/admin/photos/${invitationId}`, blob, `frames-${String(i)}.webp`),
-            );
+        const frames = await cutFrames(invitationId, src, setCutting);
+        // Scenes that played the old film now play the new one.
+        const old = base.frames?.sheets[0];
         return {
             ...base,
             behind: true,
-            frames: {
-                sheets,
-                fps: FRAMES_FPS,
-                count: cut.count,
-                cols: FRAMES_GRID,
-                rows: FRAMES_GRID,
-                width: FRAME_WIDTH,
-                height: cut.height,
-            },
+            frames,
+            scenes: base.scenes?.map((scene) =>
+                scene.kind === 'film' && scene.frames?.sheets[0] === old
+                    ? {
+                          ...scene,
+                          frames,
+                      }
+                    : scene,
+            ),
         };
     };
 
@@ -228,6 +117,7 @@ export function FilmPanel({ invitationId, film, onChange }: Props) {
                 ...film,
                 behind: false,
                 frames: undefined,
+                scenes: undefined,
             });
             return;
         }
@@ -411,6 +301,41 @@ export function FilmPanel({ invitationId, film, onChange }: Props) {
                             }}
                         />
                     </div>
+                    {film.behind && film.frames && (
+                        <>
+                            <FilmScenes
+                                invitationId={invitationId}
+                                film={film}
+                                onChange={onChange}
+                            />
+                            <FilmWords film={film} locales={locales} onChange={onChange} />
+                            <div className="flex items-start justify-between gap-3 rounded-md bg-muted/50 p-2.5">
+                                <div className="space-y-0.5">
+                                    <label
+                                        htmlFor="film-settle"
+                                        className="text-[13px] font-medium"
+                                    >
+                                        Settle on each moment
+                                    </label>
+                                    <p className="text-xs text-muted-foreground">
+                                        When a guest stops scrolling halfway, the film eases on to
+                                        the nearer moment. Off by default: some guests find it
+                                        pushy.
+                                    </p>
+                                </div>
+                                <Switch
+                                    id="film-settle"
+                                    checked={film.settle === true}
+                                    onCheckedChange={(settle) => {
+                                        onChange({
+                                            ...film,
+                                            settle,
+                                        });
+                                    }}
+                                />
+                            </div>
+                        </>
+                    )}
                     <Button
                         variant="outline"
                         size="sm"

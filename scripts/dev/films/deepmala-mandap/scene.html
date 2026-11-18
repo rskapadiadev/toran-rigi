@@ -1,0 +1,144 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>
+// Deepmala's second scene: inside the haveli, a lamp-lit courtyard with the wedding mandap.
+// An original painted still (the camera moves over it in the invitation). render(t) is deterministic.
+const W = 1080, H = 1920;
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+function glow(x, y, r, color, a) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, color.replace('A', a)); g.addColorStop(1, color.replace('A', 0));
+  ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+}
+function flame(x, y, s) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  glow(x, y - 8 * s, 30 * s, 'rgba(255,170,70,A)', 0.35);
+  ctx.restore();
+  ctx.fillStyle = '#ffd27a';
+  ctx.beginPath(); ctx.moveTo(x, y - 18 * s);
+  ctx.quadraticCurveTo(x + 6 * s, y - 6 * s, x, y); ctx.quadraticCurveTo(x - 6 * s, y - 6 * s, x, y - 18 * s); ctx.fill();
+  ctx.fillStyle = '#fff4d6';
+  ctx.beginPath(); ctx.ellipse(x, y - 5 * s, 2 * s, 4.5 * s, 0, 0, Math.PI * 2); ctx.fill();
+}
+function diya(x, y, s) {
+  ctx.fillStyle = '#b5652e';
+  ctx.beginPath(); ctx.ellipse(x, y, 11 * s, 4.5 * s, 0, 0, Math.PI); ctx.fill();
+  ctx.fillStyle = '#e09a52'; ctx.beginPath(); ctx.ellipse(x, y, 11 * s, 2 * s, 0, 0, Math.PI * 2); ctx.fill();
+  flame(x, y - 1, s);
+}
+// A cusped (multifoil) arch opening.
+function cusped(x, y, w, h) {
+  const r = w / 2;
+  ctx.beginPath();
+  ctx.moveTo(x - r, y + h);
+  ctx.lineTo(x - r, y + r * 0.9);
+  const lobes = 5;
+  for (let i = 0; i < lobes; i++) {
+    const a0 = Math.PI + (i / lobes) * Math.PI, a1 = Math.PI + ((i + 1) / lobes) * Math.PI;
+    const px0 = x + Math.cos(a0) * r, py0 = y + r * 0.9 + Math.sin(a0) * r * 1.05;
+    const px1 = x + Math.cos(a1) * r, py1 = y + r * 0.9 + Math.sin(a1) * r * 1.05;
+    const mx = (px0 + px1) / 2, my = (py0 + py1) / 2;
+    const nx = mx - x, ny = my - (y + r * 0.9); const len = Math.hypot(nx, ny) || 1;
+    ctx.quadraticCurveTo(mx + (nx / len) * r * 0.16, my + (ny / len) * r * 0.16, px1, py1);
+  }
+  ctx.lineTo(x + r, y + h);
+  ctx.closePath();
+}
+function garland(x0, y0, x1, y1, sag, n, seed) {
+  const r = rng(seed);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t + Math.sin(t * Math.PI) * sag;
+    ctx.fillStyle = r() < 0.5 ? '#f29a2e' : (r() < 0.6 ? '#f6c23e' : '#e0562a');
+    ctx.beginPath(); ctx.arc(x, y, 6.5 + r() * 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(120,40,10,0.35)';
+    ctx.beginPath(); ctx.arc(x + 1.5, y + 2, 3, 0, Math.PI * 2); ctx.fill();
+  }
+}
+window.render = function () {
+  // Night ceiling and warm stone walls.
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0b0f2a'); bg.addColorStop(0.3, '#1d1530'); bg.addColorStop(0.55, '#5a3322'); bg.addColorStop(1, '#2a160f');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  // Back wall arcade: three cusped arches glowing from lamps within.
+  ctx.fillStyle = '#7a4a2c'; ctx.fillRect(0, 700, W, 640);
+  for (const [x, w] of [[200, 230], [540, 300], [880, 230]]) {
+    cusped(x, 760, w, 560);
+    const g = ctx.createLinearGradient(0, 760, 0, 1320);
+    g.addColorStop(0, '#ffcf86'); g.addColorStop(1, '#c46a2c');
+    ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = 10; ctx.strokeStyle = '#a8683c'; ctx.stroke();
+  }
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; glow(540, 1040, 520, 'rgba(255,170,90,A)', 0.25); ctx.restore();
+  // Jaali screens either side, a soft lattice.
+  ctx.strokeStyle = 'rgba(70,35,18,0.3)'; ctx.lineWidth = 1.5;
+  for (const x0 of [30, 965]) {
+    ctx.save(); ctx.beginPath(); ctx.rect(x0, 760, 85, 520); ctx.clip();
+    for (let k = -30; k < 40; k++) {
+      ctx.beginPath(); ctx.moveTo(x0 + k * 16, 760); ctx.lineTo(x0 + k * 16 + 520, 1280); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x0 + k * 16, 760); ctx.lineTo(x0 + k * 16 - 520, 1280); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // Floor with a rangoli.
+  const floor = ctx.createLinearGradient(0, 1320, 0, H);
+  floor.addColorStop(0, '#8a5232'); floor.addColorStop(1, '#3a1e12');
+  ctx.fillStyle = floor; ctx.fillRect(0, 1320, W, H - 1320);
+  ctx.save(); ctx.translate(540, 1640); ctx.scale(1, 0.32);
+  const rings = [[300, '#c0392b'], [250, '#f39c12'], [200, '#f7dc6f'], [150, '#27ae60'], [100, '#e0562a'], [50, '#fff2c8']];
+  for (const [r, col] of rings) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = '#fff2c8';
+  for (let k = 0; k < 16; k++) { const a = (k / 16) * Math.PI * 2; ctx.beginPath(); ctx.ellipse(Math.cos(a) * 275, Math.sin(a) * 275, 26, 12, a, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+  // The mandap: four pillars wrapped in marigold, a red and gold canopy.
+  const pillars = [300, 420, 660, 780];
+  const top = 980, base = 1500;
+  for (const x of pillars) {
+    const near = x === 300 || x === 780;
+    const y1 = near ? base + 40 : base;
+    ctx.fillStyle = '#e8c48a'; ctx.fillRect(x - 11, top, 22, y1 - top);
+    for (let y = top + 10; y < y1; y += 22) { ctx.fillStyle = (y / 22) % 2 < 1 ? '#f29a2e' : '#f6c23e'; ctx.beginPath(); ctx.ellipse(x, y, 15, 9, 0, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // Canopy.
+  ctx.fillStyle = '#9c1f2a';
+  ctx.beginPath(); ctx.moveTo(250, 990); ctx.lineTo(540, 860); ctx.lineTo(830, 990); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#d9b36a'; ctx.fillRect(250, 984, 580, 12);
+  for (let x = 256; x < 830; x += 20) { ctx.fillStyle = '#d9b36a'; ctx.beginPath(); ctx.moveTo(x, 996); ctx.lineTo(x + 10, 1018); ctx.lineTo(x + 20, 996); ctx.fill(); }
+  ctx.fillStyle = '#e0b867'; ctx.beginPath(); ctx.arc(540, 852, 12, 0, Math.PI * 2); ctx.fill();
+  garland(250, 1000, 540, 1000, 60, 18, 3); garland(540, 1000, 830, 1000, 60, 18, 4);
+  // The sacred fire at the centre: a small calm flame in a brass kund.
+  ctx.fillStyle = '#b8862f'; ctx.fillRect(500, 1430, 80, 46);
+  ctx.fillStyle = '#d9a84a'; ctx.fillRect(492, 1424, 96, 10);
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; glow(540, 1400, 160, 'rgba(255,150,60,A)', 0.4); ctx.restore();
+  flame(530, 1426, 2.4); flame(552, 1428, 2);
+  // Two low seats facing the fire.
+  ctx.fillStyle = '#7a1c24'; ctx.fillRect(400, 1470, 70, 26); ctx.fillRect(610, 1470, 70, 26);
+  // Garlands swagging across the courtyard from the top, and hanging lanterns at the sides.
+  garland(0, 560, 540, 600, 120, 30, 7); garland(540, 600, 1080, 560, 120, 30, 8);
+  for (const [x, y] of [[120, 420], [960, 420], [250, 520], [830, 520]]) {
+    ctx.strokeStyle = '#6a4a2a'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, y - 30); ctx.stroke();
+    ctx.fillStyle = '#c9973f'; ctx.beginPath(); ctx.moveTo(x - 18, y - 30); ctx.lineTo(x + 18, y - 30); ctx.lineTo(x + 12, y + 20); ctx.lineTo(x - 12, y + 20); ctx.fill();
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; glow(x, y, 90, 'rgba(255,190,100,A)', 0.45); ctx.restore();
+  }
+  // Diyas along the floor's edge.
+  for (let i = 0; i < 14; i++) diya(60 + i * 74, 1380 + (i % 2) * 8, 1.2);
+  for (let i = 0; i < 9; i++) diya(110 + i * 108, 1820, 1.6);
+  // Soft vignette and grain.
+  const v = ctx.createRadialGradient(540, 1150, 380, 540, 1000, 1250);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  const r = rng(11);
+  for (let i = 0; i < 9000; i++) { ctx.fillStyle = `rgba(255,255,255,${(r() * 0.04).toFixed(3)})`; ctx.fillRect(r() * W, r() * H, 1, 1); }
+};
+render(0);
+</script>
+</body>
+</html>

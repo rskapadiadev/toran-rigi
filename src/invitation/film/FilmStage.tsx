@@ -1,8 +1,21 @@
 // The film behind the invitation: one canvas that stays put while the page scrolls over it. The
 // film's frames come in sprite sheets; scrolling through a travel spacer moves the film between two
 // moments, and sections sit over the frame held between travels.
-import { type FilmFrames, frameAt, frameCell } from '@shared/film';
+import {
+    blendFocus,
+    cameraAt,
+    exitAt,
+    type Focus,
+    frameAt,
+    frameCell,
+    momentAlpha,
+    sceneAt,
+    type TimedScene,
+    viewOf,
+    type ViewRect,
+} from '@shared/film';
 import { photoUrl } from '@shared/photos';
+import type { FilmMoment } from '@shared/types';
 import { type MotionValue, motionValue, useReducedMotion } from 'motion/react';
 import {
     createContext,
@@ -14,6 +27,8 @@ import {
     useMemo,
     useRef,
 } from 'react';
+
+import { useInvite } from '../context';
 
 export interface FilmTravelSpan {
     el: HTMLElement;
@@ -126,7 +141,7 @@ class SheetCache {
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
 
 interface StageProps {
-    frames: FilmFrames;
+    scenes: TimedScene[];
     poster?: string;
     first: number;
     // The first chapter's veil: none under the cover's names.
@@ -135,19 +150,89 @@ interface StageProps {
     // The editor scrolls a frame, not the window.
     scrollRoot: RefObject<HTMLElement | null> | null;
     still: boolean;
+    // Words placed on the film at its moments.
+    moments?: FilmMoment[];
+    // Ease to the nearest moment when the guest stops scrolling.
+    settle?: boolean;
     children: ReactNode;
 }
 
+const momentLook: Record<NonNullable<FilmMoment['style']>, string> = {
+    kicker: 'text-[3.4cqw] tracking-[0.38em] text-(--inv-gold) uppercase',
+    line: 'inv-display text-[6.4cqw] leading-snug text-[#fff6e2]',
+    script: 'inv-script text-[12cqw] leading-tight text-(--inv-gold)',
+};
+
+// A picture ready to draw: one frame cut from a sheet, or a whole still.
+interface Picture {
+    source: ImageBitmap;
+    sx: number;
+    sy: number;
+    sw: number;
+    sh: number;
+}
+
+interface Pictures {
+    a: Picture;
+    b?: Picture;
+    mix: number;
+}
+
+// Every scene is shown in the same upright column as the film.
+const ASPECT = 9 / 16;
+const range = (n: number) => Array.from({ length: n }, (_, i) => i);
+const ease = (p: number) => {
+    const x = clamp(p);
+    return x * x * (3 - 2 * x);
+};
+
+function paint(
+    ctx: CanvasRenderingContext2D,
+    pic: Picture,
+    focus: Focus,
+    rect: ViewRect,
+    alpha: number,
+) {
+    let { sx, sy, sw, sh } = pic;
+    // Crop to the upright column first (stills may be any shape), then to what the camera sees.
+    if (sw / sh > ASPECT) {
+        const nw = sh * ASPECT;
+        sx += (sw - nw) / 2;
+        sw = nw;
+    } else if (sw / sh < ASPECT) {
+        const nh = sw / ASPECT;
+        sy += (sh - nh) / 2;
+        sh = nh;
+    }
+    const v = viewOf(focus);
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(
+        pic.source,
+        sx + v.x * sw,
+        sy + v.y * sh,
+        v.w * sw,
+        v.h * sh,
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h,
+    );
+}
+
 export function FilmStage({
-    frames,
+    scenes,
     poster,
     first,
     firstVeil,
     opened,
     scrollRoot,
     still,
+    moments,
+    settle = false,
     children,
 }: StageProps) {
+    const { t: say, dir } = useInvite();
+    const words = useRef<(HTMLElement | null)[]>([]);
     const reduced = useReducedMotion() === true;
     const snap = still || reduced;
     const time = useMemo(() => motionValue(0), []);
@@ -165,41 +250,118 @@ export function FilmStage({
             drawRef.current();
         });
     }, []);
-    const cacheRef = useRef<SheetCache | null>(null);
+    const caches = useRef<(SheetCache | null)[]>([]);
+    const stills = useRef(new Map<string, ImageBitmap>());
 
+    // Load every scene: the first film's opening stretch first, later scenes a moment after.
     useEffect(() => {
-        const per = frames.cols * frames.rows;
-        const sheetOf = (t: number) => frameCell(frames, frameAt(frames, t).index).sheet;
-        // The opening's stretch first (it plays straight away after the tap), then the rest in order.
-        const lead = sheetOf(first);
-        const order = [
-            ...Array.from({ length: lead + 1 }, (_, i) => i),
-            ...Array.from({ length: Math.ceil(frames.count / per) }, (_, i) => i),
-        ];
-        const cache = new SheetCache(frames.sheets.map(photoUrl), schedule);
-        cacheRef.current = cache;
-        cache.prefetch(order);
+        const list = scenes.map((scene) =>
+            scene.kind === 'film' && scene.frames
+                ? new SheetCache(scene.frames.sheets.map(photoUrl), schedule)
+                : null,
+        );
+        caches.current = list;
+        const timers = scenes.map((scene, i) =>
+            window.setTimeout(
+                () => {
+                    const cache = list[i];
+                    const f = scene.frames;
+                    if (!cache || !f) return;
+                    const total = Math.ceil(f.count / (f.cols * f.rows));
+                    const leadAt = clamp((first - scene.start) / Math.max(0.01, scene.duration));
+                    const lead = frameCell(f, frameAt(f, leadAt * scene.duration).index).sheet;
+                    cache.prefetch([...range(lead + 1), ...range(total)]);
+                },
+                i === 0 ? 0 : 1200,
+            ),
+        );
+        let live = true;
+        const decoded = new Map<string, ImageBitmap>();
+        for (const key of new Set(scenes.map((s) => (s.kind === 'still' ? s.image : undefined)))) {
+            if (!key) continue;
+            void fetch(photoUrl(key))
+                .then((r) => (r.ok ? r.blob() : null))
+                .then((blob) => (blob ? createImageBitmap(blob) : null))
+                .catch(() => null)
+                .then((bitmap) => {
+                    if (!bitmap) return;
+                    if (!live) {
+                        bitmap.close();
+                        return;
+                    }
+                    decoded.set(key, bitmap);
+                    schedule();
+                });
+        }
+        stills.current = decoded;
         schedule();
         return () => {
-            cache.close();
-            cacheRef.current = null;
+            live = false;
+            timers.forEach((t) => {
+                clearTimeout(t);
+            });
+            list.forEach((c) => c?.close());
+            caches.current = [];
+            decoded.forEach((b) => {
+                b.close();
+            });
+            decoded.clear();
         };
-    }, [frames, first, schedule]);
+    }, [scenes, first, schedule]);
 
-    // Draw the frame at the film's current time: the two nearest frames crossfaded.
+    // Draw the film at its current time: the scene's frame (two nearest crossfaded) through its camera,
+    // and during an exit, the next scene fading in or growing out of the door the camera flies into.
     useEffect(() => {
+        const pictures = (i: number, local: number): Pictures | null => {
+            const scene = scenes[i];
+            if (!scene) return null;
+            if (scene.kind === 'still') {
+                const bitmap = scene.image ? stills.current.get(scene.image) : undefined;
+                return bitmap
+                    ? {
+                          a: {
+                              source: bitmap,
+                              sx: 0,
+                              sy: 0,
+                              sw: bitmap.width,
+                              sh: bitmap.height,
+                          },
+                          mix: 0,
+                      }
+                    : null;
+            }
+            const f = scene.frames;
+            const cache = caches.current[i];
+            if (!f || !cache) return null;
+            const pick = frameAt(f, local);
+            const ca = frameCell(f, pick.index);
+            const cb = frameCell(f, pick.next);
+            const sheetA = cache.get(ca.sheet);
+            const sheetB = cache.get(cb.sheet);
+            cache.want(ca.sheet + 1);
+            if (!sheetA) return null;
+            const cut = (source: ImageBitmap, c: typeof ca): Picture => ({
+                source,
+                sx: c.col * f.width,
+                sy: c.row * f.height,
+                sw: f.width,
+                sh: f.height,
+            });
+            return {
+                a: cut(sheetA, ca),
+                b: sheetB ? cut(sheetB, cb) : undefined,
+                mix: pick.mix,
+            };
+        };
         drawRef.current = () => {
             const el = canvas.current;
             const ctx = el?.getContext('2d');
-            const cache = cacheRef.current;
-            if (!el || !ctx || !cache) return;
-            const pick = frameAt(frames, time.get());
-            const a = frameCell(frames, pick.index);
-            const b = frameCell(frames, pick.next);
-            const sheetA = cache.get(a.sheet);
-            const sheetB = cache.get(b.sheet);
-            cache.want(a.sheet + 1);
-            if (!sheetA) return;
+            if (!el || !ctx) return;
+            const t = time.get();
+            const place = sceneAt(scenes, t);
+            const scene = scenes[place.index];
+            const current = pictures(place.index, place.local);
+            if (!scene || !current) return;
             const dpr = Math.min(2, window.devicePixelRatio || 1);
             const w = Math.round(el.clientWidth * dpr);
             const h = Math.round(el.clientHeight * dpr);
@@ -208,43 +370,72 @@ export function FilmStage({
                 el.height = h;
             }
             // Fit the height, like the upright film frame: cropped on phones, centred on wide screens.
-            const dw = (h * frames.width) / frames.height;
-            const dx = (w - dw) / 2;
-            const paint = (sheet: ImageBitmap, cell: typeof a, alpha: number) => {
-                ctx.globalAlpha = alpha;
-                ctx.drawImage(
-                    sheet,
-                    cell.col * frames.width,
-                    cell.row * frames.height,
-                    frames.width,
-                    frames.height,
-                    dx,
-                    0,
-                    dw,
-                    h,
-                );
+            const dw = h * ASPECT;
+            const column = {
+                x: (w - dw) / 2,
+                y: 0,
+                w: dw,
+                h,
             };
+            const focus = cameraAt(scene.camera, place.local / Math.max(0.01, scene.duration));
+            const exit = exitAt(scenes, place);
+            const next = exit.next;
             ctx.clearRect(0, 0, w, h);
-            paint(sheetA, a, 1);
-            if (sheetB && pick.mix > 0.02 && !snap) paint(sheetB, b, pick.mix);
+            if (exit.progress !== null && next && scene.exit === 'zoom' && scene.portal && !snap) {
+                const e = ease(exit.progress);
+                const fly = blendFocus(focus, scene.portal, e);
+                paint(ctx, current.a, fly, column, 1);
+                // The door's place on screen right now: it opens out to fill the column as the camera arrives.
+                const vf = viewOf(fly);
+                const vp = viewOf(scene.portal);
+                const door = {
+                    x: column.x + ((vp.x - vf.x) / vf.w) * column.w,
+                    y: column.y + ((vp.y - vf.y) / vf.h) * column.h,
+                    w: (vp.w / vf.w) * column.w,
+                    h: (vp.h / vf.h) * column.h,
+                };
+                const inside = pictures(place.index + 1, 0);
+                if (inside) {
+                    // Seen through an arched doorway whose curve flattens as it fills the screen.
+                    const round = (door.w / 2) * (1 - e);
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.roundRect(door.x, door.y, door.w, door.h, [round, round, 0, 0]);
+                    ctx.clip();
+                    paint(ctx, inside.a, cameraAt(next.camera, 0), door, Math.min(1, e * 1.6));
+                    ctx.restore();
+                }
+            } else {
+                paint(ctx, current.a, focus, column, 1);
+                if (current.b && current.mix > 0.02 && !snap)
+                    paint(ctx, current.b, focus, column, current.mix);
+                if (exit.progress !== null && next && scene.exit === 'fade') {
+                    const after = pictures(place.index + 1, 0);
+                    if (after)
+                        paint(ctx, after.a, cameraAt(next.camera, 0), column, ease(exit.progress));
+                }
+            }
             ctx.globalAlpha = 1;
-            // The blurred fill either side, from a tiny copy of the same frame.
+            // The blurred fill either side, from a tiny copy of the same picture.
             const fill = blur.current?.getContext('2d');
-            if (fill && dw < w)
-                fill.drawImage(
-                    sheetA,
-                    a.col * frames.width,
-                    a.row * frames.height,
-                    frames.width,
-                    frames.height,
-                    0,
-                    0,
-                    24,
-                    42,
-                );
+            const tiny = {
+                x: 0,
+                y: 0,
+                w: 24,
+                h: 42,
+            };
+            if (fill && dw < w) paint(fill, current.a, focus, tiny, 1);
             if (posterEl.current) posterEl.current.style.opacity = '0';
-            // The frame on screen, for checks and the editor's tests.
-            el.parentElement?.setAttribute('data-film-time', time.get().toFixed(2));
+            // The moment on screen, for checks and the editor's tests.
+            el.parentElement?.setAttribute('data-film-time', t.toFixed(2));
+            moments?.forEach((m, i) => {
+                const word = words.current[i];
+                if (!word) return;
+                const a = momentAlpha(m, t);
+                word.style.opacity = String(a);
+                word.style.transform = `translateY(calc(-50% + ${String((1 - a) * 14)}px))`;
+                word.setAttribute('aria-hidden', a > 0.5 ? 'false' : 'true');
+            });
         };
         schedule();
         const off = time.on('change', schedule);
@@ -253,7 +444,7 @@ export function FilmStage({
             off();
             window.removeEventListener('resize', schedule);
         };
-    }, [frames, time, schedule, snap]);
+    }, [scenes, time, schedule, snap, moments]);
 
     // Once open, the scroll position sets the film's time and how dim it sits behind the words.
     useEffect(() => {
@@ -285,18 +476,41 @@ export function FilmStage({
             time.set(t);
             if (veil.current) veil.current.style.opacity = String(dim * VEIL);
         };
+        // When asked for, a pause mid-travel eases on to the nearer moment, so the film rests on one.
+        let rest = 0;
+        const settleNow = () => {
+            const viewTop = root ? root.getBoundingClientRect().top : 0;
+            const vh = root ? root.clientHeight : window.innerHeight;
+            for (const span of spans.current) {
+                const r = span.el.getBoundingClientRect();
+                const top = r.top - viewTop;
+                const travel = r.height - vh;
+                const p = travel > 0 ? -top / travel : 0;
+                if (p <= 0.02 || p >= 0.98) continue;
+                target.scrollBy({
+                    top: p < 0.5 ? top : top + travel,
+                    behavior: 'smooth',
+                });
+                return;
+            }
+        };
         const onScroll = () => {
             if (!tick) tick = requestAnimationFrame(update);
+            if (settle && !snap) {
+                clearTimeout(rest);
+                rest = window.setTimeout(settleNow, 260);
+            }
         };
         update();
         target.addEventListener('scroll', onScroll, { passive: true });
         window.addEventListener('resize', onScroll);
         return () => {
+            clearTimeout(rest);
             cancelAnimationFrame(tick);
             target.removeEventListener('scroll', onScroll);
             window.removeEventListener('resize', onScroll);
         };
-    }, [opened, scrollRoot, first, firstVeil, snap, time]);
+    }, [opened, scrollRoot, first, firstVeil, snap, time, settle]);
 
     const register = useCallback((span: FilmTravelSpan) => {
         spans.current.add(span);
@@ -318,12 +532,12 @@ export function FilmStage({
     return (
         <FilmStageContext value={value}>
             <div
-                aria-hidden
                 className="pointer-events-none sticky top-0 z-0 h-[var(--inv-screen,100svh)] overflow-hidden bg-black"
                 style={lift}
                 data-film-stage
             >
                 <canvas
+                    aria-hidden
                     ref={blur}
                     width={24}
                     height={42}
@@ -331,18 +545,50 @@ export function FilmStage({
                 />
                 {poster && (
                     <img
+                        aria-hidden
                         ref={posterEl}
                         src={photoUrl(poster)}
                         alt=""
                         className="absolute inset-y-0 start-1/2 aspect-[9/16] h-full max-w-none -translate-x-1/2 object-cover transition-opacity duration-300 rtl:translate-x-1/2"
                     />
                 )}
-                <canvas ref={canvas} className="absolute inset-0 size-full" />
+                <canvas aria-hidden ref={canvas} className="absolute inset-0 size-full" />
                 <div
+                    aria-hidden
                     ref={veil}
                     className="absolute inset-0 bg-[#04061a] transition-opacity duration-300"
                     style={{ opacity: 0 }}
                 />
+                {moments && moments.length > 0 && (
+                    <div className="[container-type:size] absolute inset-y-0 start-1/2 aspect-[9/16] h-full -translate-x-1/2 rtl:translate-x-1/2">
+                        {moments.map((m, i) => {
+                            // Zones are places in the picture, which is never mirrored.
+                            const x = dir === 'rtl' ? 1 - m.zone.x : m.zone.x;
+                            const place = {
+                                insetInlineStart: `${String((x - m.zone.w / 2) * 100)}%`,
+                                top: `${String(m.zone.y * 100)}%`,
+                                width: `${String(m.zone.w * 100)}%`,
+                                opacity: 0,
+                                transform: 'translateY(-50%)',
+                            };
+                            return (
+                                <p
+                                    // Moments have no ids: their place in the list is who they are.
+                                    key={i}
+                                    ref={(el) => {
+                                        words.current[i] = el;
+                                    }}
+                                    aria-hidden
+                                    className={`absolute m-0 text-center text-balance [text-shadow:0_2px_18px_rgba(0,0,0,0.65)] ${momentLook[m.style ?? 'line']}`}
+                                    style={place}
+                                    data-film-moment={i}
+                                >
+                                    {say(m.text)}
+                                </p>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
             {children}
         </FilmStageContext>

@@ -9,12 +9,14 @@ import {
     settleEnter,
     type VariantInfo,
 } from '@shared/blocks';
-import { type FilmFrames, filmLength, frameAt, frameCell } from '@shared/film';
+import { frameAt, frameCell, sceneAt, type TimedScene, timelineLength } from '@shared/film';
 import { motifLabel } from '@shared/motifs';
 import { photoUrl } from '@shared/photos';
 import { motifIds } from '@shared/schemas/invitation';
 import type { DividerKind, EdgeKind, EnterPreset, SceneKind, SectionConfig } from '@shared/types';
+import type { CSSProperties } from 'react';
 
+import { SecondsInput } from '@/admin/kit/seconds-input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import {
@@ -139,40 +141,53 @@ function OptionPicker<T extends string>({
 }
 
 interface ThumbProps {
-    frames: FilmFrames;
+    scenes: TimedScene[];
     at: number;
 }
 
-// One frame of the film, cut straight from its sprite sheet.
-function FilmThumb({ frames, at }: ThumbProps) {
-    const cell = frameCell(frames, frameAt(frames, at).index);
-    const sheet = frames.sheets[cell.sheet];
-    const x = frames.cols > 1 ? (cell.col / (frames.cols - 1)) * 100 : 0;
-    const y = frames.rows > 1 ? (cell.row / (frames.rows - 1)) * 100 : 0;
-    const look = {
-        aspectRatio: `${String(frames.width)} / ${String(frames.height)}`,
-        backgroundImage: sheet ? `url(${photoUrl(sheet)})` : undefined,
-        backgroundSize: `${String(frames.cols * 100)}% ${String(frames.rows * 100)}%`,
-        backgroundPosition: `${String(x)}% ${String(y)}%`,
-    };
+// The film at one moment: a frame cut from its sprite sheet, or the still it rests on.
+function FilmThumb({ scenes, at }: ThumbProps) {
+    const place = sceneAt(scenes, at);
+    const scene = scenes[place.index];
+    const frames = scene?.frames;
+    let look: CSSProperties = { aspectRatio: '9 / 16' };
+    if (scene?.kind === 'still' && scene.image)
+        look = {
+            ...look,
+            backgroundImage: `url(${photoUrl(scene.image)})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+        };
+    else if (frames) {
+        const cell = frameCell(frames, frameAt(frames, place.local).index);
+        const sheet = frames.sheets[cell.sheet];
+        const x = frames.cols > 1 ? (cell.col / (frames.cols - 1)) * 100 : 0;
+        const y = frames.rows > 1 ? (cell.row / (frames.rows - 1)) * 100 : 0;
+        look = {
+            ...look,
+            backgroundImage: sheet ? `url(${photoUrl(sheet)})` : undefined,
+            backgroundSize: `${String(frames.cols * 100)}% ${String(frames.rows * 100)}%`,
+            backgroundPosition: `${String(x)}% ${String(y)}%`,
+        };
+    }
     return <div className="w-16 shrink-0 rounded-md bg-black" style={look} data-film-thumb />;
 }
 
 interface MomentProps {
-    frames: FilmFrames;
+    scenes: TimedScene[];
     value: number | undefined;
     onChange: (at: number | undefined) => void;
 }
 
 // Which moment of the film behind the invitation this section rests on while guests read it.
-function FilmMoment({ frames, value, onChange }: MomentProps) {
-    const length = filmLength(frames);
+function FilmMoment({ scenes, value, onChange }: MomentProps) {
+    const length = timelineLength(scenes);
     const keep = value === undefined;
     return (
         <div className="space-y-2">
             <Label className="text-xs text-muted-foreground uppercase">Film moment</Label>
             <div className="flex gap-3">
-                <FilmThumb frames={frames} at={value ?? 0} />
+                <FilmThumb scenes={scenes} at={value ?? 0} />
                 <div className="min-w-0 flex-1 space-y-3">
                     <div className="flex items-center gap-2">
                         <Checkbox
@@ -188,16 +203,25 @@ function FilmMoment({ frames, value, onChange }: MomentProps) {
                     </div>
                     {!keep && (
                         <>
-                            <Slider
-                                aria-label="Film moment"
-                                min={0}
-                                max={length}
-                                step={0.1}
-                                value={[value]}
-                                onValueChange={([v]) => {
-                                    if (v !== undefined) onChange(Math.round(v * 10) / 10);
-                                }}
-                            />
+                            <div className="flex items-center gap-3">
+                                <Slider
+                                    aria-label="Film moment"
+                                    min={0}
+                                    max={length}
+                                    step={0.1}
+                                    value={[value]}
+                                    onValueChange={([v]) => {
+                                        if (v !== undefined) onChange(Math.round(v * 10) / 10);
+                                    }}
+                                />
+                                <SecondsInput
+                                    value={value}
+                                    min={0}
+                                    max={length}
+                                    label="Film moment in seconds"
+                                    onChange={onChange}
+                                />
+                            </div>
                             <p className="text-xs text-muted-foreground">
                                 {value.toFixed(1)} s of {length.toFixed(1)} s. Scrolling moves the
                                 film here, then it holds while this section is read.
@@ -215,8 +239,8 @@ interface BlockEditorProps {
     previousScene?: SceneKind;
     // Calm motion (chosen, or imposed by a solemn occasion) offers gentle entrances only.
     calm: boolean;
-    // The frames of a film playing behind the invitation, when there is one.
-    film?: FilmFrames;
+    // The scenes of a film playing behind the invitation, when there is one.
+    film?: TimedScene[];
     update: (patch: Partial<SectionConfig>) => void;
 }
 
@@ -230,7 +254,7 @@ export function BlockEditor({ section, previousScene, calm, film, update }: Bloc
         <div className="space-y-5 pt-2">
             {film && (
                 <FilmMoment
-                    frames={film}
+                    scenes={film}
                     value={section.filmAt}
                     onChange={(filmAt) => {
                         update({ filmAt });

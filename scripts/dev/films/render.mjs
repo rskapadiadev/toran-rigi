@@ -45,6 +45,15 @@ const still = async (t, file) => {
     }, t);
     writeFileSync(join(out, file), Buffer.from(data.split(',')[1], 'base64'));
 };
+// --still: a painted still for a still scene of the film behind the invitation.
+if (process.argv.includes('--still')) {
+    await still(0, 'still.webp');
+    await browser.close();
+    console.log(
+        `${join(out, 'still.webp')}: ${(statSync(join(out, 'still.webp')).size / 1e3).toFixed(0)} KB`,
+    );
+    process.exit(0);
+}
 await still(0, 'film-first.webp');
 await still((total - 1) / FPS, 'film-last.webp');
 if (process.argv.includes('--stills')) {

@@ -50,6 +50,20 @@ const theme = (s: Spec): ThemeDefinition => ({
     },
 });
 
+// Deepmala's film cut into frames (scripts/dev/films/render.mjs deepmala --frames).
+const yatraFrames = {
+    sheets: Array.from(
+        { length: 15 },
+        (_, s) => `/kits/deepmala/frames/sheet-${String(s).padStart(3, '0')}.webp`,
+    ),
+    fps: 15,
+    count: 135,
+    cols: 3,
+    rows: 3,
+    width: 540,
+    height: 960,
+};
+
 export const luxuryThemes: ThemeDefinition[] = [
     theme({
         slug: 'sitara',
@@ -286,18 +300,71 @@ export const luxuryThemes: ThemeDefinition[] = [
             last: '/kits/deepmala/film-last.webp',
             namesAt: 4.6,
             behind: true,
-            frames: {
-                sheets: Array.from(
-                    { length: 15 },
-                    (_, s) => `/kits/deepmala/frames/sheet-${String(s).padStart(3, '0')}.webp`,
-                ),
-                fps: 15,
-                count: 135,
-                cols: 3,
-                rows: 3,
-                width: 540,
-                height: 960,
-            },
+            frames: yatraFrames,
+            // The night on the ghats, then through the haveli's lit central door into its courtyard.
+            scenes: [
+                {
+                    kind: 'film',
+                    frames: yatraFrames,
+                    exit: 'zoom',
+                    portal: {
+                        x: 0.5,
+                        y: 0.528,
+                        zoom: 7,
+                    },
+                },
+                {
+                    kind: 'still',
+                    image: '/kits/deepmala-mandap/still.webp',
+                    length: 4,
+                    camera: 'push',
+                },
+            ],
+            // Words in the stretches where the screen holds only the film.
+            moments: [
+                {
+                    text: {
+                        en: 'A night of a thousand diyas',
+                        hi: 'हज़ार दीयों की एक रात',
+                    },
+                    from: 5.6,
+                    to: 6.45,
+                    zone: {
+                        x: 0.5,
+                        y: 0.14,
+                        w: 0.8,
+                    },
+                    style: 'line',
+                },
+                {
+                    text: {
+                        en: 'Two families, one light',
+                        hi: 'दो परिवार, एक रोशनी',
+                    },
+                    from: 7.6,
+                    to: 8.15,
+                    zone: {
+                        x: 0.5,
+                        y: 0.17,
+                        w: 0.9,
+                    },
+                    style: 'script',
+                },
+                {
+                    text: {
+                        en: 'Come inside',
+                        hi: 'अंदर आइए',
+                    },
+                    from: 9.2,
+                    to: 10.45,
+                    zone: {
+                        x: 0.5,
+                        y: 0.1,
+                        w: 0.8,
+                    },
+                    style: 'kicker',
+                },
+            ],
         },
     }),
 ];
@@ -310,7 +377,8 @@ const night = {
 } as const;
 
 // Over the film every section is see-through; filmAt is the moment each chapter holds on: the cover
-// on the haveli fully lit, the date on the fireworks, the rest on the calm last frame.
+// on the haveli fully lit, the date on the fireworks, the story on the calm last frame, and the
+// replies in the courtyard the camera flies into.
 const overFilm = {
     scene: 'film',
     edge: 'none',
@@ -341,7 +409,7 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
         welcome: {
             ...overFilm,
             variant: 'centered',
-            filmAt: 8.9,
+            filmAt: 8.2,
         },
         story: {
             ...overFilm,
@@ -366,7 +434,11 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
         venue: overFilm,
         dressCode: overFilm,
         travel: overFilm,
-        rsvp: overFilm,
+        // Through the door: replies, blessings and the farewell in the mandap courtyard.
+        rsvp: {
+            ...overFilm,
+            filmAt: 10.6,
+        },
         wishes: {
             ...overFilm,
             variant: 'default',

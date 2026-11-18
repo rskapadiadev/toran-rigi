@@ -41,9 +41,16 @@ type Film = NonNullable<InvitationDesign['film']>;
 // The clip, its stills and the frame sheets cut from it for the film behind the invitation.
 const filmKeys = (film: Film | undefined) =>
     film
-        ? [film.src, film.first, film.last, ...(film.frames?.sheets ?? [])].filter(
-              (k): k is string => Boolean(k),
-          )
+        ? [
+              film.src,
+              film.first,
+              film.last,
+              ...(film.frames?.sheets ?? []),
+              ...(film.scenes ?? []).flatMap((scene) => [
+                  scene.image,
+                  ...(scene.frames?.sheets ?? []),
+              ]),
+          ].filter((k): k is string => Boolean(k))
         : [];
 
 // Still used by some design? Customer copies and the template itself can share one film's keys.

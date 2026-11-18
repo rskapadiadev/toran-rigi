@@ -107,6 +107,55 @@ export const filmFramesSchema = z.object({
     height: z.number().int().min(16).max(3840),
 });
 
+// How the camera moves across a scene while it plays (stills come alive with a slow move).
+export const cameraMoves = [
+    'still',
+    'push',
+    'pull',
+    'rise',
+    'fall',
+    'drift-left',
+    'drift-right',
+] as const;
+// How one scene hands over to the next: straight cut, crossfade, or a zoom through a door or window.
+export const sceneExits = ['cut', 'fade', 'zoom'] as const;
+
+// A point of the picture (fractions of its width and height) and how close the camera comes to it.
+export const focusSchema = z.object({
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+    zoom: z.number().min(1).max(12),
+});
+
+// One scene of the film behind the invitation: a stretch of film frames, or a still the camera moves over.
+export const filmSceneSchema = z.object({
+    kind: z.enum(['film', 'still']),
+    frames: filmFramesSchema.optional(),
+    image: z.string().optional(),
+    // Seconds a still lasts on the film's timeline; a film lasts as long as its frames.
+    length: z.number().min(0.5).max(30).optional(),
+    camera: z.enum(cameraMoves).optional(),
+    exit: z.enum(sceneExits).optional(),
+    // Where a zoom exit flies into (a door, a window), and how close it comes before the next scene.
+    portal: focusSchema.optional(),
+});
+
+export const momentStyles = ['kicker', 'line', 'script'] as const;
+
+// Words placed on the film: shown in a box of the picture while the film is between `from` and `to`.
+export const filmMomentSchema = z.object({
+    text: localizedText,
+    from: z.number().min(0).max(600),
+    to: z.number().min(0).max(600),
+    // The box's centre and width, as fractions of the upright picture.
+    zone: z.object({
+        x: z.number().min(0).max(1),
+        y: z.number().min(0).max(1),
+        w: z.number().min(0.1).max(1),
+    }),
+    style: z.enum(momentStyles).optional(),
+});
+
 export const designSchema = z.object({
     palette: paletteSchema,
     fonts: z.object({
@@ -128,6 +177,11 @@ export const designSchema = z.object({
             // Frames cut from the film into sprite sheets: drawn on a canvas, so scrubbing is smooth
             // on every phone (and works in low-power mode, where video won't play).
             frames: filmFramesSchema.optional(),
+            // Several scenes played end to end on one timeline; without them the film is one scene.
+            scenes: z.array(filmSceneSchema).max(12).optional(),
+            moments: z.array(filmMomentSchema).max(24).optional(),
+            // Ease to the nearest moment when the guest stops scrolling (off unless the studio asks).
+            settle: z.boolean().optional(),
         })
         .optional(),
     generative: z.object({

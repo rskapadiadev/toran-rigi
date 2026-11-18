@@ -9,6 +9,9 @@ import type {
     eventKinds,
     extrasSchema,
     filmFramesSchema,
+    filmMomentSchema,
+    filmSceneSchema,
+    focusSchema,
     localizedText,
     packageLimitsSchema,
     paletteSchema,
@@ -29,6 +32,9 @@ export type SceneKind = (typeof sceneKinds)[number];
 export type EdgeKind = (typeof edgeKinds)[number];
 export type DividerKind = (typeof dividerKinds)[number];
 export type FilmFramesConfig = z.infer<typeof filmFramesSchema>;
+export type FilmSceneConfig = z.infer<typeof filmSceneSchema>;
+export type FilmFocus = z.infer<typeof focusSchema>;
+export type FilmMoment = z.infer<typeof filmMomentSchema>;
 export type InvitationExtras = z.infer<typeof extrasSchema>;
 export type PackageLimits = z.infer<typeof packageLimitsSchema>;
 
