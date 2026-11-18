@@ -257,6 +257,49 @@ export const luxuryThemes: ThemeDefinition[] = [
             namesAt: 4.6,
         },
     }),
+    theme({
+        slug: 'deepmala-yatra',
+        name: 'Deepmala Yatra',
+        culture: 'hindu',
+        category: 'luxury',
+        description:
+            'The Deepmala film plays behind the whole invitation: scroll and the ghats light, fireworks rise beside your names, and every page rests on its own moment of the night.',
+        palette: {
+            bg: '#0e1838',
+            surface: '#152150',
+            ink: '#f4e9d2',
+            muted: '#b8ac93',
+            primary: '#e0b867',
+            accent: '#9c3b3b',
+            gold: '#d9b36a',
+        },
+        display: 'cormorant',
+        body: 'cormorant',
+        opening: 'film',
+        generative: 'lotus',
+        texture: 'paper',
+        titles: 'script',
+        // Frames cut by scripts/dev/films/render.mjs deepmala --frames.
+        film: {
+            src: '/kits/deepmala/film.mp4',
+            first: '/kits/deepmala/film-first.webp',
+            last: '/kits/deepmala/film-last.webp',
+            namesAt: 4.6,
+            behind: true,
+            frames: {
+                sheets: Array.from(
+                    { length: 15 },
+                    (_, s) => `/kits/deepmala/frames/sheet-${String(s).padStart(3, '0')}.webp`,
+                ),
+                fps: 15,
+                count: 135,
+                cols: 3,
+                rows: 3,
+                width: 540,
+                height: 960,
+            },
+        },
+    }),
 ];
 
 // Every Deepmala page sits on the same midnight paper, so no seams are drawn between them.
@@ -266,7 +309,73 @@ const night = {
     divider: 'diya',
 } as const;
 
+// Over the film every section is see-through; filmAt is the moment each chapter holds on: the cover
+// on the haveli fully lit, the date on the fireworks, the rest on the calm last frame.
+const overFilm = {
+    scene: 'film',
+    edge: 'none',
+    divider: 'diya',
+} as const;
+
 export const luxuryLayouts: Record<string, BlockPreset> = {
+    'deepmala-yatra': {
+        cover: {
+            variant: 'film',
+            scene: 'film',
+            filmAt: 5.4,
+        },
+        // Fireworks beside the names.
+        date: {
+            ...overFilm,
+            filmAt: 6.6,
+        },
+        blessing: {
+            ...overFilm,
+            filmAt: 7.5,
+        },
+        card: {
+            ...overFilm,
+            variant: 'night',
+        },
+        // The calm last frame holds for the rest of the invitation.
+        welcome: {
+            ...overFilm,
+            variant: 'centered',
+            filmAt: 8.9,
+        },
+        story: {
+            ...overFilm,
+            variant: 'centered',
+        },
+        family: {
+            ...overFilm,
+            variant: 'centered',
+        },
+        events: {
+            ...overFilm,
+            variant: 'pavilions',
+        },
+        countdown: {
+            ...overFilm,
+            variant: 'diyas',
+        },
+        gallery: {
+            ...overFilm,
+            variant: 'masks',
+        },
+        venue: overFilm,
+        dressCode: overFilm,
+        travel: overFilm,
+        rsvp: overFilm,
+        wishes: {
+            ...overFilm,
+            variant: 'default',
+        },
+        closing: {
+            ...overFilm,
+            variant: 'rangoli',
+        },
+    },
     deepmala: {
         cover: {
             variant: 'film',

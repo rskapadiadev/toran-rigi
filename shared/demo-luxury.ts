@@ -578,3 +578,13 @@ export const luxuryDemos: DemoInvitation[] = [
         ]),
     },
 ];
+
+// Deepmala Yatra: the same wedding, told over the film playing behind the whole invitation.
+const deepmalaDemo = luxuryDemos.find((d) => d.slug === 'demo-deepmala');
+if (deepmalaDemo)
+    luxuryDemos.push({
+        ...deepmalaDemo,
+        slug: 'demo-deepmala-yatra',
+        themeSlug: 'deepmala-yatra',
+        seed: 7343,
+    });

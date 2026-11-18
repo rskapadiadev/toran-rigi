@@ -741,6 +741,11 @@ export const sceneInfo: Record<SceneKind, VariantInfo> = {
         label: 'Plain',
         hint: 'Theme background only',
     },
+    film: {
+        id: 'film',
+        label: 'Over the film',
+        hint: 'See-through: the section floats over the film playing behind the invitation',
+    },
 };
 
 export const edgeInfo: Record<EdgeKind, VariantInfo> = {
@@ -1013,6 +1018,8 @@ export interface ResolvedBlock {
     edgeMotion: boolean;
     motif?: SectionConfig['motif'];
     divider?: DividerKind;
+    // The background film's moment this section sits on (film-behind designs only).
+    filmAt?: number;
 }
 
 // Calm motion keeps only gentle entrances; theatrical ones settle into a soft ink fade.
@@ -1058,6 +1065,7 @@ export const blockKey = (b: ResolvedBlock) =>
         b.edgeMotion ? 'live' : '',
         b.motif ?? '',
         b.divider ?? '',
+        b.filmAt ?? '',
     ].join(':');
 
 export function resolveBlock(config: SectionConfig, previousScene?: SceneKind): ResolvedBlock {
@@ -1070,10 +1078,15 @@ export function resolveBlock(config: SectionConfig, previousScene?: SceneKind): 
         enter: config.enter ?? defaults.enter,
         scene,
         // Edges only make sense where the backdrop changes.
-        edge: config.edge ?? (previousScene && previousScene !== scene ? 'seam' : 'none'),
+        // Over the film there is no backdrop to seam: the film itself joins the chapters.
+        edge:
+            scene === 'film'
+                ? 'none'
+                : (config.edge ?? (previousScene && previousScene !== scene ? 'seam' : 'none')),
         edgeMotion: config.edgeMotion ?? false,
         motif: config.motif,
         divider: config.divider,
+        filmAt: config.filmAt,
     };
 }
 

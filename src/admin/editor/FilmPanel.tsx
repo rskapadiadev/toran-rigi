@@ -1,6 +1,13 @@
 // The Film opening's clip: uploaded by the studio, with stills of its first and last frames drawn
 // here in the browser (the server never decodes video), and the moment the names rise.
-import { FILM_MAX_BYTES, FILM_STILL_MAX_WIDTH, filmMimes } from '@shared/film';
+import {
+    FILM_MAX_BYTES,
+    FILM_STILL_MAX_WIDTH,
+    filmMimes,
+    FRAME_WIDTH,
+    FRAMES_FPS,
+    FRAMES_GRID,
+} from '@shared/film';
 import { photoUrl } from '@shared/photos';
 import { Clapperboard, Loader2, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -8,6 +15,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { ApiError } from '@/lib/api';
 
 import type { Draft } from '../composer/draft';
@@ -109,11 +117,131 @@ async function stillsOf(file: File): Promise<Stills> {
     }
 }
 
+function loadVideo(src: string) {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.src = src;
+    return new Promise<HTMLVideoElement>((resolve, reject) => {
+        video.onloadeddata = () => {
+            resolve(video);
+        };
+        video.onerror = () => {
+            reject(new Error('This browser cannot play the film; try an H.264 MP4'));
+        };
+    });
+}
+
+const toWebp = (canvas: HTMLCanvasElement) =>
+    new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+            (blob) => {
+                if (blob) resolve(blob);
+                else reject(new Error('Could not draw the frames'));
+            },
+            'image/webp',
+            0.8,
+        );
+    });
+
+interface CutFrames {
+    sheets: Blob[];
+    count: number;
+    height: number;
+}
+
+// Cuts the film into frames (15 a second, 540 wide) packed 3×3 per sheet, for the film behind the
+// invitation: guests scroll through pictures, which every phone handles smoothly.
+async function framesOf(src: string, progress: (done: number, total: number) => void) {
+    const video = await loadVideo(src);
+    const count = Math.max(1, Math.floor(video.duration * FRAMES_FPS));
+    const height = Math.round((FRAME_WIDTH * video.videoHeight) / video.videoWidth);
+    const per = FRAMES_GRID * FRAMES_GRID;
+    const canvas = document.createElement('canvas');
+    canvas.width = FRAME_WIDTH * FRAMES_GRID;
+    canvas.height = height * FRAMES_GRID;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Could not draw the frames');
+    const sheets: Blob[] = [];
+    for (let s = 0; s * per < count; s++) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let k = 0; k < per && s * per + k < count; k++) {
+            const i = s * per + k;
+            await seek(video, i / FRAMES_FPS);
+            ctx.drawImage(
+                video,
+                (k % FRAMES_GRID) * FRAME_WIDTH,
+                Math.floor(k / FRAMES_GRID) * height,
+                FRAME_WIDTH,
+                height,
+            );
+            progress(i + 1, count);
+        }
+        sheets.push(await toWebp(canvas));
+    }
+    const cut: CutFrames = {
+        sheets,
+        count,
+        height,
+    };
+    return cut;
+}
+
 export function FilmPanel({ invitationId, film, onChange }: Props) {
     const input = useRef<HTMLInputElement>(null);
     const preview = useRef<HTMLVideoElement>(null);
     const [busy, setBusy] = useState(false);
     const [duration, setDuration] = useState(0);
+    const [cutting, setCutting] = useState<string | null>(null);
+
+    // Cuts and uploads the frame sheets, returning the film with them attached.
+    const withFrames = async (base: Film, src: string): Promise<Film> => {
+        const cut = await framesOf(src, (done, total) => {
+            setCutting(`Cutting frames ${String(done)} of ${String(total)}`);
+        });
+        setCutting('Uploading frames');
+        const sheets: string[] = [];
+        for (const [i, blob] of cut.sheets.entries())
+            sheets.push(
+                await send(`/api/admin/photos/${invitationId}`, blob, `frames-${String(i)}.webp`),
+            );
+        return {
+            ...base,
+            behind: true,
+            frames: {
+                sheets,
+                fps: FRAMES_FPS,
+                count: cut.count,
+                cols: FRAMES_GRID,
+                rows: FRAMES_GRID,
+                width: FRAME_WIDTH,
+                height: cut.height,
+            },
+        };
+    };
+
+    const setBehind = async (on: boolean) => {
+        if (!film) return;
+        if (!on) {
+            onChange({
+                ...film,
+                behind: false,
+                frames: undefined,
+            });
+            return;
+        }
+        setBusy(true);
+        try {
+            onChange(await withFrames(film, photoUrl(film.src)));
+            toast.success('The film now plays behind the invitation');
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : 'Could not cut the frames');
+        } finally {
+            setBusy(false);
+            setCutting(null);
+        }
+    };
 
     const pick = async (file: File) => {
         if (!(filmMimes as readonly string[]).includes(file.type)) {
@@ -135,17 +263,27 @@ export function FilmPanel({ invitationId, film, onChange }: Props) {
                 send(`/api/admin/photos/${invitationId}`, stills.last, 'last.webp'),
             ]);
             setDuration(stills.duration);
-            onChange({
+            const next: Film = {
                 src,
                 first,
                 last,
                 namesAt: Math.round(stills.duration * DEFAULT_NAMES_AT * 10) / 10,
-            });
+            };
+            // A replaced film behind the invitation needs its frames cut again.
+            if (film?.behind) {
+                const local = URL.createObjectURL(file);
+                try {
+                    onChange(await withFrames(next, local));
+                } finally {
+                    URL.revokeObjectURL(local);
+                }
+            } else onChange(next);
             toast.success('Film added');
         } catch (e) {
             toast.error(e instanceof Error ? e.message : 'Upload failed');
         } finally {
             setBusy(false);
+            setCutting(null);
         }
     };
 
@@ -252,6 +390,25 @@ export function FilmPanel({ invitationId, film, onChange }: Props) {
                             />
                         )}
                     </FormField>
+                    <div className="flex items-start justify-between gap-3 rounded-md bg-muted/50 p-2.5">
+                        <div className="space-y-0.5">
+                            <label htmlFor="film-behind" className="text-[13px] font-medium">
+                                Play behind the whole invitation
+                            </label>
+                            <p className="text-xs text-muted-foreground">
+                                {cutting ??
+                                    "Scrolling moves the film. Pick each section's moment under Section, Film moment."}
+                            </p>
+                        </div>
+                        <Switch
+                            id="film-behind"
+                            checked={Boolean(film.behind && film.frames)}
+                            disabled={busy}
+                            onCheckedChange={(on) => {
+                                void setBehind(on);
+                            }}
+                        />
+                    </div>
                     <Button
                         variant="outline"
                         size="sm"
@@ -261,7 +418,7 @@ export function FilmPanel({ invitationId, film, onChange }: Props) {
                         }}
                     >
                         {busy && <Loader2 className="size-3.5 animate-spin" />}
-                        Replace film
+                        {cutting ?? 'Replace film'}
                     </Button>
                 </>
             ) : (

@@ -5,14 +5,25 @@ import { COVER_SLOT, photoUrl } from '@shared/photos';
 import type { CSSProperties } from 'react';
 
 import { useInvite } from '../../context';
+import { useFilmStage } from '../../film/FilmStage';
 import { ArchCover } from '../../sections/covers';
-import { FilmFoot, FilmFrame, FilmNames } from '../opening/FilmOpening';
+import { FilmColumn, FilmFoot, FilmFrame, FilmNames } from '../opening/FilmOpening';
 
 const screen: CSSProperties = { height: 'var(--inv-screen, 100svh)' };
 
 export function FilmCover() {
     const { data } = useInvite();
     const { design, content } = data.invitation;
+    // Over a film playing behind the page, the cover is just the names on the film's held frame.
+    const behind = useFilmStage() !== null;
+    if (behind)
+        return (
+            <section className="relative" style={screen}>
+                <FilmColumn>
+                    <FilmNames shown instant />
+                </FilmColumn>
+            </section>
+        );
     const key = design.film?.last ?? design.film?.first ?? content.coverPhotoKey;
     if (!key) return <ArchCover />;
     const still = photoUrl(key);

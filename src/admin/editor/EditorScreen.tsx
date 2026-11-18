@@ -821,6 +821,11 @@ function EditorPage({ id }: { id: string }) {
                                             section={section}
                                             previousScene={undefined}
                                             calm={calm}
+                                            film={
+                                                draft.design.film?.behind
+                                                    ? draft.design.film.frames
+                                                    : undefined
+                                            }
                                             update={patchSection}
                                         />
                                     </>

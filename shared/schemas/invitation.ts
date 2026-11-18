@@ -97,6 +97,16 @@ export const paletteSchema = z.object({
     gold: z.string(),
 });
 
+export const filmFramesSchema = z.object({
+    sheets: z.array(z.string()).min(1).max(200),
+    fps: z.number().min(1).max(60),
+    count: z.number().int().min(1).max(5000),
+    cols: z.number().int().min(1).max(12),
+    rows: z.number().int().min(1).max(12),
+    width: z.number().int().min(16).max(2160),
+    height: z.number().int().min(16).max(3840),
+});
+
 export const designSchema = z.object({
     palette: paletteSchema,
     fonts: z.object({
@@ -113,6 +123,11 @@ export const designSchema = z.object({
             last: z.string().optional(),
             // Seconds into the clip when the names rise, timed to the scene's big moment.
             namesAt: z.number().min(0).optional(),
+            // The film stays behind the whole invitation and scrolling moves it frame by frame.
+            behind: z.boolean().optional(),
+            // Frames cut from the film into sprite sheets: drawn on a canvas, so scrubbing is smooth
+            // on every phone (and works in low-power mode, where video won't play).
+            frames: filmFramesSchema.optional(),
         })
         .optional(),
     generative: z.object({
@@ -234,6 +249,8 @@ export const sceneKinds = [
     'rays',
     'midnight',
     'plain',
+    // See-through, over the film playing behind the invitation.
+    'film',
 ] as const;
 
 export const edgeKinds = [
@@ -319,6 +336,8 @@ export const sectionConfigSchema = z.object({
     // One switch for every edge: drift, breathe, walk or pulse. Off = still.
     edgeMotion: z.boolean().optional(),
     divider: z.enum(dividerKinds).optional(),
+    // Seconds into the background film this section sits on; unset keeps the previous moment.
+    filmAt: z.number().min(0).max(600).optional(),
 });
 
 export const extrasSchema = z.object({

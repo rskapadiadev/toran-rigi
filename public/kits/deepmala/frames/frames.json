@@ -1,0 +1,25 @@
+{
+    "sheets": [
+        "/kits/deepmala/frames/sheet-000.webp",
+        "/kits/deepmala/frames/sheet-001.webp",
+        "/kits/deepmala/frames/sheet-002.webp",
+        "/kits/deepmala/frames/sheet-003.webp",
+        "/kits/deepmala/frames/sheet-004.webp",
+        "/kits/deepmala/frames/sheet-005.webp",
+        "/kits/deepmala/frames/sheet-006.webp",
+        "/kits/deepmala/frames/sheet-007.webp",
+        "/kits/deepmala/frames/sheet-008.webp",
+        "/kits/deepmala/frames/sheet-009.webp",
+        "/kits/deepmala/frames/sheet-010.webp",
+        "/kits/deepmala/frames/sheet-011.webp",
+        "/kits/deepmala/frames/sheet-012.webp",
+        "/kits/deepmala/frames/sheet-013.webp",
+        "/kits/deepmala/frames/sheet-014.webp"
+    ],
+    "fps": 15,
+    "count": 135,
+    "cols": 3,
+    "rows": 3,
+    "width": 540,
+    "height": 960
+}

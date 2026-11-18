@@ -331,6 +331,18 @@ function buildScene(
                 dappled: false,
             };
         }
+        case 'film': {
+            // Words over moving pictures: always light ink, with the night colour kept for fades.
+            const base = isDark(p.bg) ? p.bg : mixHex(p.primary, '#0a0d24', 0.85);
+            return {
+                background: 'none',
+                vars: {
+                    ...dark(base),
+                    '--inv-primary': mixHex(p.gold, '#ffffff', 0.1),
+                },
+                dappled: false,
+            };
+        }
         case 'plain': {
             const vars = isDark(p.bg) ? dark(p.bg) : light(p.bg);
             return {
@@ -697,12 +709,15 @@ export function Scene({ block, index, children }: SceneProps) {
         }),
         [block.enter, tier, dir, motion],
     );
-    const color = scene.vars['--inv-bg'] ?? 'transparent';
+    const overFilm = block.scene === 'film';
+    const color = overFilm ? 'transparent' : (scene.vars['--inv-bg'] ?? 'transparent');
     const style = {
         ...scene.vars,
         backgroundImage: scene.background,
         backgroundColor: color,
         color: 'var(--inv-ink)',
+        // A soft shadow keeps words legible over any frame of the film.
+        textShadow: overFilm ? '0 1px 14px rgba(0,0,0,0.55)' : undefined,
     } as CSSProperties;
     const selected = edit?.selected === block.type;
     // The section's one "Animate edge" switch; screenshots and the static tier always hold still.

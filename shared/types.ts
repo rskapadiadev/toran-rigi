@@ -8,6 +8,7 @@ import type {
     enterPresets,
     eventKinds,
     extrasSchema,
+    filmFramesSchema,
     localizedText,
     packageLimitsSchema,
     paletteSchema,
@@ -27,6 +28,7 @@ export type EnterPreset = (typeof enterPresets)[number];
 export type SceneKind = (typeof sceneKinds)[number];
 export type EdgeKind = (typeof edgeKinds)[number];
 export type DividerKind = (typeof dividerKinds)[number];
+export type FilmFramesConfig = z.infer<typeof filmFramesSchema>;
 export type InvitationExtras = z.infer<typeof extrasSchema>;
 export type PackageLimits = z.infer<typeof packageLimitsSchema>;
 

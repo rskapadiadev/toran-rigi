@@ -3,9 +3,10 @@
 // is exactly what the Film still cover shows, so the hand-off to the invitation is invisible.
 import { photoUrl } from '@shared/photos';
 import { useReducedMotion } from 'motion/react';
-import { type CSSProperties, type ReactNode, use, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, use, useEffect, useRef, useState } from 'react';
 
 import { useInvite } from '../../context';
+import { type FilmStageValue, useFilmStage } from '../../film/FilmStage';
 import { DiyaOpening } from '../../openings/DiyaOpening';
 import { useFinish } from '../../openings/gesture';
 import { OpeningShell } from '../../openings/OpeningShell';
@@ -35,6 +36,15 @@ export function FilmFrame({ children, fill }: FrameProps) {
             <div className="[container-type:size] absolute inset-y-0 start-1/2 aspect-[9/16] h-full -translate-x-1/2 rtl:translate-x-1/2">
                 {children}
             </div>
+        </div>
+    );
+}
+
+// The upright 9:16 column the names sit in, matching how the film is fitted on every screen.
+export function FilmColumn({ children }: { children: ReactNode }) {
+    return (
+        <div className="[container-type:size] absolute inset-y-0 start-1/2 aspect-[9/16] h-full -translate-x-1/2 rtl:translate-x-1/2">
+            {children}
         </div>
     );
 }
@@ -110,6 +120,70 @@ export function FilmFoot({ shown }: { shown: boolean }) {
 
 const DEFAULT_NAMES_AT = 0.55;
 
+interface BehindProps extends OpeningProps {
+    stage: FilmStageValue;
+    namesAt: number;
+    still: boolean;
+}
+
+// With the film behind the whole invitation, the opening is only a tap over it: the tap plays the
+// film to the first chapter's moment and the names rise on the way, then the page takes over.
+function BehindOpening({ onBegin, onOpened, stage, namesAt, still }: BehindProps) {
+    const { copy } = useInvite();
+    const [phase, setPhase] = useState<'ready' | 'playing' | 'named'>('ready');
+    const finish = useFinish(onOpened);
+    const raf = useRef(0);
+    useEffect(() => {
+        stage.time.set(0);
+        return () => {
+            cancelAnimationFrame(raf.current);
+        };
+    }, [stage]);
+    const begin = () => {
+        onBegin();
+        const target = stage.first;
+        if (still) {
+            stage.time.set(target);
+            setPhase('named');
+            finish(1200);
+            return;
+        }
+        setPhase('playing');
+        const start = performance.now();
+        let named = false;
+        const step = (now: number) => {
+            const t = Math.min(target, (now - start) / 1000);
+            stage.time.set(t);
+            if (!named && t >= Math.min(namesAt, target)) {
+                named = true;
+                setPhase('named');
+            }
+            if (t < target) raf.current = requestAnimationFrame(step);
+            else finish(1400);
+        };
+        raf.current = requestAnimationFrame(step);
+    };
+    return (
+        <div
+            className="fixed inset-0 z-50 touch-manipulation select-none [-webkit-tap-highlight-color:transparent]"
+            data-opening
+        >
+            <FilmColumn>
+                <FilmNames shown={phase === 'named'} />
+            </FilmColumn>
+            {phase === 'ready' && (
+                <button
+                    type="button"
+                    aria-label={copy('tapToOpen')}
+                    className="absolute inset-0 cursor-pointer"
+                    onClick={begin}
+                />
+            )}
+            <StagePrompt visible={phase === 'ready'}>{copy('tapToOpen')}</StagePrompt>
+        </div>
+    );
+}
+
 export function FilmOpening({ onBegin, onOpened }: OpeningProps) {
     const { data, tier, copy } = useInvite();
     const film = data.invitation.design.film;
@@ -118,6 +192,7 @@ export function FilmOpening({ onBegin, onOpened }: OpeningProps) {
     const [phase, setPhase] = useState<'ready' | 'playing' | 'named'>('ready');
     const finish = useFinish(onOpened);
     const studio = use(StudioPreviewContext);
+    const stage = useFilmStage();
     // Guests without a film get the diya; the studio sees where its film will go instead.
     if (!film && studio)
         return (
@@ -155,6 +230,16 @@ export function FilmOpening({ onBegin, onOpened }: OpeningProps) {
     if (!film) return <DiyaOpening onBegin={onBegin} onOpened={onOpened} />;
 
     const still = tier === 'static' || reduced === true;
+    if (stage)
+        return (
+            <BehindOpening
+                onBegin={onBegin}
+                onOpened={onOpened}
+                stage={stage}
+                namesAt={film.namesAt ?? stage.first}
+                still={still}
+            />
+        );
     const first = film.first ? photoUrl(film.first) : undefined;
     const last = film.last ? photoUrl(film.last) : first;
     const named = phase === 'named' || still;

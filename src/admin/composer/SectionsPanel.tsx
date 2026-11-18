@@ -9,7 +9,9 @@ import {
     settleEnter,
     type VariantInfo,
 } from '@shared/blocks';
+import { type FilmFrames, filmLength, frameAt, frameCell } from '@shared/film';
 import { motifLabel } from '@shared/motifs';
+import { photoUrl } from '@shared/photos';
 import { motifIds } from '@shared/schemas/invitation';
 import type { DividerKind, EdgeKind, EnterPreset, SceneKind, SectionConfig } from '@shared/types';
 
@@ -22,6 +24,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/cn';
 
 const enterIds = Object.keys(enterInfo) as EnterPreset[];
@@ -55,6 +58,7 @@ const sceneSwatch: Record<SceneKind, string> = {
     midnight:
         'radial-gradient(circle at 30% 35%,#d9b36a 0 1px,transparent 1.6px),radial-gradient(circle at 70% 70%,#d9b36a 0 1px,transparent 1.6px),#101a3c',
     plain: 'linear-gradient(135deg,#ffffff,#f4f4f4)',
+    film: 'linear-gradient(180deg,#1e2c63,#6b4a5e 70%,#e0a050)',
 };
 
 interface OptionPickerProps<T extends string> {
@@ -134,15 +138,89 @@ function OptionPicker<T extends string>({
     );
 }
 
+interface ThumbProps {
+    frames: FilmFrames;
+    at: number;
+}
+
+// One frame of the film, cut straight from its sprite sheet.
+function FilmThumb({ frames, at }: ThumbProps) {
+    const cell = frameCell(frames, frameAt(frames, at).index);
+    const sheet = frames.sheets[cell.sheet];
+    const x = frames.cols > 1 ? (cell.col / (frames.cols - 1)) * 100 : 0;
+    const y = frames.rows > 1 ? (cell.row / (frames.rows - 1)) * 100 : 0;
+    const look = {
+        aspectRatio: `${String(frames.width)} / ${String(frames.height)}`,
+        backgroundImage: sheet ? `url(${photoUrl(sheet)})` : undefined,
+        backgroundSize: `${String(frames.cols * 100)}% ${String(frames.rows * 100)}%`,
+        backgroundPosition: `${String(x)}% ${String(y)}%`,
+    };
+    return <div className="w-16 shrink-0 rounded-md bg-black" style={look} data-film-thumb />;
+}
+
+interface MomentProps {
+    frames: FilmFrames;
+    value: number | undefined;
+    onChange: (at: number | undefined) => void;
+}
+
+// Which moment of the film behind the invitation this section rests on while guests read it.
+function FilmMoment({ frames, value, onChange }: MomentProps) {
+    const length = filmLength(frames);
+    const keep = value === undefined;
+    return (
+        <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground uppercase">Film moment</Label>
+            <div className="flex gap-3">
+                <FilmThumb frames={frames} at={value ?? 0} />
+                <div className="min-w-0 flex-1 space-y-3">
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            id="film-keep"
+                            checked={keep}
+                            onCheckedChange={(on) => {
+                                onChange(on === true ? undefined : 0);
+                            }}
+                        />
+                        <Label htmlFor="film-keep" className="text-[13px] font-normal">
+                            Keep the previous section&apos;s moment
+                        </Label>
+                    </div>
+                    {!keep && (
+                        <>
+                            <Slider
+                                aria-label="Film moment"
+                                min={0}
+                                max={length}
+                                step={0.1}
+                                value={[value]}
+                                onValueChange={([v]) => {
+                                    if (v !== undefined) onChange(Math.round(v * 10) / 10);
+                                }}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                {value.toFixed(1)} s of {length.toFixed(1)} s. Scrolling moves the
+                                film here, then it holds while this section is read.
+                            </p>
+                        </>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 interface BlockEditorProps {
     section: SectionConfig;
     previousScene?: SceneKind;
     // Calm motion (chosen, or imposed by a solemn occasion) offers gentle entrances only.
     calm: boolean;
+    // The frames of a film playing behind the invitation, when there is one.
+    film?: FilmFrames;
     update: (patch: Partial<SectionConfig>) => void;
 }
 
-export function BlockEditor({ section, previousScene, calm, update }: BlockEditorProps) {
+export function BlockEditor({ section, previousScene, calm, film, update }: BlockEditorProps) {
     const hasDivider =
         dividerSections.includes(section.type) &&
         dividerLayouts.includes(resolveBlock(section, previousScene).variant);
@@ -150,6 +228,15 @@ export function BlockEditor({ section, previousScene, calm, update }: BlockEdito
     const resolved = resolveBlock(section, previousScene);
     return (
         <div className="space-y-5 pt-2">
+            {film && (
+                <FilmMoment
+                    frames={film}
+                    value={section.filmAt}
+                    onChange={(filmAt) => {
+                        update({ filmAt });
+                    }}
+                />
+            )}
             {variants.length > 1 && (
                 <OptionPicker
                     label="Layout"

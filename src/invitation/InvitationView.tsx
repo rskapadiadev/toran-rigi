@@ -5,12 +5,14 @@ import {
     resolveBlock,
     type ResolvedBlock,
 } from '@shared/blocks';
+import { chaptersOf } from '@shared/film';
 import { localeNames } from '@shared/locales';
 import { creditLine } from '@shared/stock';
 import Lenis from 'lenis';
 import { domAnimation, LazyMotion } from 'motion/react';
 import {
     type ComponentType,
+    Fragment,
     useCallback,
     useEffect,
     useMemo,
@@ -23,6 +25,8 @@ import { useMotionTier } from '../motion/capability';
 import { StageContext } from '../motion/Reveal';
 import { Branding } from './Branding';
 import { InviteProvider, useInvite } from './context';
+import { FilmStage } from './film/FilmStage';
+import { FilmTravel } from './film/FilmTravel';
 import { BlessingArch } from './luxury/night/BlessingArch';
 import { DressCode } from './luxury/night/DressCode';
 import { ScratchDate } from './luxury/night/ScratchDate';
@@ -290,6 +294,32 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
         return list;
     }, [invitation.sections, print]);
 
+    // A film behind the whole invitation: chapters of sections hold on its moments, and travel
+    // spacers between them move it. The PDF prints the sections alone.
+    const film = invitation.design.film;
+    const frames = film?.behind && print === undefined ? film.frames : undefined;
+    const chapters = useMemo(
+        () =>
+            frames
+                ? chaptersOf(
+                      blocks.map((b) => b.filmAt),
+                      film?.namesAt ?? 0,
+                  )
+                : [],
+        [frames, blocks, film?.namesAt],
+    );
+    // Under the cover's names the film stays bright; behind other chapters' words it dims.
+    const veilOf = (start: number) => (blocks[start]?.type === 'cover' ? 0 : 1);
+    const travels = new Map(
+        chapters.slice(1).map((c, order) => [
+            c.start,
+            {
+                ...c,
+                order,
+            },
+        ]),
+    );
+
     // In the composer preview, bring the block that was just edited into view so its new look plays at once.
     const rootRef = useRef<HTMLDivElement>(null);
     usePrintFit(rootRef, print !== undefined);
@@ -349,19 +379,8 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
         });
     }, [blocks, embedded]);
 
-    return (
-        <div
-            ref={(el) => {
-                rootRef.current = el;
-                // Set during commit, before children's effects subscribe to scroll.
-                scrollRoot.current = embedded ? findScrollParent(el) : null;
-            }}
-            className={`inv-root texture-${invitation.design.texture} min-h-svh`}
-            data-print={print === undefined ? undefined : ''}
-            style={designStyle(invitation.design)}
-            dir={dir}
-            lang={locale}
-        >
+    const page = (
+        <>
             {!opened && (
                 <StudioPreviewContext value={embedded}>
                     <Opening
@@ -379,7 +398,16 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
                 // While the opening covers the page, its CSS animations (stitched medallions, stars,
                 // processions) hold their first frame and resume together when it lifts.
                 data-staging={opened ? undefined : ''}
-                className={opened ? 'animate-[fade-in_1.2s_var(--ease-silk)]' : ''}
+                // Over a film the opening hands straight to the cover's names: no fade, so the hand-off is invisible.
+                className={
+                    frames
+                        ? opened
+                            ? 'relative'
+                            : 'relative opacity-0'
+                        : opened
+                          ? 'animate-[fade-in_1.2s_var(--ease-silk)]'
+                          : ''
+                }
             >
                 <PrintContext value={print !== undefined}>
                     <ScrollRootContext value={embedded ? scrollRoot : null}>
@@ -389,10 +417,21 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
                                     {blocks.map((block, i) => {
                                         if (!isRendered(block.type)) return null;
                                         const Section = sectionRegistry[block.type];
+                                        const travel = travels.get(i);
                                         return (
-                                            <Scene key={blockKey(block)} block={block} index={i}>
-                                                <Section variant={block.variant} />
-                                            </Scene>
+                                            <Fragment key={blockKey(block)}>
+                                                {travel && (
+                                                    <FilmTravel
+                                                        from={travel.from}
+                                                        to={travel.at}
+                                                        veil={veilOf(i)}
+                                                        order={travel.order}
+                                                    />
+                                                )}
+                                                <Scene block={block} index={i}>
+                                                    <Section variant={block.variant} />
+                                                </Scene>
+                                            </Fragment>
                                         );
                                     })}
                                 </LazyMotion>
@@ -403,6 +442,37 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
                     </ScrollRootContext>
                 </PrintContext>
             </main>
+        </>
+    );
+
+    return (
+        <div
+            ref={(el) => {
+                rootRef.current = el;
+                // Set during commit, before children's effects subscribe to scroll.
+                scrollRoot.current = embedded ? findScrollParent(el) : null;
+            }}
+            className={`inv-root texture-${invitation.design.texture} min-h-svh`}
+            data-print={print === undefined ? undefined : ''}
+            style={designStyle(invitation.design)}
+            dir={dir}
+            lang={locale}
+        >
+            {frames ? (
+                <FilmStage
+                    frames={frames}
+                    poster={film?.first}
+                    first={chapters[0]?.at ?? 0}
+                    firstVeil={veilOf(0)}
+                    opened={opened}
+                    scrollRoot={embedded ? scrollRoot : null}
+                    still={tier === 'static'}
+                >
+                    {page}
+                </FilmStage>
+            ) : (
+                page
+            )}
             {opened && print === undefined && (
                 <Chrome
                     player={player}

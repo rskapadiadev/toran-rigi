@@ -51,6 +51,74 @@ if (process.argv.includes('--stills')) {
     await browser.close();
     process.exit(0);
 }
+// --frames: sprite sheets for the film behind the invitation (scrolled frame by frame), not an mp4.
+if (process.argv.includes('--frames')) {
+    const SHEET_FPS = 15;
+    const W = 540;
+    const H = 960;
+    const GRID = 3;
+    const count = Math.floor(SHEET_FPS * SECONDS);
+    const per = GRID * GRID;
+    const sheets = Math.ceil(count / per);
+    const dir = join(out, 'frames');
+    rmSync(dir, {
+        recursive: true,
+        force: true,
+    });
+    mkdirSync(dir, { recursive: true });
+    const pages = [page, ...(await Promise.all(Array.from({ length: workers - 1 }, openPage)))];
+    let nextSheet = 0;
+    const sheetWork = async (p) => {
+        while (nextSheet < sheets) {
+            const s = nextSheet++;
+            const times = Array.from(
+                { length: Math.min(per, count - s * per) },
+                (_, k) => (s * per + k) / SHEET_FPS,
+            );
+            const data = await p.evaluate(
+                ({ list, w, h, grid }) => {
+                    const sheet = document.createElement('canvas');
+                    sheet.width = w * grid;
+                    sheet.height = h * grid;
+                    const g = sheet.getContext('2d');
+                    const film = document.querySelector('canvas');
+                    list.forEach((t, k) => {
+                        window.render(t);
+                        g.drawImage(film, (k % grid) * w, Math.floor(k / grid) * h, w, h);
+                    });
+                    return sheet.toDataURL('image/webp', 0.8);
+                },
+                {
+                    list: times,
+                    w: W,
+                    h: H,
+                    grid: GRID,
+                },
+            );
+            const file = `sheet-${String(s).padStart(3, '0')}.webp`;
+            writeFileSync(join(dir, file), Buffer.from(data.split(',')[1], 'base64'));
+        }
+    };
+    await Promise.all(pages.map(sheetWork));
+    await browser.close();
+    const files = Array.from(
+        { length: sheets },
+        (_, s) => `/kits/${name}/frames/sheet-${String(s).padStart(3, '0')}.webp`,
+    );
+    const bytes = files.reduce((sum, f) => sum + statSync(join(out, '..', '..', f)).size, 0);
+    const manifest = {
+        sheets: files,
+        fps: SHEET_FPS,
+        count,
+        cols: GRID,
+        rows: GRID,
+        width: W,
+        height: H,
+    };
+    writeFileSync(join(dir, 'frames.json'), `${JSON.stringify(manifest, null, 4)}\n`);
+    console.log(`${String(sheets)} sheets, ${(bytes / 1e6).toFixed(2)} MB → ${dir}`);
+    process.exit(0);
+}
 const started = Date.now();
 let next = 0;
 let done = 0;
