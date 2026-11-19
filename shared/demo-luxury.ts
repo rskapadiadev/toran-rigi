@@ -588,3 +588,19 @@ if (deepmalaDemo)
         themeSlug: 'deepmala-yatra',
         seed: 7343,
     });
+// Haveli Walk: the same wedding over the illustrated walk from the ghats to the mandap.
+if (deepmalaDemo)
+    luxuryDemos.push({
+        ...deepmalaDemo,
+        slug: 'demo-haveli-walk',
+        themeSlug: 'haveli-walk',
+        seed: 7351,
+    });
+// Palace Walk: the same wedding over the walk from the palace gate to its terrace.
+if (deepmalaDemo)
+    luxuryDemos.push({
+        ...deepmalaDemo,
+        slug: 'demo-palace-walk',
+        themeSlug: 'palace-walk',
+        seed: 7359,
+    });

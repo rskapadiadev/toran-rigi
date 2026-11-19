@@ -67,6 +67,8 @@ class SheetCache {
     constructor(
         private urls: string[],
         private ready: () => void,
+        // How many decoded sheets to keep: fewer on a lean connection's (often lower-memory) phone.
+        private keep = DECODED,
     ) {}
 
     prefetch(order: number[]) {
@@ -122,11 +124,11 @@ class SheetCache {
                 }
                 this.bitmaps.set(i, bitmap);
                 this.recent = [i, ...this.recent.filter((k) => k !== i)];
-                for (const old of this.recent.slice(DECODED)) {
+                for (const old of this.recent.slice(this.keep)) {
                     this.bitmaps.get(old)?.close();
                     this.bitmaps.delete(old);
                 }
-                this.recent = this.recent.slice(0, DECODED);
+                this.recent = this.recent.slice(0, this.keep);
                 this.ready();
             });
     }
@@ -139,6 +141,17 @@ class SheetCache {
 }
 
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
+
+interface NetworkInfo {
+    saveData?: boolean;
+    effectiveType?: string;
+}
+
+// Data Saver or a 2G connection: load the film as it's reached instead of all of it up front.
+function leanNetwork() {
+    const net = (navigator as Navigator & { connection?: NetworkInfo }).connection;
+    return net?.saveData === true || /2g/.test(net?.effectiveType ?? '');
+}
 
 interface StageProps {
     scenes: TimedScene[];
@@ -154,6 +167,8 @@ interface StageProps {
     moments?: FilmMoment[];
     // Ease to the nearest moment when the guest stops scrolling.
     settle?: boolean;
+    // Reading the invitation without the walk: the film rests on this moment, dimmed behind the words.
+    resting?: number;
     children: ReactNode;
 }
 
@@ -229,6 +244,7 @@ export function FilmStage({
     still,
     moments,
     settle = false,
+    resting,
     children,
 }: StageProps) {
     const { t: say, dir } = useInvite();
@@ -255,9 +271,10 @@ export function FilmStage({
 
     // Load every scene: the first film's opening stretch first, later scenes a moment after.
     useEffect(() => {
+        const lean = leanNetwork();
         const list = scenes.map((scene) =>
             scene.kind === 'film' && scene.frames
-                ? new SheetCache(scene.frames.sheets.map(photoUrl), schedule)
+                ? new SheetCache(scene.frames.sheets.map(photoUrl), schedule, lean ? 2 : DECODED)
                 : null,
         );
         caches.current = list;
@@ -270,7 +287,12 @@ export function FilmStage({
                     const total = Math.ceil(f.count / (f.cols * f.rows));
                     const leadAt = clamp((first - scene.start) / Math.max(0.01, scene.duration));
                     const lead = frameCell(f, frameAt(f, leadAt * scene.duration).index).sheet;
-                    cache.prefetch([...range(lead + 1), ...range(total)]);
+                    // On a lean connection only the opening's stretch loads ahead; the rest as it's reached.
+                    cache.prefetch(
+                        lean
+                            ? range(i === 0 ? lead + 1 : 1)
+                            : [...range(lead + 1), ...range(total)],
+                    );
                 },
                 i === 0 ? 0 : 1200,
             ),
@@ -454,6 +476,11 @@ export function FilmStage({
         let tick = 0;
         const update = () => {
             tick = 0;
+            if (resting !== undefined) {
+                time.set(resting);
+                if (veil.current) veil.current.style.opacity = String(VEIL);
+                return;
+            }
             const viewTop = root ? root.getBoundingClientRect().top : 0;
             const vh = root ? root.clientHeight : window.innerHeight;
             const list = [...spans.current].sort((x, y) => x.order - y.order);
@@ -496,7 +523,7 @@ export function FilmStage({
         };
         const onScroll = () => {
             if (!tick) tick = requestAnimationFrame(update);
-            if (settle && !snap) {
+            if (settle && !snap && resting === undefined) {
                 clearTimeout(rest);
                 rest = window.setTimeout(settleNow, 260);
             }
@@ -510,7 +537,7 @@ export function FilmStage({
             target.removeEventListener('scroll', onScroll);
             window.removeEventListener('resize', onScroll);
         };
-    }, [opened, scrollRoot, first, firstVeil, snap, time, settle]);
+    }, [opened, scrollRoot, first, firstVeil, snap, time, settle, resting]);
 
     const register = useCallback((span: FilmTravelSpan) => {
         spans.current.add(span);

@@ -20,11 +20,13 @@ import {
     useState,
     useSyncExternalStore,
 } from 'react';
+import { flushSync } from 'react-dom';
 
 import { useMotionTier } from '../motion/capability';
 import { StageContext } from '../motion/Reveal';
 import { Branding } from './Branding';
 import { InviteProvider, useInvite } from './context';
+import { FilmChapters } from './film/FilmChapters';
 import { FilmStage } from './film/FilmStage';
 import { FilmTravel } from './film/FilmTravel';
 import { BlessingArch } from './luxury/night/BlessingArch';
@@ -330,6 +332,26 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
     // What scrolls this invitation: the window live, the canvas frame in the editor.
     const scrollRoot = useRef<HTMLElement | null>(null);
 
+    // Reading without the walk: the travel stretches fold away and the film rests, dimmed, behind the
+    // words. The section in view stays put, so the guest keeps their place both ways.
+    const [reading, setReading] = useState(false);
+    const read = (next: boolean) => {
+        const root = rootRef.current;
+        const scroller = embedded ? scrollRoot.current : null;
+        const viewTop = scroller ? scroller.getBoundingClientRect().top : 0;
+        const vh = scroller ? scroller.clientHeight : window.innerHeight;
+        const shown = [...(root?.querySelectorAll<HTMLElement>('[data-block-key]') ?? [])].find(
+            (el) => el.getBoundingClientRect().bottom - viewTop > vh * 0.4,
+        );
+        const before = shown ? shown.getBoundingClientRect().top - viewTop : 0;
+        flushSync(() => {
+            setReading(next);
+        });
+        if (!shown?.isConnected) return;
+        const by = shown.getBoundingClientRect().top - viewTop - Math.min(before, vh * 0.2);
+        (scroller ?? window).scrollBy({ top: by });
+    };
+
     // Inside a preview frame the "screen" is the frame, not the browser window: full-screen scenes
     // size themselves from --inv-screen, so measure the frame and keep it current.
     useEffect(() => {
@@ -421,7 +443,7 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
                                     {blocks.map((block, i) => {
                                         if (!isRendered(block.type)) return null;
                                         const Section = sectionRegistry[block.type];
-                                        const travel = travels.get(i);
+                                        const travel = reading ? undefined : travels.get(i);
                                         return (
                                             <Fragment key={blockKey(block)}>
                                                 {travel && (
@@ -467,6 +489,7 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
                     scenes={scenes}
                     moments={film?.moments}
                     settle={film?.settle}
+                    resting={reading ? chapters.at(-1)?.at : undefined}
                     poster={film?.first}
                     first={chapters[0]?.at ?? 0}
                     firstVeil={veilOf(0)}
@@ -478,6 +501,14 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
                 </FilmStage>
             ) : (
                 page
+            )}
+            {opened && behind && chapters.length > 1 && (
+                <FilmChapters
+                    starts={chapters.map((c) => blocks[c.start]?.type ?? 'cover')}
+                    scrollRoot={embedded ? scrollRoot : null}
+                    reading={reading}
+                    onRead={read}
+                />
             )}
             {opened && print === undefined && (
                 <Chrome

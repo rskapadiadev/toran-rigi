@@ -1,0 +1,547 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../walk-kit.js"></script>
+<script>
+// Palace Walk: an original illustrated walk for the film behind the invitation. At rose-gold dusk
+// the guest walks a lamp-lit road to the palace's great gate; its studded doors swing open on a pink
+// courtyard of fountains; through a hall of mirror mosaic that glints as they move; out onto a marble
+// terrace under the stars, where fireworks rise over the city. Invented architecture, no real palace.
+// render(t) is deterministic, so every render and every frame sheet matches.
+window.SECONDS = 20;
+
+// ---------- the world ----------
+const GATE_Z = 1800;
+const COURT_X = 650, COURT_END = 3300;        // the courtyard, closed by the mirror hall's front
+const HALL_X = 480, HALL_TOP = -1000, INNER_Z = 3900, EXIT_Z = 4600;
+const TERRACE_X = 900, BAITHAK_Z = 5900, RAIL_Z = 6300;
+const GATE = { w: 460, h: 740 };
+const ENTRY = { w: 560, h: 820 };
+const INNER = { w: 620, h: 860 };
+const EXIT = { w: 660, h: 900 };
+
+// The holds the invitation rests on: 3.6 the road at dusk, 6.0 the doors open, 9.6 the courtyard,
+// 12.4 the mirror hall, 15.2 the terrace through the last arch, 19.8 fireworks over the city.
+const keys = [[0, -700], [3.6, -640], [6.0, 850], [8.4, 1500], [9.6, 1760], [12.4, 3480], [15.2, 3930], [17.6, 4780], [20, 4930]];
+const walkAt = walkPath(keys);
+
+// ---------- the sky: dusk, then night (each painted once) ----------
+function paintSky(night) {
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const bg = g.createLinearGradient(0, 0, 0, HZ);
+  if (night) { bg.addColorStop(0, '#04061c'); bg.addColorStop(0.5, '#0c1240'); bg.addColorStop(0.85, '#24204a'); bg.addColorStop(1, '#4a2c48'); }
+  else { bg.addColorStop(0, '#1a1d4e'); bg.addColorStop(0.4, '#4a3070'); bg.addColorStop(0.7, '#b0587a'); bg.addColorStop(0.9, '#f09a78'); bg.addColorStop(1, '#ffc890'); }
+  g.fillStyle = bg; g.fillRect(0, 0, W, HZ);
+  const low = g.createLinearGradient(0, HZ, 0, H);
+  low.addColorStop(0, night ? '#1c1424' : '#4a2a3a'); low.addColorStop(1, '#0a0810');
+  g.fillStyle = low; g.fillRect(0, HZ, W, H - HZ);
+  const r = rng(night ? 17 : 19);
+  // Long thin clouds, lit from below at dusk.
+  for (let i = 0; i < 14; i++) {
+    const x = r() * W, y = 300 + r() * 650, w = 200 + r() * 320;
+    const cg = g.createRadialGradient(x, y, 0, x, y, w);
+    const col = night ? '90,70,120' : '255,170,150';
+    cg.addColorStop(0, `rgba(${col},${night ? 0.08 : 0.22})`); cg.addColorStop(1, `rgba(${col},0)`);
+    g.save(); g.translate(x, y); g.scale(1, 0.14); g.translate(-x, -y); g.fillStyle = cg; g.fillRect(x - w, y - w, w * 2, w * 2); g.restore();
+  }
+  if (!night) glow(g, 300, HZ - 40, 520, 'rgba(255,190,120,A)', 0.45);
+  // Far hills with a fort and the lights of the city, seen beyond the terrace.
+  g.fillStyle = night ? '#120e22' : '#3a2440';
+  g.beginPath(); g.moveTo(0, HZ);
+  for (let x = 0; x <= W; x += 20) g.lineTo(x, HZ - 30 - Math.sin(x * 0.006) * 26 - Math.sin(x * 0.021 + 1) * 10);
+  g.lineTo(W, HZ); g.closePath(); g.fill();
+  g.fillRect(760, HZ - 92, 120, 40); for (let x = 760; x < 880; x += 16) g.fillRect(x, HZ - 102, 9, 12);
+  g.fillRect(800, HZ - 128, 26, 40);
+  if (night) {
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 260; i++) { const x = r() * W, y = HZ + 2 + r() ** 2 * 120; g.fillStyle = `rgba(255,${190 + Math.floor(r() * 50)},120,${(0.25 + r() * 0.5).toFixed(2)})`; g.fillRect(x, y, 2, 2); }
+    for (let x = 770; x < 870; x += 22) { g.fillStyle = 'rgba(255,210,140,0.8)'; g.fillRect(x, HZ - 76, 3, 4); }
+    glow(g, 540, HZ + 30, 600, 'rgba(255,160,90,A)', 0.12);
+  }
+  return cv;
+}
+const duskSky = paintSky(false), nightSky = paintSky(true);
+const stars = [];
+{ const r = rng(23); for (let i = 0; i < 260; i++) stars.push({ x: r() * W, y: r() * (HZ - 220), s: r() * 1.6 + 0.3, ph: r() * 6 }); }
+const moon = document.createElement('canvas'); moon.width = moon.height = 240;
+{ const g = moon.getContext('2d'); glow(g, 120, 120, 120, 'rgba(255,240,210,A)', 0.3);
+  const mg = g.createRadialGradient(108, 108, 4, 120, 120, 52); mg.addColorStop(0, '#fffaf0'); mg.addColorStop(1, '#f0dcb4');
+  g.fillStyle = mg; g.beginPath(); g.arc(120, 120, 52, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(200,170,130,0.25)'; for (const [x, y, rr] of [[104, 108, 10], [134, 128, 7], [118, 140, 6], [138, 100, 5]]) { g.beginPath(); g.arc(x, y, rr, 0, Math.PI * 2); g.fill(); } }
+
+// ---------- the road to the gate ----------
+const cypress = card(180, 760, 1.2, (g) => {
+  const tg = g.createLinearGradient(-90, 0, 90, 0); tg.addColorStop(0, '#0c1a14'); tg.addColorStop(0.6, '#1f3a28'); tg.addColorStop(1, '#0a140f');
+  g.fillStyle = '#2a1a14'; g.fillRect(-8, -60, 16, 60);
+  g.fillStyle = tg; g.beginPath(); g.moveTo(0, -760); g.bezierCurveTo(70, -560, 95, -200, 40, -50); g.lineTo(-40, -50); g.bezierCurveTo(-95, -200, -70, -560, 0, -760); g.fill();
+  g.fillStyle = '#c9a26a'; g.fillRect(-46, -30, 92, 30); g.fillStyle = '#e8c890'; g.fillRect(-52, -36, 104, 8);
+});
+const lampPost = card(120, 520, 1.5, (g) => {
+  g.fillStyle = '#3a2a22'; g.fillRect(-26, -40, 52, 40);
+  const pg = g.createLinearGradient(-10, 0, 10, 0); pg.addColorStop(0, '#3a2a1a'); pg.addColorStop(0.5, '#a08050'); pg.addColorStop(1, '#3a2a1a');
+  g.fillStyle = pg; g.fillRect(-9, -420, 18, 380);
+  g.fillStyle = '#a08050'; for (const y of [-120, -260, -400]) g.fillRect(-16, y, 32, 8);
+  g.fillStyle = '#b8862f'; g.beginPath(); g.moveTo(-34, -430); g.lineTo(34, -430); g.lineTo(24, -446); g.lineTo(-24, -446); g.fill();
+  g.fillStyle = '#ffd890'; g.beginPath(); g.moveTo(-26, -446); g.lineTo(26, -446); g.lineTo(20, -500); g.lineTo(-20, -500); g.closePath(); g.fill();
+  g.fillStyle = '#b8862f'; g.beginPath(); g.moveTo(-26, -500); g.lineTo(26, -500); g.lineTo(0, -520); g.fill();
+});
+const lampDark = card(120, 520, 1.5, (g) => { g.drawImage(lampPost.cv, -60, -520, 120, 520); g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(30,20,30,0.75)'; g.fillRect(-26, -500, 52, 56); });
+const posts = [];
+for (let z = -300; z <= 1500; z += 300) for (const x of [-330, 330]) posts.push({ x, z, at: 0.5 + ((z + 300) / 1800) * 2.4 });
+const trees = [];
+for (let z = -200; z <= 1600; z += 300) for (const x of [-640, 640]) trees.push({ x, z });
+
+// ---------- the gate: pink sandstone painted with white line-work ----------
+const gateArch = cuspedArch(GATE.w, GATE.h, 7);
+const gateLamps = [];
+function whiteWork(g, x0, y0, x1, y1) {
+  // Jaipur-style white borders and little flowers on the pink.
+  g.strokeStyle = 'rgba(255,246,236,0.85)'; g.lineWidth = 3; g.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  g.lineWidth = 1.5; g.strokeRect(x0 + 8, y0 + 8, x1 - x0 - 16, y1 - y0 - 16);
+  g.fillStyle = 'rgba(255,246,236,0.8)';
+  for (let x = x0 + 22; x < x1 - 10; x += 34) { g.beginPath(); g.arc(x, y0 + 4, 2.5, 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(x, y1 - 4, 2.5, 0, Math.PI * 2); g.fill(); }
+}
+const facade = card(2800, 1400, 1.2, (g) => {
+  const pink = g.createLinearGradient(0, -900, 0, 0); pink.addColorStop(0, '#a8526a'); pink.addColorStop(1, '#d8806c');
+  // Outer wall with merlons.
+  g.fillStyle = pink; g.fillRect(-1400, -900, 2800, 900);
+  for (let x = -1400; x < 1400; x += 60) { g.fillStyle = '#9a4a62'; g.beginPath(); g.moveTo(x + 6, -900); g.lineTo(x + 6, -940); g.quadraticCurveTo(x + 30, -968, x + 54, -940); g.lineTo(x + 54, -900); g.fill(); }
+  g.fillStyle = '#7a3a52'; g.fillRect(-1400, -905, 2800, 10);
+  // Blind arcades along the wall with white work.
+  for (const sgn of [-1, 1]) for (let k = 0; k < 6; k++) {
+    const x = sgn * (640 + k * 125);
+    const pts = cuspedArch(78, 260, 5).map(([px, py]) => [x + px, -130 + py]);
+    poly(g, pts); g.fillStyle = '#7a3448'; g.fill(); g.lineWidth = 3; g.strokeStyle = 'rgba(255,246,236,0.85)'; g.stroke();
+    const up = cuspedArch(50, 120, 5).map(([px, py]) => [x + px, -560 + py]);
+    poly(g, up); g.fillStyle = '#ffcf8a'; g.fill(); g.strokeStyle = 'rgba(255,246,236,0.85)'; g.stroke();
+    g.fillStyle = '#8a3e56'; g.beginPath(); g.moveTo(x - 44, -690); g.quadraticCurveTo(x, -740, x + 44, -690); g.fill(); g.fillRect(x - 40, -570, 80, 8);
+  }
+  whiteWork(g, -1380, -860, -560, -620); whiteWork(g, 560, -860, 1380, -620);
+  // Two round bastions with chhatris.
+  for (const sgn of [-1, 1]) {
+    const x = sgn * 470;
+    const bg = g.createLinearGradient(x - 110, 0, x + 110, 0); bg.addColorStop(0, '#8a3e56'); bg.addColorStop(0.5, '#e2907a'); bg.addColorStop(1, '#7a3448');
+    g.fillStyle = bg; g.fillRect(x - 110, -1150, 220, 1150);
+    for (const y of [-300, -620, -940]) { g.fillStyle = 'rgba(255,246,236,0.85)'; g.fillRect(x - 110, y, 220, 4); }
+    for (const y of [-470, -790]) { const pts = cuspedArch(54, 110, 5).map(([px, py]) => [x + px, y + py]); poly(g, pts); g.fillStyle = '#ffcf8a'; g.fill(); }
+    g.fillStyle = '#7a3448'; g.fillRect(x - 124, -1164, 248, 18);
+    for (const dx of [-80, -27, 27, 80]) { g.fillStyle = '#c86a70'; g.fillRect(x + dx - 7, -1260, 14, 96); }
+    g.fillStyle = '#7a3448'; g.fillRect(x - 100, -1272, 200, 14);
+    onion(g, x, -1272, 86, -1380); g.fillStyle = '#e8a088'; g.fill();
+    g.fillStyle = '#d9b36a'; g.fillRect(x - 3, -1400, 6, 30);
+  }
+  // The gate tower.
+  const tg = g.createLinearGradient(0, -1250, 0, 0); tg.addColorStop(0, '#b45e72'); tg.addColorStop(1, '#e8907a');
+  g.fillStyle = tg; g.fillRect(-360, -1250, 720, 1250);
+  whiteWork(g, -330, -1220, 330, -40);
+  // A jharokha balcony over the gate.
+  g.fillStyle = '#8a3e56'; g.beginPath(); g.moveTo(-200, -1000); g.quadraticCurveTo(0, -1140, 200, -1000); g.closePath(); g.fill();
+  for (const x of [-120, 0, 120]) { const pts = cuspedArch(70, 120, 5).map(([px, py]) => [x + px, -880 + py]); poly(g, pts); g.fillStyle = '#ffd690'; g.fill(); g.lineWidth = 3; g.strokeStyle = 'rgba(255,246,236,0.9)'; g.stroke(); }
+  g.fillStyle = '#7a3448'; g.fillRect(-210, -880, 420, 16);
+  for (let x = -200; x < 210; x += 40) { g.beginPath(); g.moveTo(x, -864); g.lineTo(x + 20, -864); g.lineTo(x + 10, -836); g.fill(); }
+  // Painted flowers in the spandrels and the gate's frame.
+  rosette(g, -270, -760, 34, 'rgba(255,246,236,0.9)'); rosette(g, 270, -760, 34, 'rgba(255,246,236,0.9)');
+  g.save(); g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000'; poly(g, gateArch); g.fill(); g.restore();
+  poly(g, gateArch); g.lineWidth = 10; g.strokeStyle = '#d9b36a'; g.stroke();
+  poly(g, cuspedArch(GATE.w + 44, GATE.h + 26, 7)); g.lineWidth = 4; g.strokeStyle = 'rgba(255,246,236,0.9)'; g.stroke();
+  leaves(g, -225, 225, -705, 15);
+  garland(g, -230, -696, 0, -660, 30, 13, 61, 8); garland(g, 0, -660, 230, -696, 30, 13, 62, 8);
+  strand(g, -222, -690, -440, 63); strand(g, 222, -690, -440, 64);
+  // Roof crown: a row of small chhatris over the tower.
+  for (const x of [-260, -130, 0, 130, 260]) { const r = x === 0 ? 62 : 40; g.fillStyle = '#8a3e56'; g.fillRect(x - r, -1290, r * 2, 40); onion(g, x, -1290, r, -1290 - r * 1.6); g.fillStyle = '#e8a088'; g.fill(); g.fillStyle = '#d9b36a'; g.fillRect(x - 2, -1310 - r * 1.6, 4, 22); }
+});
+for (let x = -1380; x <= 1380; x += 30) if (Math.abs(x) > 380) gateLamps.push([x, -912]);
+for (let x = -350; x <= 350; x += 26) gateLamps.push([x, -1262]);
+for (const sgn of [-1, 1]) for (const y of [-300, -620, -940]) for (let dx = -100; dx <= 100; dx += 25) gateLamps.push([sgn * 470 + dx, y - 6]);
+
+// The doors: one painting per leaf, cut to its half of the arch, drawn turning on its hinge.
+function paintLeaf(g, sgn) {
+  const half = gateArch.filter(([x]) => sgn * x >= -0.5).map(([x, y]) => [x, y]);
+  half.push([0, 0]);
+  g.save(); poly(g, half.map(([x, y]) => [x, y])); g.clip();
+  const wg = g.createLinearGradient(0, -GATE.h, 0, 0); wg.addColorStop(0, '#4a2414'); wg.addColorStop(1, '#6a3420');
+  g.fillStyle = wg; g.fillRect(-GATE.w / 2, -GATE.h, GATE.w, GATE.h);
+  g.strokeStyle = '#2a120a'; g.lineWidth = 3;
+  for (let x = -GATE.w / 2; x < GATE.w / 2; x += 38) { g.beginPath(); g.moveTo(x, -GATE.h); g.lineTo(x, 0); g.stroke(); }
+  g.fillStyle = '#3a3a3a'; for (const y of [-600, -400, -200]) g.fillRect(-GATE.w / 2, y, GATE.w, 14);
+  for (let y = -680; y < -20; y += 56) for (let x = -GATE.w / 2 + 28; x < GATE.w / 2; x += 52) {
+    g.fillStyle = '#d9b36a'; g.beginPath(); g.moveTo(x, y - 9); g.lineTo(x + 7, y); g.lineTo(x, y + 9); g.lineTo(x - 7, y); g.closePath(); g.fill();
+  }
+  g.restore();
+}
+const leaves2 = [-1, 1].map((sgn) => card(GATE.w, GATE.h + 20, 1.2, (g) => paintLeaf(g, sgn)));
+const openAt = (t) => smooth((t - 4.3) / 1.7) * 1.38;   // radians, swinging inwards
+function drawDoors(t) {
+  const th = openAt(t), N = 18;
+  for (const [k, sgn] of [[0, -1], [1, 1]]) {
+    const cd = leaves2[k], hinge = sgn * GATE.w / 2, w = GATE.w / 2;
+    for (let i = 0; i < N; i++) {
+      // Strip i of the leaf, from the hinge inwards, placed in depth as the leaf turns.
+      const u0 = i / N, u1 = (i + 1) / N;
+      const x0 = hinge - sgn * w * u0 * Math.cos(th), z0 = GATE_Z + w * u0 * Math.sin(th);
+      const x1 = hinge - sgn * w * u1 * Math.cos(th), z1 = GATE_Z + w * u1 * Math.sin(th);
+      const a = P(x0, -GATE.h - 20, z0), b = P(x0, 0, z0), cc = P(x1, -GATE.h - 20, z1), d = P(x1, 0, z1);
+      if (a.d < 25 || cc.d < 25) continue;
+      // Source strip: leaf picture columns from the hinge side.
+      const srcW = cd.cv.width / 2, sx = sgn < 0 ? u0 * srcW : cd.cv.width - u1 * srcW;
+      ctx.save();
+      poly(ctx, [[a.x, a.y], [cc.x, cc.y], [d.x, d.y], [b.x, b.y]]); ctx.clip();
+      const left = Math.min(a.x, cc.x), right = Math.max(a.x, cc.x), top = Math.min(a.y, cc.y), bottom = Math.max(b.y, d.y);
+      ctx.drawImage(cd.cv, sx, 0, srcW / N, cd.cv.height, left - 0.5, top, right - left + 1, bottom - top);
+      // Turning away from the light, the leaf darkens.
+      ctx.fillStyle = `rgba(20,8,6,${(0.55 * Math.sin(th)).toFixed(3)})`; ctx.fillRect(left - 1, top, right - left + 2, bottom - top);
+      ctx.restore();
+    }
+  }
+}
+
+// ---------- the courtyard ----------
+const courtArches = [];
+for (let k = 0; k < 7; k++) courtArches.push(1960 + k * 200);
+const arcadeArch = cuspedArch(150, 420, 7), upperWin = cuspedArch(80, 140, 5);
+const fountain = card(300, 120, 1.5, (g) => {
+  g.fillStyle = '#e8dccc';
+  for (let k = 0; k < 9; k++) { const a = Math.PI + (k / 8) * Math.PI; g.save(); g.translate(Math.cos(a) * 120, -40 + Math.sin(a) * 30); g.rotate(a + Math.PI / 2); g.beginPath(); g.ellipse(0, 0, 18, 44, 0, 0, Math.PI * 2); g.fill(); g.restore(); }
+  g.fillStyle = '#cfc0ac'; g.beginPath(); g.ellipse(0, -30, 140, 26, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#5a8a9a'; g.beginPath(); g.ellipse(0, -36, 118, 18, 0, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#e8dccc'; g.fillRect(-10, -80, 20, 46);
+});
+// Off the guest's path, either side of the water channel.
+const FOUNTAINS = [[-380, 2350], [380, 2350], [-380, 2850], [380, 2850]];
+const lotus = [];
+{ const r = rng(71); for (let z = 1900; z < 3240; z += 70) lotus.push({ x: (r() - 0.5) * 100, z: z + r() * 30, ph: r() * 8, v: (r() - 0.5) * 6 }); }
+const hallFront = card(1300, 1900, 1.2, (g) => {
+  const mg = g.createLinearGradient(0, -1500, 0, 0); mg.addColorStop(0, '#d8c8b8'); mg.addColorStop(1, '#f4e6d0');
+  g.fillStyle = mg; g.fillRect(-650, -1500, 1300, 1500);
+  // Tiers of jharokhas.
+  for (const [y, n, w, h] of [[-1060, 7, 70, 130], [-1340, 9, 50, 90]]) {
+    for (let k = 0; k < n; k++) {
+      const x = -560 + (k + 0.5) * (1120 / n);
+      if (y === -1060 && Math.abs(x) < 120) continue;
+      const pts = cuspedArch(w, h, 5).map(([px, py]) => [x + px, y + h / 2 + py]);
+      poly(g, pts); g.fillStyle = '#ffd690'; g.fill(); g.lineWidth = 3; g.strokeStyle = '#b8924a'; g.stroke();
+      g.fillStyle = '#a89078'; g.beginPath(); g.moveTo(x - w * 0.8, y - h / 2 - 6); g.quadraticCurveTo(x, y - h / 2 - 50, x + w * 0.8, y - h / 2 - 6); g.fill();
+    }
+    g.fillStyle = '#a89078'; g.fillRect(-650, y + h / 2 + 4, 1300, 12);
+  }
+  // Mirror-work panels either side of the entrance: tiny painted mirrors.
+  const r = rng(81);
+  for (const sgn of [-1, 1]) {
+    g.fillStyle = '#3a2438'; g.fillRect(sgn * 440 - 160, -860, 320, 820);
+    for (let i = 0; i < 900; i++) { const x = sgn * 440 - 150 + r() * 300, y = -850 + r() * 800; g.fillStyle = ['#e8f0ff', '#ffe0a0', '#ffb0c8', '#a0f0e8'][i % 4]; g.globalAlpha = 0.25 + r() * 0.5; g.fillRect(x, y, 3 + r() * 4, 3 + r() * 4); }
+    g.globalAlpha = 1; g.lineWidth = 6; g.strokeStyle = '#d9b36a'; g.strokeRect(sgn * 440 - 160, -860, 320, 820);
+    rosette(g, sgn * 440, -450, 70, 'rgba(255,240,210,0.85)');
+  }
+  // The entrance, framed in gold.
+  g.fillStyle = '#c8b49c'; g.fillRect(-330, -960, 660, 960);
+  g.strokeStyle = '#d9b36a'; g.lineWidth = 8; g.strokeRect(-310, -940, 620, 940);
+  const entry = cuspedArch(ENTRY.w, ENTRY.h, 9);
+  g.save(); g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000'; poly(g, entry); g.fill(); g.restore();
+  poly(g, entry); g.lineWidth = 12; g.strokeStyle = '#d9b36a'; g.stroke();
+  leaves(g, -260, 260, -800, 16); garland(g, -270, -790, 0, -750, 30, 14, 83, 8); garland(g, 0, -750, 270, -790, 30, 14, 84, 8);
+  // Parapet, corner chhatris and three domes.
+  g.fillStyle = '#b8a48c'; g.fillRect(-650, -1520, 1300, 24);
+  for (let x = -640; x < 650; x += 40) g.fillRect(x, -1546, 22, 26);
+  for (const sgn of [-1, 1]) { g.fillStyle = '#c8b49c'; g.fillRect(sgn * 590 - 50, -1640, 100, 120); onion(g, sgn * 590, -1640, 56, -1730); g.fillStyle = '#e8dccc'; g.fill(); g.fillStyle = '#d9b36a'; g.fillRect(sgn * 590 - 2, -1750, 4, 22); }
+  for (const [x, rr] of [[-300, 90], [300, 90], [0, 170]]) {
+    g.fillStyle = '#c8b49c'; g.fillRect(x - rr, -1580, rr * 2, 60);
+    onion(g, x, -1580, rr, -1580 - rr * 1.75);
+    const dg = g.createLinearGradient(x - rr, 0, x + rr, 0); dg.addColorStop(0, '#b8a48c'); dg.addColorStop(0.45, '#fff4e4'); dg.addColorStop(1, '#a8947c');
+    g.fillStyle = dg; g.fill();
+    g.fillStyle = '#d9b36a'; g.fillRect(x - 3, -1610 - rr * 1.75, 6, 36); g.beginPath(); g.arc(x, -1600 - rr * 1.75, 8, 0, Math.PI * 2); g.fill();
+  }
+});
+const hallFrontLamps = [];
+for (let x = -640; x <= 640; x += 32) hallFrontLamps.push([x, -1518]);
+for (let x = -310; x <= 310; x += 30) hallFrontLamps.push([x, -944]);
+
+// ---------- the hall of mirrors ----------
+const glints = [];
+{
+  const r = rng(91);
+  for (let i = 0; i < 3200; i++) glints.push({ x: r() < 0.5 ? -HALL_X : HALL_X, y: -20 - r() * 960, z: COURT_END + 20 + r() * (EXIT_Z - COURT_END - 40), ph: r() * 40, c: ['232,240,255', '255,224,160', '255,176,200', '160,240,232'][i % 4] });
+  for (let i = 0; i < 1600; i++) glints.push({ x: (r() - 0.5) * 2 * HALL_X, y: HALL_TOP, z: COURT_END + 20 + r() * (EXIT_Z - COURT_END - 40), ph: r() * 40, c: ['232,240,255', '255,224,160', '255,176,200'][i % 3] });
+}
+const niches = [];
+for (let z = 3420; z < 4560; z += 170) niches.push(z);
+const nicheArch = cuspedArch(110, 330, 7);
+function paintMirrorArch(g, w, h, open) {
+  const bg = g.createLinearGradient(0, -1000, 0, 0); bg.addColorStop(0, '#24142a'); bg.addColorStop(1, '#4a2a3a');
+  g.fillStyle = bg; g.fillRect(-w / 2, -1000, w, 1000);
+  const pool = g.createRadialGradient(0, -520, 100, 0, -520, 700);
+  pool.addColorStop(0, 'rgba(255,170,110,0.35)'); pool.addColorStop(1, 'rgba(255,170,110,0)');
+  g.fillStyle = pool; g.fillRect(-w / 2, -1000, w, 1000);
+  const r = rng(w + h);
+  for (let i = 0; i < 2600; i++) { const x = (r() - 0.5) * w, y = -r() * 1000; g.fillStyle = ['#e8f0ff', '#ffe0a0', '#ffb0c8', '#a0f0e8'][i % 4]; g.globalAlpha = 0.15 + r() * 0.45; g.fillRect(x, y, 2 + r() * 4, 2 + r() * 4); }
+  g.globalAlpha = 1;
+  // White marble frame with gold, and inlaid flowers.
+  g.strokeStyle = '#f0e4d0'; g.lineWidth = 10; g.strokeRect(-open.w / 2 - 50, -open.h - 70, open.w + 100, open.h + 70);
+  for (const sgn of [-1, 1]) { rosette(g, sgn * (open.w / 2 + 20), -open.h - 20, 30, '#f0e4d0'); for (let y = -open.h + 40; y < -40; y += 90) rosette(g, sgn * (open.w / 2 + 110), y, 22, '#d9b36a'); }
+  const pts = cuspedArch(open.w, open.h, 9);
+  g.save(); g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000'; poly(g, pts); g.fill(); g.restore();
+  poly(g, pts); g.lineWidth = 12; g.strokeStyle = '#d9b36a'; g.stroke();
+  poly(g, cuspedArch(open.w + 36, open.h + 20, 9)); g.lineWidth = 4; g.strokeStyle = '#f0e4d0'; g.stroke();
+  // A coloured glass lantern from the crown.
+  g.strokeStyle = '#8a6a3a'; g.lineWidth = 3; g.beginPath(); g.moveTo(0, -open.h - 20); g.lineTo(0, -open.h + 80); g.stroke();
+  const cols = ['#e05a78', '#3ab0a0', '#f0b040', '#5a70e0'];
+  for (let k = 0; k < 4; k++) { g.fillStyle = cols[k]; g.beginPath(); g.moveTo(-26 + k * 13, -open.h + 80); g.lineTo(-13 + k * 13, -open.h + 80); g.lineTo(-10 + k * 10, -open.h + 150); g.lineTo(-20 + k * 10, -open.h + 150); g.closePath(); g.fill(); }
+  g.fillStyle = '#d9b36a'; g.fillRect(-30, -open.h + 74, 60, 8); g.fillRect(-22, -open.h + 150, 44, 8);
+}
+const innerArchCard = card(2 * HALL_X, 1000, 1.25, (g) => paintMirrorArch(g, 2 * HALL_X, 1000, INNER));
+const exitArchCard = card(2 * HALL_X, 1000, 1.25, (g) => paintMirrorArch(g, 2 * HALL_X, 1000, EXIT));
+
+// ---------- the terrace ----------
+const baithak = card(760, 980, 1.5, (g) => {
+  // A marble chhatri on a plinth, with bolsters and gauzy drapes.
+  for (let k = 0; k < 2; k++) { const w = 760 - k * 60; const pg = g.createLinearGradient(0, -(k + 1) * 40, 0, -k * 40); pg.addColorStop(0, '#f4ead8'); pg.addColorStop(1, '#b8a890'); g.fillStyle = pg; g.fillRect(-w / 2, -(k + 1) * 40, w, 40); }
+  g.fillStyle = '#7a1c34'; g.fillRect(-250, -150, 500, 70);
+  g.fillStyle = '#d9b36a'; g.fillRect(-250, -150, 500, 8);
+  for (const x of [-220, 220]) { g.fillStyle = '#a82848'; g.beginPath(); g.ellipse(x, -110, 30, 40, 0, 0, Math.PI * 2); g.fill(); g.fillStyle = '#d9b36a'; g.fillRect(x - 3, -150, 6, 80); }
+  for (let k = 0; k < 5; k++) { g.fillStyle = k % 2 ? '#c8902a' : '#a82848'; g.beginPath(); g.ellipse(-120 + k * 60, -170, 28, 22, 0, 0, Math.PI * 2); g.fill(); }
+  for (const x of [-320, -200, 200, 320]) { g.fillStyle = x * x > 50000 ? '#f4ead8' : '#ddd0bc'; g.fillRect(x - 16, -700, 32, 620); g.fillStyle = '#d9b36a'; g.fillRect(x - 22, -712, 44, 14); g.fillRect(x - 22, -94, 44, 14); }
+  for (const sgn of [-1, 1]) {
+    g.fillStyle = 'rgba(255,240,230,0.45)';
+    g.beginPath(); g.moveTo(sgn * 300, -690); g.quadraticCurveTo(sgn * 240, -400, sgn * 290, -90); g.lineTo(sgn * 330, -90); g.quadraticCurveTo(sgn * 300, -400, sgn * 340, -690); g.closePath(); g.fill();
+  }
+  const arch = cuspedArch(400, 300, 7).map(([x, y]) => [x, -400 + y]);
+  g.strokeStyle = '#d9b36a'; g.lineWidth = 6; poly(g, arch); g.stroke();
+  g.fillStyle = '#c8b8a0'; g.fillRect(-380, -740, 760, 30);
+  for (let x = -370; x < 380; x += 26) { g.beginPath(); g.moveTo(x, -710); g.lineTo(x + 13, -690); g.lineTo(x + 26, -710); g.fill(); }
+  onion(g, 0, -740, 300, -960); const dg = g.createLinearGradient(-300, 0, 300, 0); dg.addColorStop(0, '#b8a890'); dg.addColorStop(0.45, '#fff6e8'); dg.addColorStop(1, '#a89880'); g.fillStyle = dg; g.fill();
+  g.fillStyle = '#d9b36a'; g.fillRect(-3, -990, 6, 40); g.beginPath(); g.arc(0, -972, 9, 0, Math.PI * 2); g.fill();
+  garland(g, -330, -690, 330, -690, 60, 30, 93, 7);
+  for (let x = -300; x <= 300; x += 40) if (Math.abs(x) > 60) strand(g, x, -680, -560 - Math.abs(x) * 0.1, 95 + x, 5);
+});
+const railFar = card(2 * TERRACE_X, 140, 1, (g) => {
+  g.fillStyle = '#d8ccb8'; g.fillRect(-TERRACE_X, -140, 2 * TERRACE_X, 140);
+  for (let x = -TERRACE_X + 30; x < TERRACE_X; x += 60) { const pts = cuspedArch(34, 80, 5).map(([px, py]) => [x + px, -20 + py]); poly(g, pts); g.fillStyle = '#2a2034'; g.fill(); }
+  g.fillStyle = '#f0e6d4'; g.fillRect(-TERRACE_X, -150, 2 * TERRACE_X, 16);
+});
+const terraceLanterns = [];
+for (let z = 4800; z <= 6200; z += 280) for (const x of [-860, 860]) terraceLanterns.push({ x, z, c: ['255,120,150', '120,220,210', '255,200,110', '150,160,255'][(z / 280 + (x > 0 ? 1 : 0)) % 4 | 0] });
+const finale = [
+  { tb: 16.6, x: -1700, y: -3300, c: [255, 210, 120] }, { tb: 17.3, x: 1600, y: -3800, c: [255, 140, 170] },
+  { tb: 18.0, x: -600, y: -4300, c: [255, 244, 220] }, { tb: 18.6, x: 1900, y: -3200, c: [150, 230, 220] },
+  { tb: 19.2, x: -1800, y: -4000, c: [255, 190, 90] }, { tb: 19.55, x: 1300, y: -4400, c: [255, 140, 170] },
+];
+const FW_Z = 9200;
+finale.forEach((b, n) => { const r = rng(300 + n); b.parts = Array.from({ length: 96 }, (_, k) => ({ a: (k / 96) * Math.PI * 2 + r() * 0.08, sp: 0.75 + r() * 0.35, tw: r() * 6 })); });
+const petals = [];
+{ const r = rng(131); for (let i = 0; i < 140; i++) petals.push({ x: r() * W, ts: 15.4 + r() * 4.6, v: 110 + r() * 150, sway: 20 + r() * 40, ph: r() * 6, s: 8 + r() * 8, c: r() < 0.45 ? '#e8506e' : r() < 0.6 ? '#f6a0b4' : '#fff4ec', y0: -40 - r() * 380 }); }
+const terracePetals = [];
+{ const r = rng(151); for (let i = 0; i < 160; i++) terracePetals.push({ x: (r() - 0.5) * 1400, z: EXIT_Z + 60 + r() * 1500, c: r() < 0.5 ? '#d8466a' : r() < 0.6 ? '#f2a0b6' : '#fff4ec', a: r() * 3 }); }
+const roadPetals = [];
+{ const r = rng(141); for (let i = 0; i < 220; i++) roadPetals.push({ x: (r() - 0.5) * 480, z: -500 + r() * 2300, c: r() < 0.6 ? '#d8466a' : '#f2a0b6', a: r() * 3 }); }
+
+// ---------- parts of a frame ----------
+function drawSky(t) {
+  const night = smooth((t - 3.8) / 5.5);
+  ctx.drawImage(duskSky, 0, 0);
+  if (night > 0) { ctx.globalAlpha = night; ctx.drawImage(nightSky, 0, 0); ctx.globalAlpha = 1; }
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const s of stars) { const a = (0.3 + 0.4 * Math.sin(t * 1.7 + s.ph)) * (0.15 + 0.85 * night); ctx.fillStyle = `rgba(255,246,226,${a.toFixed(3)})`; ctx.fillRect(s.x, s.y, s.s, s.s); }
+  ctx.restore();
+  // The moon rises as night falls.
+  ctx.globalAlpha = 0.5 + 0.5 * night; ctx.drawImage(moon, 700, mix(640, 150, night) - 120); ctx.globalAlpha = 1;
+}
+function drawFinale(t) {
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const b of finale) {
+    const launch = b.tb - 0.7, age = t - b.tb;
+    if (t < launch || age > 2.2) continue;
+    const [cr, cg, cb] = b.c;
+    if (age < 0) {
+      const u = (t - launch) / 0.7, y = mix(-200, b.y, 1 - (1 - u) ** 2), p = P(b.x, y, FW_Z), q = P(b.x, y + 120, FW_Z);
+      ctx.strokeStyle = 'rgba(255,220,170,0.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+      continue;
+    }
+    const fade = clamp(1 - age / 2.0) ** 1.4, c0 = P(b.x, b.y, FW_Z);
+    glow(ctx, c0.x, c0.y, 1800 * c0.s, `rgba(${cr},${cg},${cb},A)`, 0.12 * clamp(1 - age / 0.9));
+    for (const pt of b.parts) {
+      const R = 950 * pt.sp * (1 - Math.exp(-age * 3.2)), R0 = 950 * pt.sp * (1 - Math.exp(-Math.max(0, age - 0.12) * 3.2)), drop = 140 * age * age;
+      const p = P(b.x + Math.cos(pt.a) * R, b.y + Math.sin(pt.a) * R + drop, FW_Z), q = P(b.x + Math.cos(pt.a) * R0, b.y + Math.sin(pt.a) * R0 + drop * 0.8, FW_Z);
+      const tw = age > 1 ? 0.55 + 0.45 * Math.sin(t * 30 + pt.tw) : 1;
+      ctx.strokeStyle = `rgba(${cr},${cg},${cb},${(fade * tw).toFixed(3)})`; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+      ctx.fillStyle = `rgba(255,250,235,${(fade * tw).toFixed(3)})`; ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+    }
+  }
+  ctx.restore();
+}
+function lampGlow(p, r, col, a) { ctx.save(); ctx.globalCompositeOperation = 'lighter'; glow(ctx, p.x, p.y, Math.min(r * p.s, 380), col, a); ctx.restore(); }
+
+function drawWorld(t) {
+  const items = [];
+  const outside = cam.z < GATE_Z - 25;
+  // Floors: the road and gardens, the courtyard, the hall, the terrace.
+  items.push({ z: 99999, draw: () => {
+    floorStrip(-4000, 4000, 0, -2000, GATE_Z, '#14161a');
+    const rg = ctx.createLinearGradient(0, P(0, 0, GATE_Z).y, 0, H); rg.addColorStop(0, '#a8705a'); rg.addColorStop(1, '#4a2a22');
+    floorStrip(-280, 280, 0, -2000, GATE_Z, '#e0c8a8'); floorStrip(-262, 262, 0, -2000, GATE_Z, rg);
+    for (const p of roadPetals) { const q = P(p.x, 0, p.z); if (q.d < 30 || q.y > H) continue; ctx.fillStyle = p.c; ctx.beginPath(); ctx.ellipse(q.x, q.y, 7 * q.s, 3 * q.s, p.a, 0, Math.PI * 2); ctx.fill(); }
+    const cg = ctx.createLinearGradient(0, P(0, 0, COURT_END).y, 0, H); cg.addColorStop(0, '#c89a8a'); cg.addColorStop(1, '#6a4038');
+    floorStrip(-COURT_X, COURT_X, 0, GATE_Z, COURT_END, cg);
+    ctx.strokeStyle = 'rgba(255,240,230,0.25)'; ctx.lineWidth = 1.5;
+    for (let z = GATE_Z + 100; z < COURT_END; z += 100) { if (z < cam.z + 30) continue; const a = P(-COURT_X, 0, z), b = P(COURT_X, 0, z); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+    floorStrip(-96, 96, 0, GATE_Z + 50, COURT_END - 50, '#f0e4d0'); floorStrip(-80, 80, 0, GATE_Z + 60, COURT_END - 60, '#1e4a5a');
+    const hg = ctx.createLinearGradient(0, P(0, 0, EXIT_Z).y, 0, H); hg.addColorStop(0, '#5a3a48'); hg.addColorStop(1, '#24141e');
+    floorStrip(-HALL_X, HALL_X, 0, COURT_END, EXIT_Z, hg);
+    floorStrip(-84, 84, 0, COURT_END, EXIT_Z, '#b8924a'); floorStrip(-76, 76, 0, COURT_END, EXIT_Z, '#5e1424'); floorStrip(-62, 62, 0, COURT_END, EXIT_Z, '#7e1c30');
+    const tg = ctx.createLinearGradient(0, P(0, 0, RAIL_Z).y, 0, H); tg.addColorStop(0, '#9a90a0'); tg.addColorStop(1, '#3a3040');
+    floorStrip(-TERRACE_X, TERRACE_X, 0, EXIT_Z, RAIL_Z, tg);
+    ctx.strokeStyle = 'rgba(30,20,40,0.5)';
+    for (let z = EXIT_Z + 120; z < RAIL_Z; z += 120) { if (z < cam.z + 30) continue; const a = P(-TERRACE_X, 0, z), b = P(TERRACE_X, 0, z); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+    for (let x = -TERRACE_X + 150; x < TERRACE_X; x += 150) { const a = P(x, 0, Math.max(EXIT_Z, cam.z + 20)), b = P(x, 0, RAIL_Z); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+    floorStrip(-84, 84, 0, EXIT_Z, BAITHAK_Z - 200, '#b8924a'); floorStrip(-76, 76, 0, EXIT_Z, BAITHAK_Z - 200, '#5e1424'); floorStrip(-62, 62, 0, EXIT_Z, BAITHAK_Z - 200, '#7e1c30');
+    for (const p of terracePetals) { const q = P(p.x, 0, p.z); if (q.d < 30 || q.y > H) continue; ctx.fillStyle = p.c; ctx.beginPath(); ctx.ellipse(q.x, q.y, 7 * q.s, 3 * q.s, p.a, 0, Math.PI * 2); ctx.fill(); }
+  } });
+  // The terrace: side balustrades, lanterns, the baithak, the far rail.
+  items.push({ z: RAIL_Z + 1, draw: () => {
+    for (const sgn of [-1, 1]) {
+      wallPlane(sgn * TERRACE_X, -140, 0, EXIT_Z, RAIL_Z, '#cfc2ae');
+      wallPlane(sgn * TERRACE_X, -152, -138, EXIT_Z, RAIL_Z, '#f0e6d4');
+      for (let z = EXIT_Z + 60; z < RAIL_Z; z += 70) { const s = onWall(sgn * TERRACE_X, z, -20, cuspedArch(34, 80, 5)); if (s) { poly(ctx, s); ctx.fillStyle = '#2a2034'; ctx.fill(); } }
+    }
+  } });
+  items.push({ z: RAIL_Z, draw: () => put(railFar, 0, 0, RAIL_Z) });
+  items.push({ z: BAITHAK_Z, draw: () => {
+    put(baithak, 0, 0, BAITHAK_Z);
+    for (const x of [-260, 260]) { const p = P(x, -620, BAITHAK_Z - 2); if (p.d > 30) lampGlow(p, 140, 'rgba(255,190,120,A)', 0.4); }
+    floorGlow(0, 0, BAITHAK_Z - 160, 360, 0.25);
+  } });
+  for (const l of terraceLanterns) items.push({ z: l.z, draw: () => {
+    const base = P(l.x, 0, l.z), top = P(l.x, -520, l.z); if (base.d < 30) return;
+    ctx.strokeStyle = '#3a2a22'; ctx.lineWidth = Math.max(1, 8 * base.s); ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(top.x, top.y); ctx.stroke();
+    const p = P(l.x, -470, l.z); lampGlow(p, 150, `rgba(${l.c},A)`, 0.55);
+    ctx.fillStyle = `rgb(${l.c})`; ctx.fillRect(p.x - 14 * p.s, p.y - 24 * p.s, 28 * p.s, 44 * p.s);
+    ctx.fillStyle = '#d9b36a'; ctx.fillRect(p.x - 18 * p.s, p.y - 28 * p.s, 36 * p.s, 6 * p.s);
+  } });
+  // The hall: mirror walls and ceiling, candle niches, glints that shift as the guest moves.
+  items.push({ z: EXIT_Z + 0.5, draw: () => {
+    for (const sgn of [-1, 1]) {
+      const x = sgn * HALL_X;
+      wallPlane(x, HALL_TOP, 0, COURT_END, EXIT_Z, '#3e2440');
+      // Gold rails and pilasters frame the mirror panels.
+      ctx.strokeStyle = 'rgba(217,179,106,0.75)'; ctx.lineWidth = 3;
+      for (const y of [-40, -440, -940]) { const z0 = Math.max(COURT_END, cam.z + 30); if (z0 >= EXIT_Z) continue; const a = P(x, y, z0), b = P(x, y, EXIT_Z); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+      for (const z of niches) { const zz = z + 85; if (zz < cam.z + 30) continue; const a = P(x, 0, zz), b = P(x, HALL_TOP, zz); ctx.lineWidth = Math.max(2, 10 * a.s); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+    }
+    floorStrip(-HALL_X, HALL_X, HALL_TOP, COURT_END, EXIT_Z, '#2e1a32');
+    ctx.strokeStyle = 'rgba(217,179,106,0.35)'; ctx.lineWidth = 2;
+    for (let z = COURT_END + 100; z < EXIT_Z; z += 100) { if (z < cam.z + 30) continue; const a = P(-HALL_X, HALL_TOP, z), b = P(HALL_X, HALL_TOP, z), cc = P(HALL_X, 0, z), d = P(-HALL_X, 0, z); ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(cc.x, cc.y); ctx.stroke(); }
+    for (const z of niches) for (const sgn of [-1, 1]) {
+      const s = onWall(sgn * HALL_X, z, -60, nicheArch); if (!s) continue;
+      poly(ctx, s); ctx.fillStyle = '#6a3a30'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#d9b36a'; ctx.stroke();
+      const f = P(sgn * HALL_X, -80, z); flame(ctx, f.x, f.y, 1.6 * f.s, t, z + sgn, 1);
+      floorGlow(sgn * (HALL_X - 90), 0, z, 130, 0.4);
+    }
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const gl of glints) {
+      const p = P(gl.x, gl.y, gl.z); if (p.d < 40 || p.x < -10 || p.x > W + 10 || p.y < -10 || p.y > H + 10) continue;
+      // Every mirror catches a little light; a few flash as the guest moves past them.
+      const b = Math.max(0, Math.sin(gl.ph + cam.z * 0.012 + t * 1.3)) ** 6;
+      const m = Math.min(7, 2.6 * p.s);
+      ctx.fillStyle = `rgba(${gl.c},${(0.22 + 0.5 * b).toFixed(3)})`; ctx.fillRect(p.x - m / 2, p.y - m / 2, m, m);
+      if (b < 0.3) continue;
+      const r = Math.min(12, 5 * p.s) * b;
+      ctx.fillStyle = `rgba(255,255,255,${(0.9 * b).toFixed(3)})`;
+      ctx.fillRect(p.x - r, p.y - 0.8, r * 2, 1.6); ctx.fillRect(p.x - 0.8, p.y - r, 1.6, r * 2);
+    }
+    ctx.restore();
+  } });
+  items.push({ z: EXIT_Z, draw: () => put(exitArchCard, 0, 0, EXIT_Z) });
+  items.push({ z: INNER_Z, draw: () => { put(innerArchCard, 0, 0, INNER_Z); const p = P(0, -INNER.h + 120, INNER_Z - 1); if (p.d > 30) lampGlow(p, 220, 'rgba(255,200,150,A)', 0.3); } });
+  items.push({ z: COURT_END, draw: () => {
+    put(hallFront, 0, 0, COURT_END);
+    for (const [x, y] of hallFrontLamps) { const p = P(x, y, COURT_END - 1); if (p.d > 30) { lampGlow(p, 16, 'rgba(255,200,120,A)', 0.6); } }
+    floorGlow(0, 0, COURT_END - 150, 300, 0.25);
+  } });
+  // The courtyard: arcades on both sides, the water channel, fountains and floating lamps.
+  items.push({ z: COURT_END + 0.5, draw: () => {
+    for (const sgn of [-1, 1]) {
+      const x = sgn * COURT_X;
+      wallPlane(x, -720, 0, GATE_Z, COURT_END, '#b8607a');
+      wallPlane(x, -740, -716, GATE_Z, COURT_END, '#8a3e56');
+      for (const z of courtArches) {
+        const s = onWall(x, z, 0, arcadeArch); if (s) { poly(ctx, s); ctx.fillStyle = '#ffc47a'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(255,246,236,0.9)'; ctx.stroke(); }
+        const u = onWall(x, z, -500, upperWin); if (u) { poly(ctx, u); ctx.fillStyle = '#ffd690'; ctx.fill(); }
+        const f = P(x, -60, z); if (f.d > 30) { flame(ctx, f.x, f.y, 1.8 * f.s, t, z, 1); floorGlow(x - sgn * 80, 0, z, 120, 0.22); }
+      }
+      for (let z = GATE_Z + 30; z < COURT_END; z += 40) { const p = P(x, -742, z); if (p.d > 40) lampGlow(p, 10, 'rgba(255,200,120,A)', 0.7); }
+    }
+  } });
+  for (const [fx, z] of FOUNTAINS) items.push({ z, draw: () => {
+    put(fountain, fx, 0, z);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let k = 0; k < 60; k++) {
+      const a = (k / 60) * Math.PI * 2, age = (t * 0.9 + (k % 12) / 12) % 1;
+      const rr = 70 * age, h = -80 - 320 * age + 380 * age * age;
+      const p = P(fx + Math.cos(a) * rr, h, z + Math.sin(a) * rr * 0.6); if (p.d < 30) continue;
+      ctx.fillStyle = `rgba(210,240,255,${(0.7 * (1 - age)).toFixed(3)})`; ctx.fillRect(p.x - 2 * p.s, p.y - 2 * p.s, 4 * p.s, 4 * p.s);
+    }
+    ctx.restore();
+  } });
+  for (const l of lotus) items.push({ z: l.z, draw: () => {
+    const p = P(l.x + Math.sin(t * 0.5 + l.ph) * 6, 0, l.z); if (p.d < 30 || p.y > H) return;
+    ctx.fillStyle = '#f0a0b8'; ctx.beginPath(); ctx.ellipse(p.x, p.y, 12 * p.s, 4 * p.s, 0, 0, Math.PI * 2); ctx.fill();
+    flame(ctx, p.x, p.y - 2 * p.s, 0.9 * p.s, t, l.ph, smooth((t - 4.8) / 0.6));
+  } });
+  if (outside || cam.z < GATE_Z + 500) items.push({ z: GATE_Z + 0.5, draw: () => drawDoors(t) });
+  if (outside) {
+    items.push({ z: GATE_Z, draw: () => {
+      put(facade, 0, 0, GATE_Z);
+      for (const [x, y] of gateLamps) {
+        const a = smooth((t - 1.6 - Math.abs(x) / 1400 * 1.2) / 0.4); if (a <= 0) continue;
+        const p = P(x, y, GATE_Z - 1); lampGlow(p, 14, 'rgba(255,200,120,A)', 0.6 * a);
+        ctx.fillStyle = `rgba(255,240,200,${a.toFixed(3)})`; ctx.fillRect(p.x - 1.4 * p.s, p.y - 1.4 * p.s, 2.8 * p.s, 2.8 * p.s);
+      }
+      // Gold light pours out as the doors open.
+      const open = Math.sin(openAt(t) / 1.38 * Math.PI / 2);
+      const g = P(0, -300, GATE_Z - 2); lampGlow(g, 600, 'rgba(255,190,110,A)', 0.08 + 0.3 * open);
+      floorGlow(0, 0, GATE_Z - 260, 240, 0.4 * open);
+    } });
+  }
+  for (const tr of trees) items.push({ z: tr.z, draw: () => put(cypress, tr.x, 0, tr.z) });
+  for (const l of posts) items.push({ z: l.z - 1, draw: () => {
+    const lit = smooth((t - l.at) / 0.4);
+    put(lampPost, l.x, 0, l.z); if (lit < 1) put(lampDark, l.x, 0, l.z, 1 - lit);
+    const p = P(l.x, -473, l.z - 1); if (p.d > 30 && lit > 0) { lampGlow(p, 160, 'rgba(255,190,110,A)', 0.5 * lit); floorGlow(l.x, 0, l.z, 150, 0.25 * lit); }
+  } });
+  items.sort((a, b) => b.z - a.z).forEach((it) => it.draw());
+}
+
+window.render = function (t) {
+  cam.z = walkAt(t); cam.y = -150; cam.x = 0;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  drawSky(t);
+  drawFinale(t);
+  drawWorld(t);
+  // Rose and jasmine petals drift over the terrace.
+  for (const p of petals) {
+    const age = t - p.ts; if (age < 0) continue;
+    const y = p.y0 + age * p.v; if (y > H + 30) continue;
+    const x = p.x + Math.sin(age * 1.4 + p.ph) * p.sway;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(age * 2 + p.ph); ctx.fillStyle = p.c; ctx.globalAlpha = 0.9 * clamp(age / 0.4);
+    ctx.beginPath(); ctx.ellipse(0, 0, p.s, p.s * 0.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  // Past the gate, the floor nearest the guest falls into shadow, so the eye goes on ahead.
+  if (cam.z > GATE_Z) {
+    const fl = ctx.createLinearGradient(0, H * 0.7, 0, H);
+    fl.addColorStop(0, 'rgba(10,4,10,0)'); fl.addColorStop(1, 'rgba(10,4,10,0.55)');
+    ctx.fillStyle = fl; ctx.fillRect(0, H * 0.7, W, H * 0.3);
+  }
+  const v = ctx.createRadialGradient(540, 900, 420, 540, 900, 1300);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.07; ctx.drawImage(grain, 0, 0, W, H); ctx.restore();
+};
+render(0);
+</script>
+</body>
+</html>

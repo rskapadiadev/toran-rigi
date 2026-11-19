@@ -2,6 +2,9 @@
 // Renders an illustrated opening film from its scene page into public/kits/<name>/:
 // film.mp4 plus the first and last frames as stills, ready for a template's design.film.
 // Usage: node scripts/dev/films/render.mjs deepmala [--stills]   (needs ffmpeg: brew install ffmpeg)
+// A scene sets its own length with window.SECONDS (9 when it doesn't).
+// --frames takes --fps (15) and --quality (0.8): a long, detailed walk fits its budget at 12 and 0.72.
+// The mp4 takes --width (full 1080) and --crf (24): a walk only needs a light preview copy.
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
@@ -11,8 +14,11 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 
 const name = process.argv[2] ?? 'deepmala';
+const option = (flag, fallback) => {
+    const i = process.argv.indexOf(flag);
+    return i > 0 ? Number(process.argv[i + 1]) : fallback;
+};
 const FPS = 30;
-const SECONDS = 9;
 const here = dirname(fileURLToPath(import.meta.url));
 const scene = resolve(here, name, 'scene.html');
 const out = resolve(here, '../../../public/kits', name);
@@ -35,6 +41,7 @@ const openPage = async () => {
     return p;
 };
 const page = await openPage();
+const SECONDS = await page.evaluate(() => window.SECONDS ?? 9);
 const total = FPS * SECONDS;
 // The first and last frames become the stills: encoded as WebP by the browser (ffmpeg builds often
 // lack a WebP encoder).
@@ -62,7 +69,8 @@ if (process.argv.includes('--stills')) {
 }
 // --frames: sprite sheets for the film behind the invitation (scrolled frame by frame), not an mp4.
 if (process.argv.includes('--frames')) {
-    const SHEET_FPS = 15;
+    const SHEET_FPS = option('--fps', 15);
+    const QUALITY = option('--quality', 0.8);
     const W = 540;
     const H = 960;
     const GRID = 3;
@@ -85,7 +93,7 @@ if (process.argv.includes('--frames')) {
                 (_, k) => (s * per + k) / SHEET_FPS,
             );
             const data = await p.evaluate(
-                ({ list, w, h, grid }) => {
+                ({ list, w, h, grid, quality }) => {
                     const sheet = document.createElement('canvas');
                     sheet.width = w * grid;
                     sheet.height = h * grid;
@@ -95,13 +103,14 @@ if (process.argv.includes('--frames')) {
                         window.render(t);
                         g.drawImage(film, (k % grid) * w, Math.floor(k / grid) * h, w, h);
                     });
-                    return sheet.toDataURL('image/webp', 0.8);
+                    return sheet.toDataURL('image/webp', quality);
                 },
                 {
                     list: times,
                     w: W,
                     h: H,
                     grid: GRID,
+                    quality: QUALITY,
                 },
             );
             const file = `sheet-${String(s).padStart(3, '0')}.webp`;
@@ -170,8 +179,9 @@ ff(
     'high',
     '-pix_fmt',
     'yuv420p',
+    ...(option('--width', 0) > 0 ? ['-vf', `scale=${String(option('--width', 0))}:-2`] : []),
     '-crf',
-    '24',
+    String(option('--crf', 24)),
     '-preset',
     'slow',
     '-movflags',

@@ -50,19 +50,23 @@ const theme = (s: Spec): ThemeDefinition => ({
     },
 });
 
-// Deepmala's film cut into frames (scripts/dev/films/render.mjs deepmala --frames).
-const yatraFrames = {
+// A film cut into 3×3 sheets of 540×960 frames (scripts/dev/films/render.mjs <kit> --frames).
+const framesOf = (kit: string, count: number, fps = 15) => ({
     sheets: Array.from(
-        { length: 15 },
-        (_, s) => `/kits/deepmala/frames/sheet-${String(s).padStart(3, '0')}.webp`,
+        { length: Math.ceil(count / 9) },
+        (_, s) => `/kits/${kit}/frames/sheet-${String(s).padStart(3, '0')}.webp`,
     ),
-    fps: 15,
-    count: 135,
+    fps,
+    count,
     cols: 3,
     rows: 3,
     width: 540,
     height: 960,
-};
+});
+const yatraFrames = framesOf('deepmala', 135);
+// The 20 s walk at 12 fps (crossfaded, so it still scrubs smoothly), to stay near 8 MB.
+const walkFrames = framesOf('haveli-walk', 240, 12);
+const palaceFrames = framesOf('palace-walk', 240, 12);
 
 export const luxuryThemes: ThemeDefinition[] = [
     theme({
@@ -367,6 +371,217 @@ export const luxuryThemes: ThemeDefinition[] = [
             ],
         },
     }),
+    theme({
+        slug: 'haveli-walk',
+        name: 'Haveli Walk',
+        culture: 'hindu',
+        category: 'luxury',
+        description:
+            "A walk plays behind the whole invitation: guests arrive by boat as the ghats light, climb the steps under fireworks, and walk through the haveli's lamp-lit arches to the mandap as they scroll.",
+        palette: {
+            bg: '#120c1e',
+            surface: '#1c1430',
+            ink: '#f6ead2',
+            muted: '#bcae94',
+            primary: '#e0b867',
+            accent: '#a8283a',
+            gold: '#d9b36a',
+        },
+        display: 'cormorant',
+        body: 'cormorant',
+        opening: 'film',
+        generative: 'lotus',
+        texture: 'paper',
+        titles: 'script',
+        // Our own illustrated walk (scripts/dev/films/haveli-walk), one 20 s film in frames.
+        film: {
+            src: '/kits/haveli-walk/film.mp4',
+            first: '/kits/haveli-walk/film-first.webp',
+            last: '/kits/haveli-walk/film-last.webp',
+            namesAt: 3.6,
+            behind: true,
+            frames: walkFrames,
+            moments: [
+                {
+                    text: {
+                        en: 'A night of a thousand diyas',
+                        hi: 'हज़ार दीयों की एक रात',
+                    },
+                    from: 4.2,
+                    to: 5.3,
+                    zone: {
+                        x: 0.5,
+                        y: 0.14,
+                        w: 0.8,
+                    },
+                    style: 'line',
+                },
+                {
+                    text: {
+                        en: 'Come inside',
+                        hi: 'अंदर आइए',
+                    },
+                    from: 7.4,
+                    to: 8.8,
+                    zone: {
+                        x: 0.5,
+                        y: 0.15,
+                        w: 0.8,
+                    },
+                    style: 'kicker',
+                },
+                {
+                    text: {
+                        en: 'Every lamp lit for you',
+                        hi: 'हर दीया आपके लिए',
+                    },
+                    from: 10.4,
+                    to: 11.6,
+                    // Ivory serif over the dark sky seen through the arches: gold script was lost on the lanterns.
+                    zone: {
+                        x: 0.5,
+                        y: 0.38,
+                        w: 0.86,
+                    },
+                    style: 'line',
+                },
+                {
+                    text: {
+                        en: 'Two families, one light',
+                        hi: 'दो परिवार, एक रोशनी',
+                    },
+                    from: 13.2,
+                    to: 14.4,
+                    zone: {
+                        x: 0.5,
+                        y: 0.2,
+                        w: 0.9,
+                    },
+                    style: 'script',
+                },
+                {
+                    text: {
+                        en: 'The mandap awaits',
+                        hi: 'मंडप आपकी राह देख रहा है',
+                    },
+                    from: 16.2,
+                    to: 17.6,
+                    zone: {
+                        x: 0.5,
+                        y: 0.16,
+                        w: 0.84,
+                    },
+                    style: 'line',
+                },
+            ],
+        },
+    }),
+    theme({
+        slug: 'palace-walk',
+        name: 'Palace Walk',
+        culture: 'hindu',
+        category: 'luxury',
+        description:
+            'A walk plays behind the whole invitation: a lamp-lit road at rose-gold dusk, the palace gate swinging open on a courtyard of fountains, a hall of glinting mirrors, and a marble terrace under the stars with fireworks over the city.',
+        palette: {
+            bg: '#160c1e',
+            surface: '#22142e',
+            ink: '#f8ecdc',
+            muted: '#c4ae9c',
+            primary: '#e6b86a',
+            accent: '#c2456a',
+            gold: '#e0b867',
+        },
+        display: 'cormorant',
+        body: 'cormorant',
+        opening: 'film',
+        generative: 'lotus',
+        texture: 'paper',
+        titles: 'script',
+        // Our own illustrated walk (scripts/dev/films/palace-walk), one 20 s film in frames.
+        film: {
+            src: '/kits/palace-walk/film.mp4',
+            first: '/kits/palace-walk/film-first.webp',
+            last: '/kits/palace-walk/film-last.webp',
+            namesAt: 3.6,
+            behind: true,
+            frames: palaceFrames,
+            moments: [
+                {
+                    text: {
+                        en: 'A royal welcome awaits',
+                        hi: 'शाही स्वागत आपकी राह देख रहा है',
+                    },
+                    from: 4.2,
+                    to: 5.3,
+                    zone: {
+                        x: 0.5,
+                        y: 0.14,
+                        w: 0.84,
+                    },
+                    style: 'line',
+                },
+                {
+                    text: {
+                        en: 'The doors open for you',
+                        hi: 'द्वार आपके लिए खुलते हैं',
+                    },
+                    from: 7,
+                    to: 8.2,
+                    // Over the road below the gate: the pink wall above is too bright for words.
+                    zone: {
+                        x: 0.5,
+                        y: 0.78,
+                        w: 0.84,
+                    },
+                    style: 'line',
+                },
+                {
+                    text: {
+                        en: 'A hall of a thousand mirrors',
+                        hi: 'हज़ार आईनों का महल',
+                    },
+                    from: 10.4,
+                    to: 11.6,
+                    zone: {
+                        x: 0.5,
+                        y: 0.82,
+                        w: 0.86,
+                    },
+                    style: 'line',
+                },
+                {
+                    text: {
+                        en: 'Two families, one celebration',
+                        hi: 'दो परिवार, एक उत्सव',
+                    },
+                    from: 13.2,
+                    to: 14.4,
+                    // In the night sky inside the arch, clear of its mirror-work crown.
+                    zone: {
+                        x: 0.5,
+                        y: 0.32,
+                        w: 0.9,
+                    },
+                    style: 'script',
+                },
+                {
+                    text: {
+                        en: 'Under a sky full of stars',
+                        hi: 'तारों भरे आसमान के नीचे',
+                    },
+                    from: 16.2,
+                    to: 17.6,
+                    zone: {
+                        x: 0.5,
+                        y: 0.21,
+                        w: 0.84,
+                    },
+                    style: 'line',
+                },
+            ],
+        },
+    }),
 ];
 
 // Every Deepmala page sits on the same midnight paper, so no seams are drawn between them.
@@ -385,7 +600,73 @@ const overFilm = {
     divider: 'diya',
 } as const;
 
+// Both walks rest on the same six moments: the names on arrival, the date as the gate opens (or the
+// fireworks rise), the blessing just inside, the welcome deeper in, the celebrations before the
+// mandap or the terrace, and the replies at the end of the walk.
+const walkLayout: BlockPreset = {
+    cover: {
+        variant: 'film',
+        scene: 'film',
+        filmAt: 3.6,
+    },
+    date: {
+        ...overFilm,
+        filmAt: 6,
+    },
+    blessing: {
+        ...overFilm,
+        filmAt: 9.6,
+    },
+    card: {
+        ...overFilm,
+        variant: 'night',
+    },
+    welcome: {
+        ...overFilm,
+        variant: 'centered',
+        filmAt: 12.4,
+    },
+    story: {
+        ...overFilm,
+        variant: 'centered',
+    },
+    family: {
+        ...overFilm,
+        variant: 'centered',
+    },
+    events: {
+        ...overFilm,
+        variant: 'pavilions',
+        filmAt: 15.2,
+    },
+    countdown: {
+        ...overFilm,
+        variant: 'diyas',
+    },
+    gallery: {
+        ...overFilm,
+        variant: 'masks',
+    },
+    venue: overFilm,
+    dressCode: overFilm,
+    travel: overFilm,
+    rsvp: {
+        ...overFilm,
+        filmAt: 19.8,
+    },
+    wishes: {
+        ...overFilm,
+        variant: 'default',
+    },
+    closing: {
+        ...overFilm,
+        variant: 'rangoli',
+    },
+};
+
 export const luxuryLayouts: Record<string, BlockPreset> = {
+    'haveli-walk': walkLayout,
+    'palace-walk': walkLayout,
     'deepmala-yatra': {
         cover: {
             variant: 'film',

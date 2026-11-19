@@ -99,12 +99,24 @@ What the walk adds on top:
 - Camera boxes for stills, zoom-portal and fade exits.
 - The editor gets a scene list (add a film or a still, reorder, set the exit) in the Film panel.
 
-**Stage 3, the walk feel** (words on the film and opt-in settling done, 2026-11-19; settling is off by default)
+**Stage 3, the walk feel** (done, 2026-11-19: words on the film, chapter bar, "Read the invitation", lighter loading on Data Saver or 2G, and opt-in settling, off by default)
 - **Moment text**: short lines with a zone and a time window, placed in the editor by dragging a box over the frame.
 - Gentle rest settling, a chapter bar with Next and progress ticks, and "Read the invitation".
 - Lean loading: skip every other frame on Save-Data or 2G, and free far frames.
 
-**Stage 4, our own walk films**
+**Stage 4, our own walk films** (first one done, 2026-11-19: the **Haveli Walk** template, `/demo-haveli-walk`)
+- An illustrated 20 s walk (`scripts/dev/films/haveli-walk/scene.html`): by boat to the ghats as the diyas
+  light, fireworks over the haveli, up the steps, through the gate into a corridor of arches whose lamps
+  light ahead, and into the mandap court. Painted cards in depth seen through one moving camera.
+- Six chapters (3.6, 6.0, 9.6, 12.4, 15.2, 19.8 s) and five lines of words between them.
+- Frames: 27 sheets at 12 fps, 8.4 MB (`render.mjs haveli-walk --frames --fps 12 --quality 0.72`);
+  a light 720p mp4 for the studio preview, 3.1 MB (`--width 720 --crf 28`).
+- Second walk done the same day: the **Palace Walk** (`/demo-palace-walk`). A lamp-lit road at dusk, the
+  gate's studded doors swinging open, a pink courtyard of fountains, a hall of mirror mosaic that glints
+  as the guest moves, and a marble terrace with fireworks over the city. 6.45 MB of frames, 2.75 MB mp4.
+- Both walks share `scripts/dev/films/walk-kit.js` (camera path, cards, walls, lamps, arches) and one
+  layout (`walkLayout`): a new walk is mostly a new painting.
+
 Every film is our own original. Two ways to make them:
 1. **AI video from our own prompts** (Veo, Kling, Runway): 2–4 clips of 6–8 s, chained by first-frame
    and last-frame so they join cleanly. Use invented, temple-inspired or palace architecture,
@@ -132,8 +144,12 @@ Ram Darbar, Ik Onkar…), never AI-generated, with no zoom or effect over the de
 | Scroll | 60 fps on a mid-range Android, with no long tasks over 50 ms |
 | Fallback | Low-power, reduced motion or 2G: stills at each moment with a soft fade |
 
-## 6. Decisions needed from Rishi
+## 6. Decisions
 
-1. **Moment text** (Stage 3): build it, or keep "sections over a held frame" only?
-2. **Rest settling**: some guests find it pushy. Should it be on by default for walk templates?
-3. **Which first walk film to make** (haveli, palace or garden), and AI video or illustrated?
+Made on 2026-11-19:
+1. **Moment text**: built (Film panel, "Words on the film").
+2. **Rest settling**: built, but off by default; a template can switch it on.
+3. **Read the invitation**: a button under the chapter pill folds the walk away; the film rests, dimmed,
+   on its last moment, and "Back to the film" returns. The guest keeps their place both ways.
+
+4. **First walk films**: the illustrated haveli and palace walks (done). The garden walk is next.
