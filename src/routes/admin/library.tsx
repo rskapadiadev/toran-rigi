@@ -11,6 +11,7 @@ import { brandingInfo, type BrandingStyle, brandingStyles } from '@shared/brandi
 import { generateOrnament, generativeInfo, seedFrom, type StrokeRole } from '@shared/generative';
 import { motifLabel, motifs } from '@shared/motifs';
 import { categoryInfo } from '@shared/occasions';
+import { photoUrl } from '@shared/photos';
 import { ceremonyProps } from '@shared/props';
 import { generativeKinds, motifIds } from '@shared/schemas/invitation';
 import { themeCatalog, themeLayouts } from '@shared/themes';
@@ -27,6 +28,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import {
     BadgeCheck,
     Brush,
+    Clapperboard,
     Dices,
     DoorOpen,
     Gem,
@@ -72,6 +74,7 @@ const categoryIds = [
     'sections',
     'entrances',
     'backdrops',
+    'films',
     'edges',
     'motifs',
     'generative',
@@ -305,6 +308,27 @@ const catalogue: Category[] = [
         })),
     },
     {
+        id: 'films',
+        label: 'Films',
+        hint: 'A film behind the whole invitation: scroll the preview to walk through it',
+        icon: Clapperboard,
+        items: themeCatalog
+            .filter((t) => t.design.film?.behind)
+            .map((t) => ({
+                key: t.slug,
+                label: t.name,
+                hint: t.description,
+                thumb: t.design.film?.first ? (
+                    <img
+                        src={photoUrl(t.design.film.first)}
+                        alt=""
+                        loading="lazy"
+                        className="h-14 w-8 rounded-sm object-cover ring-1 ring-black/10"
+                    />
+                ) : undefined,
+            })),
+    },
+    {
         id: 'edges',
         label: 'Section edges',
         hint: 'Where one section meets the next',
@@ -480,8 +504,8 @@ function sampleExtras(type: SectionType, data: PublicInvitationData): PublicInvi
     return null;
 }
 
-// "Over the film": the Deepmala Yatra film behind a stack of sections, each resting on its own
-// moment, so scrolling the preview moves the film exactly as guests will see it.
+// "Over the film": a film template's film behind a stack of sections, each resting on its own moment
+// from that template's layout, so scrolling the preview moves the film exactly as guests will see it.
 const filmStack: SectionType[] = [
     'cover',
     'date',
@@ -492,14 +516,17 @@ const filmStack: SectionType[] = [
     'closing',
 ];
 
-function overFilm(withSections: (sections: SectionConfig[]) => Preview): Preview {
+function overFilm(
+    withSections: (sections: SectionConfig[]) => Preview,
+    slug = 'deepmala-yatra',
+): Preview {
     const preview = withSections(
         applyLayout(
             filmStack.map((type) => section(type)),
-            themeLayouts['deepmala-yatra'],
+            themeLayouts[slug],
         ),
     );
-    const film = themeCatalog.find((t) => t.slug === 'deepmala-yatra')?.design.film;
+    const film = themeCatalog.find((t) => t.slug === slug)?.design.film;
     return {
         ...preview,
         data: {
@@ -680,6 +707,8 @@ function previewFor(
                     edge: 'none',
                 }),
             ]);
+        case 'films':
+            return overFilm(withSections, key);
         case 'edges':
             return withSections([
                 section('welcome', {

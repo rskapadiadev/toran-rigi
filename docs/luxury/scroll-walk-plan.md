@@ -114,8 +114,13 @@ What the walk adds on top:
 - Second walk done the same day: the **Palace Walk** (`/demo-palace-walk`). A lamp-lit road at dusk, the
   gate's studded doors swinging open, a pink courtyard of fountains, a hall of mirror mosaic that glints
   as the guest moves, and a marble terrace with fireworks over the city. 6.45 MB of frames, 2.75 MB mp4.
-- Both walks share `scripts/dev/films/walk-kit.js` (camera path, cards, walls, lamps, arches) and one
-  layout (`walkLayout`): a new walk is mostly a new painting.
+- Third walk, the same day: the **Garden Walk** (`/demo-garden-walk`), for any tradition (no sacred
+  symbols; universal culture, its own demo wedding). Golden hour to blue hour: a lavender path to a rose
+  archway, fairy lights through an avenue, a rose tunnel, a pool of floating candles, an aisle to a
+  flower moon-gate by the lake. 6.18 MB of frames, 2.93 MB mp4.
+- The walks share `scripts/dev/films/walk-kit.js` (camera path, cards, walls, lamps, arches) and one
+  layout (`walkLayout`; the garden holds the invitation card where the others hold the blessing).
+- Studio: **Library → Films** shows every film template; scroll the preview to walk through it.
 
 Every film is our own original. Two ways to make them:
 1. **AI video from our own prompts** (Veo, Kling, Runway): 2–4 clips of 6–8 s, chained by first-frame
@@ -152,4 +157,4 @@ Made on 2026-11-19:
 3. **Read the invitation**: a button under the chapter pill folds the walk away; the film rests, dimmed,
    on its last moment, and "Back to the film" returns. The guest keeps their place both ways.
 
-4. **First walk films**: the illustrated haveli and palace walks (done). The garden walk is next.
+4. **First walk films**: the illustrated haveli, palace and garden walks (done).

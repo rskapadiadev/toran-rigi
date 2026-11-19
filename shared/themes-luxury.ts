@@ -67,6 +67,7 @@ const yatraFrames = framesOf('deepmala', 135);
 // The 20 s walk at 12 fps (crossfaded, so it still scrubs smoothly), to stay near 8 MB.
 const walkFrames = framesOf('haveli-walk', 240, 12);
 const palaceFrames = framesOf('palace-walk', 240, 12);
+const gardenFrames = framesOf('garden-walk', 240, 12);
 
 export const luxuryThemes: ThemeDefinition[] = [
     theme({
@@ -582,6 +583,112 @@ export const luxuryThemes: ThemeDefinition[] = [
             ],
         },
     }),
+    theme({
+        slug: 'garden-walk',
+        name: 'Garden Walk',
+        culture: 'universal',
+        category: 'luxury',
+        description:
+            'A walk plays behind the whole invitation: golden hour on a lavender path, fairy lights switching on through an avenue of trees, a tunnel of roses, a pool of floating candles, and an aisle to a flower moon-gate by the lake as the first stars come out.',
+        palette: {
+            bg: '#121a1e',
+            surface: '#1c262c',
+            ink: '#f8f0e6',
+            muted: '#bcb2a6',
+            primary: '#e8c9a0',
+            accent: '#c96a7a',
+            gold: '#dcbc80',
+        },
+        display: 'cormorant',
+        body: 'cormorant',
+        opening: 'film',
+        generative: 'lotus',
+        texture: 'paper',
+        titles: 'script',
+        // Our own illustrated walk (scripts/dev/films/garden-walk), one 20 s film in frames. No sacred
+        // symbols, so it suits any tradition.
+        film: {
+            src: '/kits/garden-walk/film.mp4',
+            first: '/kits/garden-walk/film-first.webp',
+            last: '/kits/garden-walk/film-last.webp',
+            namesAt: 3.6,
+            behind: true,
+            frames: gardenFrames,
+            moments: [
+                {
+                    text: {
+                        en: 'Golden hour in the garden',
+                        hi: 'बग़ीचे में सुनहरी शाम',
+                    },
+                    from: 4.2,
+                    to: 5.3,
+                    zone: {
+                        x: 0.5,
+                        y: 0.14,
+                        w: 0.84,
+                    },
+                    style: 'line',
+                },
+                {
+                    text: {
+                        en: 'Follow the lights',
+                        hi: 'रोशनी के पीछे चलिए',
+                    },
+                    from: 7,
+                    to: 8.2,
+                    zone: {
+                        x: 0.5,
+                        y: 0.14,
+                        w: 0.8,
+                    },
+                    style: 'kicker',
+                },
+                {
+                    text: {
+                        en: 'Through the roses',
+                        hi: 'गुलाबों के बीच से',
+                    },
+                    from: 10.4,
+                    to: 11.6,
+                    // Over the sunset at the end of the tunnel, clear of the roses overhead.
+                    zone: {
+                        x: 0.5,
+                        y: 0.42,
+                        w: 0.84,
+                    },
+                    style: 'line',
+                },
+                {
+                    text: {
+                        en: 'Two hearts, one promise',
+                        hi: 'दो दिल, एक वादा',
+                    },
+                    from: 13.2,
+                    to: 14.4,
+                    zone: {
+                        x: 0.5,
+                        y: 0.2,
+                        w: 0.9,
+                    },
+                    style: 'script',
+                },
+                {
+                    text: {
+                        en: 'Under the first stars',
+                        hi: 'पहले तारों के नीचे',
+                    },
+                    from: 16.2,
+                    to: 17.6,
+                    zone: {
+                        x: 0.5,
+                        y: 0.16,
+                        w: 0.84,
+                    },
+                    style: 'line',
+                },
+            ],
+        },
+    }),
 ];
 
 // Every Deepmala page sits on the same midnight paper, so no seams are drawn between them.
@@ -667,6 +774,16 @@ const walkLayout: BlockPreset = {
 export const luxuryLayouts: Record<string, BlockPreset> = {
     'haveli-walk': walkLayout,
     'palace-walk': walkLayout,
+    // The garden has no blessing page of its own, so the invitation card holds the third moment.
+    'garden-walk': {
+        ...walkLayout,
+        blessing: overFilm,
+        card: {
+            ...overFilm,
+            variant: 'night',
+            filmAt: 9.6,
+        },
+    },
     'deepmala-yatra': {
         cover: {
             variant: 'film',

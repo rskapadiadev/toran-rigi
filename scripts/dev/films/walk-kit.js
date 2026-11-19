@@ -184,3 +184,5 @@ function onWall(x, zc, base, pts) {
   for (const [u, v] of pts) { const p = P(x, base + v, zc + u); if (p.d < 20) return null; out.push([p.x, p.y]); }
   return out;
 }
+// An open outline (an arch's sides and top without the line across its foot).
+function polyline(g, pts) { g.beginPath(); pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); }

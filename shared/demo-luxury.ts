@@ -604,3 +604,69 @@ if (deepmalaDemo)
         themeSlug: 'palace-walk',
         seed: 7359,
     });
+
+// Garden Walk: a wedding of no particular tradition, in a garden by a lake.
+luxuryDemos.push({
+    slug: 'demo-garden-walk',
+    themeSlug: 'garden-walk',
+    culture: 'universal.modern',
+    locales: ['en'],
+    calendars: [],
+    seed: 7367,
+    content: {
+        people: {
+            one: { name: t('Rohan') },
+            two: { name: t('Elise') },
+        },
+        headline: t('invite you to celebrate their wedding'),
+        welcome: t('In the garden where we first said hello, at the hour the light turns gold.'),
+        story: t(
+            'We met at a friend’s garden party, both hiding from the rain under the same rose arbour. Three summers later, we are getting married under another one.',
+        ),
+        family: t('With love from the Mehtas and the Laurents'),
+        closing: t('Dinner, dancing and a sky full of stars.'),
+        gallery: [],
+    },
+    events: days(
+        [
+            {
+                kind: 'ceremony',
+                title: 'Garden ceremony',
+                at: '2027-02-13T16:30',
+            },
+            {
+                kind: 'reception',
+                title: 'Dinner under the stars',
+                at: '2027-02-13T19:00',
+            },
+        ],
+        'The Rose Garden Estate',
+        'Coonoor, Nilgiris',
+    ),
+    extras: {
+        wishes: { enabled: true },
+        travel: [
+            {
+                title: t('Getting there'),
+                body: t(
+                    'Coimbatore airport is a scenic three hours away. Cars leave at noon on the 13th.',
+                ),
+            },
+        ],
+    },
+    sections: sections([
+        'cover',
+        'date',
+        'card',
+        'welcome',
+        'story',
+        'events',
+        'countdown',
+        'venue',
+        'travel',
+        'family',
+        'rsvp',
+        'wishes',
+        'closing',
+    ]),
+});
