@@ -123,9 +123,27 @@ What the walk adds on top:
 - Studio: **Library → Films** shows every film template; scroll the preview to walk through it.
 - Loading follows the guest (2026-11-19): before the tap only the opening's sheets load (5 of 27 for a
   walk, about 1.3 MB); once open, the next 6 s of film is always fetched ahead (2 s on Data Saver or 2G).
-- **Film editor** (studio, 2026-11-19): "Film editor" in the editor's top bar (or "Edit on the film"
-  under Words) puts the film big in the middle: words dragged and widened on the picture, a timeline
-  with a filmstrip, playhead, chapter marks, word bars and scenes (Space plays, ← → step, undo works).
+- **Film editor** (studio, 2026-11-19): film invitations open in it ("Page view" switches back). The
+  real invitation plays in the middle with its film: click a section or text on it to edit, drag words
+  on the picture. Beside it, the chosen section's settings (layout, entrance, backdrop, edge, film
+  moment) or words. Below, a timeline: filmstrip, playhead, a **Sections** track (drag a section in
+  time; the page keeps film order; "Add section" drops one at the playhead), words and scenes.
+  Play scrolls like a guest; Space plays, ← → step, ⌘Z undoes. 
+- **Layers** (step 2, 2026-11-19): "Add layer" puts a photo (arch, circle or framed), the couple's
+  monogram, a motif-library ornament, or an effect (rose or marigold petals, sparkles, fireworks, sky
+  lanterns) on the film for a stretch of seconds, with an entrance (fade, rise, zoom, blur). Dragged
+  and widened on the picture, slid and stretched on the Layers track (overlaps stack). Drawn on the
+  invitation (`FilmLayers.tsx`) and in the WhatsApp video; effects are drawn from a clock
+  (`layers.ts`), so both match. Design JSON (`film.layers`), no migration.
+- **Keyframes** (step 3, 2026-11-19): a layer's place, size, fade and turn at chosen seconds, eased
+  between (`poseAt`, `withKey` in `layers.ts`). With the playhead on a keyframe, dragging the layer
+  edits it; elsewhere it makes one there. Diamonds on the layer's bar jump to and retime them; the
+  Motion list sets fade and turn. Same on the invitation, in the editor and in the WhatsApp video.
+- **Smoothness** (2026-11-19, production build): the clock is a value only the playhead, clock and
+  handles follow; the player's invitation is memoized; drags move only their handle and save once
+  (one undo step). Playing and dragging: no long tasks, ~60 fps. A far playhead jump can still cost
+  one ~150 ms frame in a GPU-less test browser (first paint of that part of the page).
+  Next: our own landing page.
 - **WhatsApp video** (couples, 2026-11-19): "Share video" in the couple's editor once a film invitation
   is live. Made on their device (WebCodecs, `src/invitation/film/video.ts`, our own MP4 writer in
   `mp4.ts`): the walk holds on their names, shows the film's words, ends on a card with their link.

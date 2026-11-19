@@ -29,5 +29,15 @@ export function FilmTravel({ from, to, veil, order }: TravelProps) {
     // One screen for the last chapter's words to leave, plus the film's own travel.
     const screens = String(1 + travelScreens(to - from));
     const tall = { height: `calc(var(--inv-screen, 100svh) * ${screens})` };
-    return <div ref={ref} aria-hidden style={tall} data-film-travel />;
+    // Its film times, so the studio's film editor can turn a second into a scroll position.
+    return (
+        <div
+            ref={ref}
+            aria-hidden
+            style={tall}
+            data-film-travel
+            data-film-from={from}
+            data-film-to={to}
+        />
+    );
 }

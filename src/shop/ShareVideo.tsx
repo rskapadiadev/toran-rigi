@@ -121,6 +121,7 @@ function VideoMaker({ base }: Props) {
                 zone: m.zone,
                 style: m.style ?? 'line',
             })),
+            layers: film?.layers ?? [],
             dir,
         };
         const fonts = {

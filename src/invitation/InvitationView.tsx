@@ -488,6 +488,7 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
                 <FilmStage
                     scenes={scenes}
                     moments={film?.moments}
+                    layers={film?.layers}
                     settle={film?.settle}
                     resting={reading ? chapters.at(-1)?.at : undefined}
                     poster={film?.first}

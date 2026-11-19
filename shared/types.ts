@@ -9,9 +9,11 @@ import type {
     eventKinds,
     extrasSchema,
     filmFramesSchema,
+    filmLayerSchema,
     filmMomentSchema,
     filmSceneSchema,
     focusSchema,
+    layerKeySchema,
     localizedText,
     packageLimitsSchema,
     paletteSchema,
@@ -35,6 +37,8 @@ export type FilmFramesConfig = z.infer<typeof filmFramesSchema>;
 export type FilmSceneConfig = z.infer<typeof filmSceneSchema>;
 export type FilmFocus = z.infer<typeof focusSchema>;
 export type FilmMoment = z.infer<typeof filmMomentSchema>;
+export type FilmLayer = z.infer<typeof filmLayerSchema>;
+export type LayerKey = z.infer<typeof layerKeySchema>;
 export type InvitationExtras = z.infer<typeof extrasSchema>;
 export type PackageLimits = z.infer<typeof packageLimitsSchema>;
 

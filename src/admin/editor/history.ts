@@ -6,6 +6,8 @@ interface History {
     past: Draft[];
     present: Draft | null;
     future: Draft[];
+    // The gesture the last change came from: its later changes merge into the same undo step.
+    gesture?: string;
 }
 
 const LIMIT = 80;
@@ -19,17 +21,26 @@ export function useDraftHistory(base: Draft | null) {
     });
     const draft = h.present ?? base;
 
+    // `gesture` names one drag: all its moves become a single step to undo.
     const set = useCallback(
-        (update: (d: Draft) => Draft) => {
+        (update: (d: Draft) => Draft, gesture?: string) => {
             setH((cur) => {
                 const from = cur.present ?? base;
                 if (!from) return cur;
                 const next = update(from);
                 if (next === from) return cur;
+                if (gesture && cur.gesture === gesture)
+                    return {
+                        past: cur.past,
+                        present: next,
+                        future: [],
+                        gesture,
+                    };
                 return {
                     past: [...cur.past, from].slice(-LIMIT),
                     present: next,
                     future: [],
+                    gesture,
                 };
             });
         },

@@ -156,6 +156,43 @@ export const filmMomentSchema = z.object({
     style: z.enum(momentStyles).optional(),
 });
 
+// Layers placed on the film for a stretch of seconds: a photo, the couple's monogram, an ornament from
+// the motif library, or an effect over the whole picture. Each fades in with its entrance.
+export const layerKinds = ['photo', 'monogram', 'ornament', 'effect'] as const;
+export const layerEffects = ['petals', 'marigold', 'sparkles', 'fireworks', 'lanterns'] as const;
+export const layerEnters = ['fade', 'rise', 'zoom', 'blur'] as const;
+export const photoShapes = ['arch', 'circle', 'frame'] as const;
+
+// A layer's pose at a second of the film; between two, it moves smoothly from one to the next.
+export const layerKeySchema = z.object({
+    at: z.number().min(0).max(600),
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+    w: z.number().min(0.05).max(1),
+    opacity: z.number().min(0).max(1),
+    rotate: z.number().min(-180).max(180),
+});
+
+export const filmLayerSchema = z.object({
+    kind: z.enum(layerKinds),
+    from: z.number().min(0).max(600),
+    to: z.number().min(0).max(600),
+    // The layer's centre and width, as fractions of the upright picture (effects fill it).
+    zone: z.object({
+        x: z.number().min(0).max(1),
+        y: z.number().min(0).max(1),
+        w: z.number().min(0.05).max(1),
+    }),
+    enter: z.enum(layerEnters).optional(),
+    photo: z.string().max(300).optional(),
+    shape: z.enum(photoShapes).optional(),
+    // A motif id (see shared/motifs.ts; checked where it's drawn, as the list is defined below).
+    motif: z.string().max(40).optional(),
+    effect: z.enum(layerEffects).optional(),
+    // Keyframes: without them the layer stays at its zone.
+    keys: z.array(layerKeySchema).max(16).optional(),
+});
+
 export const designSchema = z.object({
     palette: paletteSchema,
     fonts: z.object({
@@ -180,6 +217,7 @@ export const designSchema = z.object({
             // Several scenes played end to end on one timeline; without them the film is one scene.
             scenes: z.array(filmSceneSchema).max(12).optional(),
             moments: z.array(filmMomentSchema).max(24).optional(),
+            layers: z.array(filmLayerSchema).max(24).optional(),
             // Ease to the nearest moment when the guest stops scrolling (off unless the studio asks).
             settle: z.boolean().optional(),
         })

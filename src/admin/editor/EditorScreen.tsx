@@ -243,11 +243,12 @@ function EditorPage({ id }: { id: string }) {
     const [opening, setOpening] = useState(false);
     const [replay, setReplay] = useState(0);
     // The film editor takes the middle of the screen; a panel can open it on a line of words.
-    const [filmOpen, setFilmOpen] = useState(false);
+    // Film invitations open in it; null follows that default until the studio switches view.
+    const [filmChoice, setFilmChoice] = useState<boolean | null>(null);
     const [filmWord, setFilmWord] = useState<number | null>(null);
     const openFilm = useCallback((word?: number) => {
         setFilmWord(word ?? null);
-        setFilmOpen(true);
+        setFilmChoice(true);
     }, []);
     // Changing the entry screen (from any panel) plays it on the canvas straight away.
     const chosenOpening = draft?.design.opening;
@@ -365,6 +366,7 @@ function EditorPage({ id }: { id: string }) {
             // Clicking a section on the canvas shows just that section's fields on the left.
             select: (type, detail) => {
                 setSelected(type);
+                setFilmWord(null);
                 setTab('section');
                 setFocusEvent(detail?.event);
                 setPhotoFirst(detail?.photo ?? false);
@@ -412,6 +414,10 @@ function EditorPage({ id }: { id: string }) {
             </div>
         );
 
+    const filmOpen = Boolean(draft.design.film?.behind) && (filmChoice ?? true);
+    const setFilmOpen = (open: boolean | ((was: boolean) => boolean)) => {
+        setFilmChoice(typeof open === 'function' ? open(filmOpen) : open);
+    };
     const index = selected ? draft.sections.findIndex((s) => s.type === selected) : -1;
     const section = index >= 0 ? draft.sections[index] : undefined;
     const occasion = occasionOf(draft.occasion);
@@ -448,6 +454,85 @@ function EditorPage({ id }: { id: string }) {
             };
         });
     };
+
+    // The chosen text's style and the chosen section's settings: in the right column of the page
+    // view, and beside the player in the film editor.
+    const textSettings = selectedText ? (
+        <div className="border-b pb-5">
+            <TextStylePanel
+                path={selectedText}
+                style={draft.content.textStyles?.[selectedText] ?? {}}
+                palette={draft.design.palette}
+                onChange={(style) => {
+                    setTextStyle(selectedText, style);
+                }}
+                onReset={() => {
+                    setTextStyle(selectedText, {});
+                }}
+            />
+        </div>
+    ) : null;
+    const blockSettings = section ? (
+        <>
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
+                        Section
+                    </p>
+                    <h2 className="text-base font-semibold">{shortName(section.type)}</h2>
+                </div>
+                <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="Deselect"
+                    onClick={() => {
+                        deselect();
+                    }}
+                >
+                    <X />
+                </Button>
+            </div>
+            <div className="grid grid-cols-3 gap-1.5">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={index <= 0}
+                    onClick={() => {
+                        moveSection(-1);
+                    }}
+                >
+                    <ArrowUp /> Up
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={index >= draft.sections.length - 1}
+                    onClick={() => {
+                        moveSection(1);
+                    }}
+                >
+                    <ArrowDown /> Down
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                        patchSection({ enabled: !section.enabled });
+                    }}
+                >
+                    {section.enabled ? <EyeOff /> : <Eye />}
+                    {section.enabled ? 'Hide' : 'Show'}
+                </Button>
+            </div>
+            <BlockEditor
+                section={section}
+                previousScene={undefined}
+                calm={calm}
+                film={draft.design.film?.behind ? timelineOf(draft.design.film) : undefined}
+                update={patchSection}
+            />
+        </>
+    ) : null;
 
     return (
         <AutoTranslateProvider value={translator.status}>
@@ -719,9 +804,33 @@ function EditorPage({ id }: { id: string }) {
                                 <FilmEditor
                                     draft={draft}
                                     set={set}
+                                    preview={preview}
+                                    invitationId={id}
+                                    editing={editing}
                                     locale={locale}
                                     selected={filmWord}
-                                    onSelect={setFilmWord}
+                                    onSelect={(word) => {
+                                        // Words and sections are chosen one at a time.
+                                        setFilmWord(word);
+                                        if (word !== null) {
+                                            setSelected(null);
+                                            setSelectedText(null);
+                                        }
+                                    }}
+                                    section={selected}
+                                    onSection={(type) => {
+                                        select(type);
+                                        setFilmWord(null);
+                                        setTab('section');
+                                    }}
+                                    settings={
+                                        textSettings || blockSettings ? (
+                                            <div className="space-y-5">
+                                                {textSettings}
+                                                {blockSettings}
+                                            </div>
+                                        ) : null
+                                    }
                                     onClose={() => {
                                         setFilmOpen(false);
                                     }}
@@ -793,90 +902,8 @@ function EditorPage({ id }: { id: string }) {
                         <aside className={cn('w-[320px] shrink-0 border-s', filmOpen && 'hidden')}>
                             <ScrollArea className="h-full">
                                 <div className="space-y-5 p-4">
-                                    {selectedText && (
-                                        <div className="border-b pb-5">
-                                            <TextStylePanel
-                                                path={selectedText}
-                                                style={
-                                                    draft.content.textStyles?.[selectedText] ?? {}
-                                                }
-                                                palette={draft.design.palette}
-                                                onChange={(style) => {
-                                                    setTextStyle(selectedText, style);
-                                                }}
-                                                onReset={() => {
-                                                    setTextStyle(selectedText, {});
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-                                    {section ? (
-                                        <>
-                                            <div className="flex items-center justify-between">
-                                                <div>
-                                                    <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
-                                                        Section
-                                                    </p>
-                                                    <h2 className="text-base font-semibold">
-                                                        {shortName(section.type)}
-                                                    </h2>
-                                                </div>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon-sm"
-                                                    aria-label="Deselect"
-                                                    onClick={() => {
-                                                        deselect();
-                                                    }}
-                                                >
-                                                    <X />
-                                                </Button>
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-1.5">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    disabled={index <= 0}
-                                                    onClick={() => {
-                                                        moveSection(-1);
-                                                    }}
-                                                >
-                                                    <ArrowUp /> Up
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    disabled={index >= draft.sections.length - 1}
-                                                    onClick={() => {
-                                                        moveSection(1);
-                                                    }}
-                                                >
-                                                    <ArrowDown /> Down
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        patchSection({ enabled: !section.enabled });
-                                                    }}
-                                                >
-                                                    {section.enabled ? <EyeOff /> : <Eye />}
-                                                    {section.enabled ? 'Hide' : 'Show'}
-                                                </Button>
-                                            </div>
-                                            <BlockEditor
-                                                section={section}
-                                                previousScene={undefined}
-                                                calm={calm}
-                                                film={
-                                                    draft.design.film?.behind
-                                                        ? timelineOf(draft.design.film)
-                                                        : undefined
-                                                }
-                                                update={patchSection}
-                                            />
-                                        </>
-                                    ) : (
+                                    {textSettings}
+                                    {blockSettings ?? (
                                         <div className="space-y-4 text-sm text-muted-foreground">
                                             <div className="flex items-center gap-2 text-foreground">
                                                 <MousePointerClick className="size-4" />

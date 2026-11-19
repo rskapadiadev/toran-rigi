@@ -3,7 +3,7 @@
 // moments, and sections sit over the frame held between travels.
 import { frameAt, frameCell, momentAlpha, sceneAt, type TimedScene } from '@shared/film';
 import { photoUrl } from '@shared/photos';
-import type { FilmMoment } from '@shared/types';
+import type { FilmLayer, FilmMoment } from '@shared/types';
 import { type MotionValue, motionValue, useReducedMotion } from 'motion/react';
 import {
     createContext,
@@ -17,6 +17,7 @@ import {
 } from 'react';
 
 import { useInvite } from '../context';
+import { FilmLayers } from './FilmLayers';
 import { ASPECT, paint, paintFilm, type Picture, type Pictures } from './paint';
 
 export interface FilmTravelSpan {
@@ -158,6 +159,8 @@ interface StageProps {
     still: boolean;
     // Words placed on the film at its moments.
     moments?: FilmMoment[];
+    // Photos, the monogram, ornaments and effects shown for their stretch of seconds.
+    layers?: FilmLayer[];
     // Ease to the nearest moment when the guest stops scrolling.
     settle?: boolean;
     // Reading the invitation without the walk: the film rests on this moment, dimmed behind the words.
@@ -184,11 +187,12 @@ export function FilmStage({
     scrollRoot,
     still,
     moments,
+    layers,
     settle = false,
     resting,
     children,
 }: StageProps) {
-    const { t: say, dir } = useInvite();
+    const { t: say, dir, names } = useInvite();
     const words = useRef<(HTMLElement | null)[]>([]);
     const reduced = useReducedMotion() === true;
     const snap = still || reduced;
@@ -520,6 +524,16 @@ export function FilmStage({
                     className="absolute inset-0 bg-[#04061a] transition-opacity duration-300"
                     style={{ opacity: 0 }}
                 />
+                {layers && layers.length > 0 && (
+                    <FilmLayers
+                        layers={layers}
+                        time={time}
+                        one={names.one}
+                        two={names.two}
+                        dir={dir}
+                        still={snap}
+                    />
+                )}
                 {moments && moments.length > 0 && (
                     <div className="[container-type:size] absolute inset-y-0 start-1/2 aspect-[9/16] h-full -translate-x-1/2 rtl:translate-x-1/2">
                         {moments.map((m, i) => {

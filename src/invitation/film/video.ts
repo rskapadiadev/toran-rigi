@@ -2,8 +2,11 @@
 // words and an end card with their link, drawn frame by frame and encoded on their own device
 // (WebCodecs); nothing is uploaded. The film is drawn by the same code as the invitation page.
 import { momentAlpha, type TimedScene, timelineLength } from '@shared/film';
-import type { FilmMoment } from '@shared/types';
+import { type MotifId, motifs } from '@shared/motifs';
+import { photoUrl } from '@shared/photos';
+import type { FilmLayer, FilmMoment } from '@shared/types';
 
+import { drawEffect, enterLook, initialsOf, poseAt, shapeAspect } from './layers';
 import { filmLoader } from './loader';
 import { mp4, type Mp4Sample } from './mp4';
 import { paintFilm } from './paint';
@@ -35,6 +38,7 @@ export interface VideoText {
     credit: string;
     namesAt: number;
     words: VideoWords[];
+    layers: FilmLayer[];
     dir: 'ltr' | 'rtl';
 }
 
@@ -218,6 +222,121 @@ function drawTitles(
     ctx.restore();
 }
 
+// The layers' photos, decoded before the first frame is drawn.
+async function photosOf(layers: FilmLayer[]) {
+    const out = new Map<string, ImageBitmap>();
+    const keys = [
+        ...new Set(layers.flatMap((l) => (l.kind === 'photo' && l.photo ? [l.photo] : []))),
+    ];
+    await Promise.all(
+        keys.map(async (key) => {
+            const bitmap = await fetch(photoUrl(key))
+                .then((r) => (r.ok ? r.blob() : null))
+                .then((blob) => (blob ? createImageBitmap(blob) : null))
+                .catch(() => null);
+            if (bitmap) out.set(key, bitmap);
+        }),
+    );
+    return out;
+}
+
+const GOLD = '#d9b36a';
+
+// Photos, the monogram and ornaments where the invitation places them, and effects over all.
+function drawLayers(
+    ctx: Ctx,
+    text: VideoText,
+    fonts: VideoFonts,
+    photos: Map<string, ImageBitmap>,
+    at: number,
+    clock: number,
+) {
+    for (const layer of text.layers) {
+        const a = momentAlpha(layer, at);
+        if (a <= 0) continue;
+        if (layer.kind === 'effect') {
+            drawEffect(ctx, layer.effect ?? 'petals', clock, W, H, a);
+            continue;
+        }
+        const look = enterLook(layer.enter ?? 'fade', a);
+        const pose = poseAt(layer, at);
+        const w = pose.w * W;
+        const aspect = layer.kind === 'photo' ? shapeAspect[layer.shape ?? 'arch'] : 1;
+        const h = w / aspect;
+        const cx = pose.x * W;
+        const cy = pose.y * H + look.lift;
+        ctx.save();
+        ctx.globalAlpha = a * pose.opacity;
+        if (look.blur > 0) ctx.filter = `blur(${String(look.blur)}px)`;
+        ctx.translate(cx, cy);
+        ctx.rotate((pose.rotate * Math.PI) / 180);
+        ctx.scale(look.scale, look.scale);
+        ctx.translate(-w / 2, -h / 2);
+        ctx.shadowColor = 'rgba(0,0,0,0.55)';
+        ctx.shadowBlur = 24;
+        if (layer.kind === 'photo') {
+            const shape = layer.shape ?? 'arch';
+            const outline = (inset: number) => {
+                ctx.beginPath();
+                if (shape === 'circle') ctx.arc(w / 2, h / 2, w / 2 - inset, 0, Math.PI * 2);
+                else
+                    ctx.roundRect(
+                        inset,
+                        inset,
+                        w - inset * 2,
+                        h - inset * 2,
+                        shape === 'arch' ? [w / 2 - inset, w / 2 - inset, 8, 8] : 8,
+                    );
+            };
+            outline(0);
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = GOLD;
+            ctx.stroke();
+            const picture = layer.photo ? photos.get(layer.photo) : undefined;
+            if (picture) {
+                const pad = w * 0.03;
+                outline(pad);
+                ctx.clip();
+                // Cover the frame, cropping the photo's longer side.
+                const scale = Math.max(
+                    (w - pad * 2) / picture.width,
+                    (h - pad * 2) / picture.height,
+                );
+                const pw = picture.width * scale;
+                const ph = picture.height * scale;
+                ctx.drawImage(picture, (w - pw) / 2, (h - ph) / 2, pw, ph);
+            }
+        } else if (layer.kind === 'monogram') {
+            ctx.beginPath();
+            ctx.arc(w / 2, h / 2, w * 0.46, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = GOLD;
+            ctx.lineWidth = w * 0.016;
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(w / 2, h / 2, w * 0.41, 0, Math.PI * 2);
+            ctx.lineWidth = w * 0.006;
+            ctx.stroke();
+            const letters = initialsOf(text.one, text.two);
+            ctx.fillStyle = GOLD;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = `${String(w * (text.two ? 0.24 : 0.4))}px ${fonts.script}`;
+            ctx.fillText(letters, w / 2, h / 2);
+        } else if (layer.motif && layer.motif in motifs) {
+            ctx.scale(w / 100, h / 100);
+            ctx.fillStyle = GOLD;
+            for (const d of motifs[layer.motif as MotifId]) ctx.fill(new Path2D(d), 'evenodd');
+        }
+        ctx.restore();
+    }
+}
+
 // The best H.264 setting this device can encode, at the video's size.
 async function encoderConfig(): Promise<VideoEncoderConfig | null> {
     for (const codec of ['avc1.640028', 'avc1.4d0028', 'avc1.42e028', 'avc1.42e01f']) {
@@ -269,6 +388,7 @@ export async function makeFilmVideo(
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('This device can’t make videos yet.');
     const loader = filmLoader(scenes, () => undefined, 6);
+    const photos = await photosOf(text.layers);
     const length = timelineLength(scenes);
     const filmEnd = length + NAMES_HOLD;
     const total = Math.round(videoSeconds(scenes) * FPS);
@@ -311,6 +431,7 @@ export async function makeFilmVideo(
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, W, H);
             paintFilm(ctx, column, scenes, at, loader.pictures, false);
+            if (t < filmEnd) drawLayers(ctx, text, fonts, photos, at, t);
             drawTitles(ctx, text, fonts, t, at, filmEnd);
             const frame = new VideoFrame(canvas, {
                 timestamp: Math.round((i * 1e6) / FPS),
@@ -329,6 +450,7 @@ export async function makeFilmVideo(
     } finally {
         if (encoder.state !== 'closed') encoder.close();
         loader.close();
+        for (const bitmap of photos.values()) bitmap.close();
     }
     if (out.error) throw out.error;
     if (!out.avcC) throw new Error('The video couldn’t be finished. Please try again.');
