@@ -1,0 +1,893 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../walk-kit.js"></script>
+<script>
+// Himalaya Walk: an original illustrated walk for the film behind the invitation, in bright morning
+// light. A stone path beside a glacial river leads up a stair between terraced fields to an invented
+// mountain shrine of grey granite and timber; through its gate into a courtyard of brass bells and
+// marigolds; into a pillared hall where the bells sway in shafts of sun; and it comes to rest before
+// the closed carved doors of the sanctum, glowing softly from within. Invented architecture, no real
+// temple; no figures, symbols or sacred text anywhere.
+// render(t) is deterministic, so every render and every frame sheet matches.
+window.SECONDS = 20;
+
+// ---------- the world (z forward, y down, the valley floor at y = 0) ----------
+const STEP0 = 1200, STEP_D = 90, STEPS = 10, RISE = 40, TOP = -STEPS * RISE, STEP_END = STEP0 + STEPS * STEP_D;
+const STAIR_X = 240;
+const GATE_Z = 2300, COURT_X = 620, HALL_Z = 3400, HALL_X = 300, CEIL = TOP - 560, DOOR_Z = 4700, TOWER_Z = 4900;
+const PILLAR_X = 190;
+const PILLARS = [3600, 3860, 4120, 4380];
+const BAYS = [3730, 3990, 4250, 4510];
+const GATE = { w: 280, h: 340 };
+const DOOR = { w: 260, h: 400 };
+const FRAMES_Z = [];
+
+// The holds the invitation rests on: 3.6 the valley and the peaks, 6.0 the foot of the stair, 9.6 just
+// inside the gate, 12.4 the hall of bells, 15.2 deeper in, 19.8 before the sanctum doors.
+const keys = [[0, -760], [3.6, -700], [6.0, 450], [8.4, 1750], [9.6, 2350], [12.4, 3500], [15.2, 3850], [17.6, 3990], [20, 4020]];
+const walkAt = walkPath(keys);
+// Eye height: on the valley path, rising with the stair to the courtyard.
+const eyeAt = (z) => -150 + TOP * smooth((z - 1100) / (STEP_END + 50 - 1100));
+
+// ---------- helpers of this scene ----------
+// A ragged line between two points (midpoint displacement), for ridges and rock.
+function jag(x0, y0, x1, y1, rough, depth, r) {
+  let pts = [[x0, y0], [x1, y1]];
+  for (let d = 0; d < depth; d++) {
+    const out = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const [ax, ay] = pts[i - 1], [bx, by] = pts[i], len = Math.hypot(bx - ax, by - ay) || 1;
+      const off = (r() - 0.5) * len * rough;
+      out.push([(ax + bx) / 2 - ((by - ay) / len) * off, (ay + by) / 2 + ((bx - ax) / len) * off], [bx, by]);
+    }
+    pts = out;
+  }
+  return pts;
+}
+function hull(pts) {
+  const p = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo = [], up = [];
+  for (const q of p) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], q) <= 0) up.pop(); up.push(q); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+function light(p, r, col, a) { if (p.d < 30 || a <= 0) return; ctx.save(); ctx.globalCompositeOperation = 'lighter'; glow(ctx, p.x, p.y, Math.min(r * p.s, 380), col, a); ctx.restore(); }
+// A strip of floor (or ceiling) seen only from the side it faces.
+function deck(x0, x1, y, z0, z1, fill, ceiling = false) { if (ceiling ? cam.y <= y : cam.y >= y) return; floorStrip(x0, x1, y, z0, z1, fill); }
+// Ashlar: courses of grey granite blocks of uneven length.
+function ashlar(g, x0, y0, x1, y1, course, seed, tone = 0) {
+  const r = rng(seed);
+  g.fillStyle = `rgb(${92 + tone},${88 + tone},${82 + tone})`; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+  for (let y = y1; y > y0; y -= course) {
+    let x = x0 - r() * course;
+    while (x < x1) {
+      const w = course * (1.2 + r() * 1.6), v = Math.round(132 + tone + (r() - 0.5) * 26);
+      g.fillStyle = `rgb(${v + 4},${v + 1},${v - 4})`;
+      g.fillRect(Math.max(x, x0), Math.max(y - course, y0), Math.min(w, x1 - x) - 3, Math.min(course, y - y0) - 3);
+      g.fillStyle = 'rgba(255,255,255,0.10)'; g.fillRect(Math.max(x, x0), Math.max(y - course, y0), Math.min(w, x1 - x) - 3, 3);
+      x += w;
+    }
+  }
+}
+// A timber band of the stone-and-timber walls, with a carved row of small rosettes.
+function timber(g, x0, x1, y, h, carved = true) {
+  const tg = g.createLinearGradient(0, y - h, 0, y); tg.addColorStop(0, '#8a5a34'); tg.addColorStop(1, '#5a3820');
+  g.fillStyle = tg; g.fillRect(x0, y - h, x1 - x0, h);
+  g.fillStyle = 'rgba(30,16,8,0.5)'; g.fillRect(x0, y - 3, x1 - x0, 3);
+  if (carved && h >= 22) for (let x = x0 + h; x < x1 - h / 2; x += h * 1.4) rosette(g, x, y - h / 2, h * 0.36, 'rgba(240,200,140,0.55)');
+}
+// Slate courses: rows of overlapping scallops over a trapezoid roof.
+function slateRoof(g, xb, yb, xt, yt, seed) {
+  g.save();
+  g.beginPath(); g.moveTo(-xb, yb); g.lineTo(-xt, yt); g.lineTo(xt, yt); g.lineTo(xb, yb); g.closePath();
+  const sg = g.createLinearGradient(-xb, 0, xb, 0); sg.addColorStop(0, '#7a828c'); sg.addColorStop(0.45, '#5e666e'); sg.addColorStop(1, '#3a4048');
+  g.fillStyle = sg; g.fill(); g.clip();
+  const r = rng(seed);
+  g.strokeStyle = 'rgba(30,34,40,0.55)'; g.lineWidth = 2;
+  for (let y = yb; y > yt; y -= 16) {
+    const off = ((yb - y) / 16) % 2 ? 11 : 0;
+    for (let x = -xb - 22 + off; x < xb + 22; x += 22) { g.beginPath(); g.arc(x, y - 4, 11, 0.1, Math.PI - 0.1); g.stroke(); }
+  }
+  // Snow lying on the slates, thicker at the top.
+  g.fillStyle = 'rgba(250,252,255,0.95)';
+  g.beginPath(); g.moveTo(-xt - 4, yt - 2);
+  for (let k = 0; k <= 40; k++) { const u = k / 40, x = mix(-xt, xt, u); g.lineTo(x, yt + 10 + r() * 14 + Math.sin(u * 19) * 4); }
+  g.lineTo(xt + 4, yt - 2); g.closePath(); g.fill();
+  for (let i = 0; i < 26; i++) {
+    const u = r(), y = mix(yt, yb, 0.2 + r() * 0.7), half = mix(xt, xb, (y - yt) / (yb - yt));
+    g.beginPath(); g.ellipse((u - 0.5) * 2 * half * 0.9, y, 18 + r() * 40, 3 + r() * 3, 0, 0, Math.PI * 2); g.fill();
+  }
+  g.restore();
+  // The eave: a timber edge with a fringe of carved wooden drops.
+  g.fillStyle = '#5a3820'; g.fillRect(-xb - 6, yb - 2, xb * 2 + 12, 12);
+  for (let x = -xb; x <= xb; x += 18) { g.fillStyle = '#7a4c2a'; g.beginPath(); g.moveTo(x - 6, yb + 10); g.lineTo(x + 6, yb + 10); g.lineTo(x, yb + 26); g.closePath(); g.fill(); }
+  g.fillStyle = 'rgba(255,255,255,0.9)'; g.fillRect(-xb - 6, yb - 6, xb * 2 + 12, 5);
+}
+// A brass bell hanging from (x, y) on screen by a chain of length `chain` (in its own units).
+function bell(g, x, y, s, ang, chain, size = 1, glint = 0) {
+  if (s < 0.03) return;
+  g.save(); g.translate(x, y); g.rotate(ang); g.scale(s * size, s * size);
+  g.strokeStyle = '#5a4420'; g.lineWidth = 2.4; g.beginPath(); g.moveTo(0, 0); g.lineTo(0, chain); g.stroke();
+  const top = chain, h = 62;
+  g.fillStyle = '#8a6a26'; g.beginPath(); g.arc(0, top + 3, 5, 0, Math.PI * 2); g.fill();
+  const bg = g.createLinearGradient(-28, 0, 28, 0);
+  bg.addColorStop(0, '#6a4a12'); bg.addColorStop(0.28, '#f6dc8a'); bg.addColorStop(0.5, '#c8962e'); bg.addColorStop(1, '#4a3008');
+  g.fillStyle = bg;
+  g.beginPath(); g.moveTo(-9, top + 6);
+  g.bezierCurveTo(-18, top + 10, -18, top + 30, -22, top + h - 10); g.quadraticCurveTo(-26, top + h - 2, -30, top + h);
+  g.lineTo(30, top + h); g.quadraticCurveTo(26, top + h - 2, 22, top + h - 10); g.bezierCurveTo(18, top + 30, 18, top + 10, 9, top + 6); g.closePath(); g.fill();
+  g.fillStyle = '#6a4a14'; g.fillRect(-30, top + h - 3, 60, 4);
+  g.strokeStyle = 'rgba(80,50,10,0.6)'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-19, top + 26); g.lineTo(19, top + 26); g.stroke();
+  // The clapper lags the swing.
+  g.rotate(-ang * 0.6); g.fillStyle = '#5a3c10'; g.beginPath(); g.arc(0, top + h + 6, 5, 0, Math.PI * 2); g.fill();
+  g.restore();
+  if (glint > 0) { g.save(); g.globalCompositeOperation = 'lighter'; glow(g, x + Math.sin(ang) * (chain + 30) * s * size - 8 * s * size, y + Math.cos(ang) * (chain + 30) * s * size, Math.min(30 * s * size, 90), 'rgba(255,236,170,A)', glint); g.restore(); }
+}
+
+// ---------- the sky: high-altitude morning, painted once ----------
+const sky = document.createElement('canvas'); sky.width = W; sky.height = H;
+{
+  const g = sky.getContext('2d');
+  // Deep at the top, as the sky is up high, so the names read over it.
+  const bg = g.createLinearGradient(0, 0, 0, HZ);
+  [['#1c4a8c', 0], ['#2f64aa', 0.28], ['#5a92d0', 0.55], ['#9cc6ea', 0.8], ['#d4e8f6', 1]].forEach(([c, k]) => bg.addColorStop(k, c));
+  g.fillStyle = bg; g.fillRect(0, 0, W, HZ);
+  g.fillStyle = '#d4e8f6'; g.fillRect(0, HZ, W, H - HZ);
+  // The morning sun just out of frame, top left.
+  glow(g, -80, 160, 760, 'rgba(255,246,222,A)', 0.22);
+  // Faint high wisps, slow and quiet.
+  const r = rng(11);
+  for (let i = 0; i < 7; i++) {
+    const x = r() * W, y = 120 + r() * 420, w = 260 + r() * 300;
+    const cg = g.createRadialGradient(x, y, 0, x, y, w);
+    cg.addColorStop(0, 'rgba(255,255,255,0.10)'); cg.addColorStop(1, 'rgba(255,255,255,0)');
+    g.save(); g.translate(x, y); g.rotate(-0.12); g.scale(1, 0.07); g.translate(-x, -y); g.fillStyle = cg; g.fillRect(x - w, y - w, w * 2, w * 2); g.restore();
+  }
+}
+// Cumulus that drift past the peaks: white tops lit from the left, blue-grey bellies.
+function cloudSprite(seed, w, h) {
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const g = cv.getContext('2d'); const r = rng(seed), puffs = [];
+  for (let i = 0; i < 26; i++) {
+    const u = 0.12 + r() * 0.76, rr = h * (0.12 + 0.24 * Math.sin(Math.PI * u) * (0.6 + r() * 0.5));
+    puffs.push([u * w, h * 0.78 - rr * (0.4 + r() * 0.5), rr]);
+  }
+  g.fillStyle = '#b4c6dc'; for (const [x, y, rr] of puffs) { g.beginPath(); g.arc(x + rr * 0.12, y + rr * 0.16, rr, 0, Math.PI * 2); g.fill(); }
+  g.fillStyle = '#ffffff'; for (const [x, y, rr] of puffs) { g.beginPath(); g.arc(x - rr * 0.08, y - rr * 0.1, rr * 0.88, 0, Math.PI * 2); g.fill(); }
+  // A flat, soft underside.
+  g.globalCompositeOperation = 'destination-out';
+  const fade = g.createLinearGradient(0, h * 0.7, 0, h); fade.addColorStop(0, 'rgba(0,0,0,0)'); fade.addColorStop(1, 'rgba(0,0,0,1)');
+  g.fillStyle = fade; g.fillRect(0, h * 0.7, w, h * 0.3);
+  return cv;
+}
+const clouds = [
+  { cv: cloudSprite(21, 520, 200), x: -140, y: 760, v: 9, a: 0.9 },
+  { cv: cloudSprite(22, 420, 160), x: 640, y: 800, v: 6, a: 0.85 },
+  { cv: cloudSprite(23, 300, 120), x: 300, y: 860, v: 12, a: 0.75 },
+  { cv: cloudSprite(24, 360, 140), x: 900, y: 740, v: 7, a: 0.8 },
+];
+
+// ---------- the mountains: painted cards far away ----------
+function paintPeak(g, pk, st, r) {
+  const L = jag(pk.x - pk.wl, 0, pk.x, -pk.h, 0.3, 7, r);
+  const R = jag(pk.x, -pk.h, pk.x + pk.wr, 0, 0.3, 7, r);
+  const out = L.concat(R.slice(1));
+  g.save(); poly(g, out);
+  const rg = g.createLinearGradient(0, -pk.h, 0, 0); rg.addColorStop(0, st.rock[0]); rg.addColorStop(1, st.rock[1]);
+  g.fillStyle = rg; g.fill(); g.clip();
+  // Snow above a ragged snow line, with gullies of snow running down the rock.
+  const sl = -pk.h * st.snow, snow = [[pk.x - pk.wl - 20, -pk.h - 200], [pk.x + pk.wr + 20, -pk.h - 200]];
+  const n = 70;
+  for (let i = n; i >= 0; i--) {
+    const x = pk.x - pk.wl + ((pk.wl + pk.wr) * i) / n;
+    let y = sl + (r() - 0.5) * pk.h * 0.06;
+    if (r() < 0.28) y += pk.h * (0.06 + r() * 0.2);
+    snow.push([x, y]);
+  }
+  poly(g, snow); g.fillStyle = st.snowCol; g.fill();
+  // Dark rock showing through the snow.
+  g.fillStyle = st.crack;
+  for (let k = 0; k < 10; k++) {
+    const u = r(), x0 = pk.x + (u - 0.5) * (pk.wl + pk.wr) * 0.55, y0 = -pk.h * (0.5 + r() * 0.36), len = pk.h * (0.08 + r() * 0.16), wd = pk.h * (0.015 + r() * 0.03);
+    const side = jag(x0, y0, x0 + len * 0.3, y0 + len, 0.45, 4, r), back = jag(x0 + len * 0.3 + wd, y0 + len, x0 + wd * 0.6, y0, 0.45, 4, r);
+    poly(g, side.concat(back)); g.fill();
+  }
+  // The face away from the sun, in blue shadow.
+  const ridge = jag(pk.x, -pk.h, pk.x + pk.wr * (0.08 + r() * 0.22), 0, 0.42, 6, r);
+  poly(g, ridge.concat([[pk.x + pk.wr + 40, 0], [pk.x + pk.wr + 40, -pk.h - 60]])); g.fillStyle = st.shadow; g.fill();
+  // A second, smaller facet on the sunlit side.
+  const i0 = Math.floor(L.length * (0.45 + r() * 0.2)), [sx, sy] = L[i0];
+  const ridge2 = jag(sx, sy, sx + pk.wl * 0.25, 0, 0.4, 5, r);
+  poly(g, ridge2.concat([[pk.x - pk.wl * 0.05, 0]]).concat(L.slice(i0).reverse().slice(0, 1))); g.fillStyle = st.shadow2; g.fill();
+  // Warm morning light on the left face; haze gathering at the foot.
+  const lg = g.createLinearGradient(pk.x - pk.wl, 0, pk.x, 0); lg.addColorStop(0, 'rgba(255,236,206,0.22)'); lg.addColorStop(1, 'rgba(255,236,206,0)');
+  g.fillStyle = lg; g.fillRect(pk.x - pk.wl, -pk.h, pk.wl, pk.h);
+  const hg = g.createLinearGradient(0, 0, 0, -pk.h * 0.75); hg.addColorStop(0, st.haze); hg.addColorStop(1, 'rgba(200,220,240,0)');
+  g.fillStyle = hg; g.fillRect(pk.x - pk.wl, -pk.h, pk.wl + pk.wr, pk.h);
+  g.restore();
+}
+function range(w, h, res, peaks, st, seed) {
+  return card(w, h, res, (g) => {
+    const r = rng(seed);
+    peaks.slice().sort((a, b) => b.h - a.h).forEach((pk) => paintPeak(g, pk, st, r));
+  });
+}
+const farRange = range(38000, 8000, 0.08, [
+  { x: -15000, h: 5600, wl: 4800, wr: 4200 }, { x: -9600, h: 7200, wl: 4600, wr: 4800 }, { x: -4800, h: 6200, wl: 3600, wr: 4000 },
+  { x: -200, h: 7700, wl: 4600, wr: 4200 }, { x: 4600, h: 6600, wl: 3800, wr: 4200 }, { x: 9000, h: 7500, wl: 4400, wr: 4600 },
+  { x: 14000, h: 5800, wl: 4000, wr: 4600 }, { x: 2400, h: 5000, wl: 2800, wr: 3000 },
+], { rock: ['#8c96ba', '#a8b4d0'], snow: 0.56, snowCol: '#eef3fc', crack: 'rgba(130,144,180,0.5)', shadow: 'rgba(118,136,186,0.55)', shadow2: 'rgba(150,166,206,0.35)', haze: 'rgba(206,224,242,0.9)' }, 31);
+const mainRange = range(30000, 5600, 0.13, [
+  { x: -2300, h: 5400, wl: 3000, wr: 2600 }, { x: -6600, h: 4300, wl: 2800, wr: 2600 }, { x: -11200, h: 4900, wl: 3400, wr: 3000 },
+  { x: 3000, h: 4900, wl: 2600, wr: 3000 }, { x: 7200, h: 4000, wl: 2600, wr: 2800 }, { x: 11400, h: 5000, wl: 3000, wr: 3200 },
+  { x: 500, h: 3300, wl: 2000, wr: 2000 }, { x: -4500, h: 3100, wl: 2000, wr: 1800 },
+], { rock: ['#4e5a76', '#6e7c96'], snow: 0.58, snowCol: '#fbfcff', crack: 'rgba(78,90,118,0.6)', shadow: 'rgba(84,104,156,0.5)', shadow2: 'rgba(120,140,190,0.3)', haze: 'rgba(196,216,238,0.78)' }, 37);
+// Foothills dark with deodar forest, between the valley and the snow.
+const foothills = card(20000, 1500, 0.25, (g) => {
+  const r = rng(41);
+  const ridge = (x) => -(620 + 260 * Math.sin(x * 0.00055 + 1.2) + 170 * Math.sin(x * 0.0016 + 2.1) + 70 * Math.sin(x * 0.0051));
+  const top = [];
+  for (let x = -10000; x <= 10000; x += 40) top.push([x, ridge(x) - 30 - r() * 70]);
+  const fg = g.createLinearGradient(0, -1100, 0, 0); fg.addColorStop(0, '#3e5e56'); fg.addColorStop(0.6, '#5a7a72'); fg.addColorStop(1, '#9ab4b4');
+  g.fillStyle = fg; poly(g, [[-10000, 0], ...top, [10000, 0]]); g.fill();
+  // Tree spires along the crest, and the forest's texture below it.
+  g.fillStyle = '#3a5a52';
+  for (let x = -10000; x <= 10000; x += 26 + r() * 30) { const y = ridge(x) - 20, hh = 60 + r() * 90; g.beginPath(); g.moveTo(x - 20, y + 30); g.lineTo(x, y - hh); g.lineTo(x + 20, y + 30); g.closePath(); g.fill(); }
+  for (let i = 0; i < 3000; i++) { const x = (r() - 0.5) * 20000, y = ridge(x) + r() * 700; g.fillStyle = r() < 0.5 ? 'rgba(40,66,58,0.5)' : 'rgba(110,140,130,0.25)'; g.beginPath(); g.moveTo(x - 14, y + 20); g.lineTo(x, y - 40); g.lineTo(x + 14, y + 20); g.fill(); }
+  const hz = g.createLinearGradient(0, -500, 0, 0); hz.addColorStop(0, 'rgba(200,222,236,0)'); hz.addColorStop(1, 'rgba(200,222,236,0.75)');
+  g.fillStyle = hz; g.fillRect(-10000, -500, 20000, 500);
+});
+
+// ---------- the valley ----------
+const RIVER_HW = 190;
+const riverX = (z) => 450 + (z > 150 ? ((z - 150) / 1000) ** 2 * 1500 : 0);
+function deodar(seed, h) {
+  return card(h * 0.46, h + 20, 1.1, (g) => {
+    const r = rng(seed);
+    g.fillStyle = '#4a3424'; g.fillRect(-h * 0.02, -h * 0.4, h * 0.04, h * 0.4);
+    const tiers = 11;
+    for (let k = 0; k < tiers; k++) {
+      const u = k / (tiers - 1), y = -h * (0.14 + u * 0.8), hw = h * 0.22 * (1 - u * 0.85) + 8;
+      const dark = g.createLinearGradient(-hw, 0, hw, 0); dark.addColorStop(0, '#4e7a5e'); dark.addColorStop(0.5, '#2e5444'); dark.addColorStop(1, '#1e3a32');
+      g.fillStyle = dark;
+      g.beginPath(); g.moveTo(-hw, y + h * 0.06);
+      for (let j = 0; j <= 12; j++) { const v = j / 12, x = mix(-hw, hw, v); g.lineTo(x, y + h * 0.06 - Math.sin(v * Math.PI) * h * 0.07 + (j % 2) * 6); }
+      g.lineTo(hw, y + h * 0.065); g.quadraticCurveTo(0, y + h * 0.03, -hw, y + h * 0.065); g.closePath(); g.fill();
+      // Last night's snow on the tops of the boughs.
+      g.fillStyle = 'rgba(250,252,255,0.9)';
+      for (let j = 0; j < 4; j++) { const x = (r() - 0.6) * hw * 1.4; g.beginPath(); g.ellipse(x, y + h * 0.02 - Math.sin(((x + hw) / (2 * hw)) * Math.PI) * h * 0.05, hw * 0.16, 3.5, 0, 0, Math.PI * 2); g.fill(); }
+    }
+    g.fillStyle = '#2e5444'; g.beginPath(); g.moveTo(-6, -h * 0.9); g.lineTo(0, -h); g.lineTo(6, -h * 0.9); g.fill();
+  });
+}
+const deodars = [deodar(51, 900), deodar(52, 760), deodar(53, 1000)];
+function boulderCard(seed) {
+  return card(260, 170, 1.4, (g) => {
+    const r = rng(seed);
+    const pts = []; for (let k = 0; k <= 16; k++) { const a = Math.PI + (k / 16) * Math.PI; pts.push([Math.cos(a) * (110 + r() * 14), Math.sin(a) * (120 + r() * 30) * (0.9 + 0.2 * Math.sin(a * 3))]); }
+    const bg = g.createLinearGradient(-110, -150, 110, 0); bg.addColorStop(0, '#c4c2bc'); bg.addColorStop(0.5, '#8e8c88'); bg.addColorStop(1, '#5a5a5c');
+    poly(g, pts); g.fillStyle = bg; g.fill();
+    g.save(); g.clip();
+    for (let i = 0; i < 7; i++) { g.fillStyle = r() < 0.5 ? 'rgba(150,170,110,0.18)' : 'rgba(60,60,64,0.14)'; g.beginPath(); g.ellipse((r() - 0.5) * 160, -20 - r() * 90, 14 + r() * 20, 8 + r() * 10, r() * 3, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = 'rgba(250,252,255,0.85)'; g.beginPath(); g.ellipse(-20, -128, 60, 12, -0.1, 0, Math.PI * 2); g.fill();
+    g.restore();
+  });
+}
+const boulders = [boulderCard(61), boulderCard(62)];
+function rhodoCard(seed) {
+  return card(260, 200, 1.4, (g) => {
+    const r = rng(seed);
+    for (let i = 0; i < 70; i++) { const a = Math.PI + r() * Math.PI, d = Math.sqrt(r()); const x = Math.cos(a) * d * 120, y = Math.sin(a) * d * 150 - 10; g.fillStyle = r() < 0.5 ? '#2e5a34' : '#3e6e3e'; g.beginPath(); g.ellipse(x, y, 16, 9, r() * 3, 0, Math.PI * 2); g.fill(); }
+    for (let i = 0; i < 26; i++) { const a = Math.PI + r() * Math.PI, d = Math.sqrt(r()); const x = Math.cos(a) * d * 110, y = Math.sin(a) * d * 140 - 16; g.fillStyle = ['#d83a4a', '#e85a6a', '#f08aa0', '#c02a3a'][i % 4]; g.beginPath(); g.arc(x, y, 9 + r() * 6, 0, Math.PI * 2); g.fill(); }
+  });
+}
+const rhodos = [rhodoCard(65), rhodoCard(66)];
+const shrubs = [];
+{ const r = rng(67); for (let i = 0; i < 18; i++) { const z = -350 + r() * 1500, side = r() < 0.6 ? -1 : 1; const x = side < 0 ? -230 - r() * 1100 : riverX(z) - RIVER_HW - 130 - r() * 60; if (side > 0 && x < 230) continue; shrubs.push({ x, z, k: i % 2, sc: 0.6 + r() * 0.6 }); } }
+const valleyTrees = [];
+{
+  const r = rng(71);
+  for (let z = 820; z < 1160; z += 70) { valleyTrees.push({ x: -640 - r() * 900, z: z + r() * 40, k: Math.floor(r() * 3) }); }
+  for (let z = 900; z < 1160; z += 90) valleyTrees.push({ x: -1700 - r() * 600, z, k: Math.floor(r() * 3) });
+}
+const rocks = [];
+{
+  const r = rng(73);
+  for (let i = 0; i < 16; i++) { const z = -400 + r() * 1500, side = r() < 0.55 ? -1 : 1; const x = side < 0 ? -260 - r() * 900 : riverX(z) + RIVER_HW + 80 + r() * 500; rocks.push({ x, z, k: i % 2, sc: 0.5 + r() * 0.8 }); }
+  // Boulders in the river itself, white water round them.
+  for (let i = 0; i < 6; i++) { const z = -300 + i * 220 + r() * 80; rocks.push({ x: riverX(z) + (r() - 0.5) * RIVER_HW, z, k: i % 2, sc: 0.35 + r() * 0.3, wet: true }); }
+}
+const PATH_X = 120;
+const pathStones = [];
+{
+  const r = rng(81);
+  for (let z = -1400; z < STEP0; z += 64) {
+    let x = -PATH_X;
+    while (x < PATH_X - 20) { const w = Math.min(PATH_X - x, 60 + r() * 70); pathStones.push({ x0: x, x1: x + w, z0: z, z1: z + 64, c: Math.round(150 + r() * 34) }); x += w; }
+  }
+}
+const flowers = [];
+{
+  const r = rng(83), cols = ['#f4d04a', '#e8e4f4', '#b48ad8', '#f29a2e', '#ffffff', '#e86a8a'];
+  for (let i = 0; i < 900; i++) {
+    const z = -1200 + r() * 2400, x = (r() < 0.6 ? -1 : 1) * (PATH_X + 16 + r() * 1600);
+    if (x > 0 && Math.abs(x - riverX(z)) < RIVER_HW + 50) continue;
+    flowers.push({ x, z, c: cols[Math.floor(r() * cols.length)], grass: r() < 0.45 });
+  }
+}
+const snowPatches = [];
+{ const r = rng(85); for (let i = 0; i < 26; i++) { const z = -200 + r() * 1350, x = -400 - r() * 1800; snowPatches.push({ x, z, rx: 60 + r() * 160, rz: 30 + r() * 90 }); } }
+const bankFlowers = [];
+{ const r = rng(86), cols = ['#f4d04a', '#e8e4f4', '#b48ad8', '#f29a2e', '#ffffff']; for (let i = 0; i < 420; i++) bankFlowers.push({ x: (r() < 0.5 ? -1 : 1) * (STAIR_X + 50 + r() * 1500), z: STEP0 + r() * (STEP_END - STEP0), c: cols[Math.floor(r() * cols.length)], snow: r() < 0.04 }); }
+const meadow = [];
+{ const r = rng(84); for (let i = 0; i < 260; i++) { const z = -1200 + r() * 2400, x = (r() - 0.5) * 4400; if (Math.abs(x) < PATH_X + 30 || (x > 0 && Math.abs(x - riverX(z)) < RIVER_HW + 90)) continue; meadow.push({ x, z, rx: 50 + r() * 180, rz: 20 + r() * 60, c: r() < 0.5 ? 'rgba(52,84,30,0.22)' : 'rgba(170,196,110,0.2)' }); } }
+const foam = [];
+{ const r = rng(87); for (let i = 0; i < 280; i++) foam.push({ u: (r() - 0.5) * 1.8, z0: r() * 2600, len: 30 + r() * 70, v: 220 + r() * 140 }); }
+const sparkles = [];
+{ const r = rng(89); for (let i = 0; i < 140; i++) sparkles.push({ u: (r() - 0.5) * 1.8, z: -900 + r() * 2100, ph: r() * 20 }); }
+
+// ---------- the stair and the gate ----------
+const stairPetals = [];
+{ const r = rng(91); for (let i = 0; i < 120; i++) { const k = Math.floor(r() * STEPS); stairPetals.push({ k, x: (r() - 0.5) * 2 * (STAIR_X - 20), z: STEP0 + k * STEP_D + 10 + r() * (STEP_D - 20), a: r() * 3, c: r() < 0.6 ? '#f29a2e' : '#f6c23e' }); } }
+const gateArch = (() => {
+  const r = GATE.w / 2, pts = [[-r, 0], [-r, -(GATE.h - r)]];
+  for (let i = 0; i <= 50; i++) { const a = Math.PI + (i / 50) * Math.PI; pts.push([Math.cos(a) * r, -(GATE.h - r) + Math.sin(a) * r]); }
+  pts.push([r, -(GATE.h - r)], [r, 0]);
+  return pts;
+})();
+const gateCard = card(2400, 580, 1.1, (g) => {
+  // The courtyard wall, granite ashlar with a slate coping under snow.
+  ashlar(g, -1200, -250, 1200, 0, 42, 101);
+  const sh = g.createLinearGradient(0, -250, 0, 0); sh.addColorStop(0, 'rgba(255,255,255,0.06)'); sh.addColorStop(1, 'rgba(40,40,50,0.25)');
+  g.fillStyle = sh; g.fillRect(-1200, -250, 2400, 250);
+  g.fillStyle = 'rgba(90,110,60,0.35)'; { const r = rng(104); for (let x = -1200; x < 1200; x += 20 + r() * 30) { g.beginPath(); g.ellipse(x, 0, 14 + r() * 26, 6 + r() * 16, 0, Math.PI, 0); g.fill(); } }
+  g.fillStyle = '#4a5058'; g.fillRect(-1210, -276, 2420, 28);
+  g.fillStyle = '#f8fbff'; g.beginPath(); g.moveTo(-1210, -274);
+  { const r = rng(103); for (let x = -1210; x <= 1210; x += 30) g.lineTo(x, -284 - r() * 10); }
+  g.lineTo(1210, -274); g.closePath(); g.fill();
+  // The gate house: stone and timber, a slate roof.
+  ashlar(g, -250, -390, 250, 0, 38, 105, 8);
+  timber(g, -250, 250, -150, 24); timber(g, -250, 250, -364, 28);
+  slateRoof(g, 310, -392, 60, -482, 107);
+  g.fillStyle = '#c8962e'; g.fillRect(-4, -530, 8, 50); g.beginPath(); g.arc(0, -534, 9, 0, Math.PI * 2); g.fill();
+  // The arched opening with a carved wooden frame.
+  g.save(); g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000'; poly(g, gateArch); g.fill(); g.restore();
+  polyline(g, gateArch.map(([x, y]) => [x * 1.06, y * 1.03])); g.lineWidth = 16; g.strokeStyle = '#6a4224'; g.stroke();
+  polyline(g, gateArch.map(([x, y]) => [x * 1.13, y * 1.06])); g.lineWidth = 5; g.strokeStyle = '#a87a4a'; g.stroke();
+  polyline(g, gateArch); g.lineWidth = 4; g.strokeStyle = '#3a2414'; g.stroke();
+  // Marigolds and mango leaves over the threshold.
+  leaves(g, -140, 140, -222, 10);
+  garland(g, -148, -218, 0, -190, 20, 12, 109, 8); garland(g, 0, -190, 148, -218, 20, 12, 110, 8);
+  strand(g, -150, -212, -70, 111); strand(g, 150, -212, -70, 112);
+  garland(g, -260, -350, 260, -350, 34, 32, 113, 8);
+});
+
+// ---------- the courtyard ----------
+const ROW_X = 380, ROW_Z0 = 2600, ROW_Z1 = 3300;
+const rowPost = card(90, 500, 1.4, (g) => {
+  g.fillStyle = '#8e8c88'; g.fillRect(-32, -60, 64, 60); g.fillStyle = '#b0aea8'; g.fillRect(-36, -66, 72, 10);
+  const pg = g.createLinearGradient(-16, 0, 16, 0); pg.addColorStop(0, '#8a5a34'); pg.addColorStop(0.5, '#a8784a'); pg.addColorStop(1, '#4a2e18');
+  g.fillStyle = pg; g.fillRect(-15, -470, 30, 410);
+});
+const rowBells = [];
+for (const sgn of [-1, 1]) for (let z = ROW_Z0 + 35; z < ROW_Z1; z += 58) rowBells.push({ x: sgn * ROW_X, z, chain: 30 + ((z / 58) % 3) * 18, ph: z * 0.05 + sgn });
+const bellFrame = card(780, 720, 1.4, (g) => {
+  for (const sgn of [-1, 1]) {
+    const x = sgn * 330;
+    g.fillStyle = '#8e8c88'; g.fillRect(x - 32, -60, 64, 60); g.fillStyle = '#b0aea8'; g.fillRect(x - 36, -66, 72, 10);
+    const pg = g.createLinearGradient(x - 16, 0, x + 16, 0); pg.addColorStop(0, '#8a5a34'); pg.addColorStop(0.5, '#a8784a'); pg.addColorStop(1, '#4a2e18');
+    g.fillStyle = pg; g.fillRect(x - 15, -620, 30, 560);
+    strand(g, x - sgn * 22, -600, -360, 121 + sgn, 7);
+  }
+  timber(g, -380, 380, -608, 34);
+  g.fillStyle = '#4a5058'; g.beginPath(); g.moveTo(-400, -640); g.lineTo(400, -640); g.lineTo(380, -662); g.lineTo(-380, -662); g.closePath(); g.fill();
+  g.fillStyle = '#f8fbff'; g.fillRect(-384, -670, 768, 9);
+  garland(g, -330, -600, 0, -580, 18, 18, 123, 7); garland(g, 0, -580, 330, -600, 18, 18, 124, 7);
+});
+const frameBells = [];
+for (const z of FRAMES_Z) for (let x = -300; x <= 300; x += 60) frameBells.push({ x, z, chain: 40 + ((x / 60 + 5) % 3) * 22, ph: x * 0.07 + z });
+const lampPillar = card(160, 560, 1.4, (g) => {
+  g.fillStyle = '#8a8884'; g.fillRect(-70, -60, 140, 60); g.fillStyle = '#a8a6a0'; g.fillRect(-76, -66, 152, 10);
+  const sg = g.createLinearGradient(-26, 0, 26, 0); sg.addColorStop(0, '#b8b6b0'); sg.addColorStop(0.6, '#8a8884'); sg.addColorStop(1, '#5e5e60');
+  g.fillStyle = sg; g.beginPath(); g.moveTo(-28, -60); g.lineTo(-18, -500); g.lineTo(18, -500); g.lineTo(28, -60); g.fill();
+  for (let k = 0; k < 6; k++) { const y = -130 - k * 66, w = 54 - k * 5; g.fillStyle = '#9a9894'; g.fillRect(-w, y, w * 2, 9); g.fillStyle = 'rgba(40,40,44,0.35)'; g.fillRect(-w, y + 9, w * 2, 3); }
+  g.fillStyle = '#c8962e'; g.beginPath(); g.ellipse(0, -508, 26, 9, 0, 0, Math.PI * 2); g.fill();
+});
+const pillarLamps = [];
+for (let k = 0; k < 6; k++) { const y = -130 - k * 66, w = 54 - k * 5; for (const x of [-w + 8, w - 8]) pillarLamps.push({ x, y, k }); }
+pillarLamps.push({ x: 0, y: -512, k: 6 });
+const courtNiches = [2560, 2900, 3240];
+const courtPetals = [];
+{ const r = rng(131); for (let i = 0; i < 170; i++) courtPetals.push({ x: (r() - 0.5) * 300, z: GATE_Z + 40 + r() * (HALL_Z - GATE_Z - 60), a: r() * 3, c: r() < 0.6 ? '#f29a2e' : r() < 0.6 ? '#f6c23e' : '#e0562a' }); }
+const plinthDiyas = [];
+for (let x = 270; x <= 600; x += 66) for (const sgn of [-1, 1]) plinthDiyas.push({ x: sgn * x, ph: x * 0.31 + sgn });
+const porchOpening = [[-210, 0], [-210, -410], [-198, -440], [-176, -460], [-146, -472], [146, -472], [176, -460], [198, -440], [210, -410], [210, 0]];
+const porch = card(1500, 940, 1.2, (g) => {
+  // Stone and timber courses across the front.
+  ashlar(g, -690, -560, 690, -40, 40, 141, 4);
+  for (const y of [-150, -310, -470]) timber(g, -690, 690, y, 28);
+  g.fillStyle = '#a8a69e'; g.fillRect(-700, -40, 1400, 40); g.fillStyle = '#c4c2ba'; g.fillRect(-706, -44, 1412, 8);
+  // Carved wooden windows with lattice either side.
+  for (const sgn of [-1, 1]) {
+    const x = sgn * 460;
+    g.fillStyle = '#6a4224'; g.fillRect(x - 96, -440, 192, 250);
+    g.fillStyle = '#2a1a10'; g.fillRect(x - 78, -422, 156, 214);
+    g.save(); g.beginPath(); g.rect(x - 78, -422, 156, 214); g.clip(); lattice(g, x - 78, -422, x + 78, -208, 22, '#8a5a34'); g.restore();
+    g.strokeStyle = '#a87a4a'; g.lineWidth = 4; g.strokeRect(x - 88, -432, 176, 234);
+    rosette(g, x, -470, 16, 'rgba(240,200,140,0.7)');
+  }
+  // Pillars framing the porch.
+  for (const sgn of [-1, 1]) {
+    const x = sgn * 248;
+    const pg = g.createLinearGradient(x - 26, 0, x + 26, 0); pg.addColorStop(0, '#c8c6be'); pg.addColorStop(0.6, '#9a9890'); pg.addColorStop(1, '#6a6a68');
+    g.fillStyle = pg; g.fillRect(x - 26, -540, 52, 500);
+    for (const y of [-110, -250, -400]) { g.fillStyle = '#7a7872'; g.fillRect(x - 30, y, 60, 14); }
+    g.fillStyle = '#6a4224'; g.beginPath(); g.moveTo(x - 30, -540); g.lineTo(x + 30, -540); g.lineTo(x + 70 * -sgn, -566); g.lineTo(x + 70 * sgn, -566); g.closePath(); g.fill();
+  }
+  // The eave and two tiers of slate roof.
+  timber(g, -720, 720, -560, 36);
+  for (let x = -700; x <= 700; x += 70) { g.fillStyle = '#5a3820'; g.beginPath(); g.moveTo(x - 4, -560); g.lineTo(x + 22, -600); g.lineTo(x + 30, -600); g.lineTo(x + 4, -560); g.fill(); }
+  slateRoof(g, 740, -600, 300, -740, 143);
+  g.fillStyle = '#5a3820'; g.fillRect(-300, -752, 600, 14);
+  // The opening, its carved frame and marigolds.
+  g.save(); g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000'; poly(g, porchOpening); g.fill(); g.restore();
+  polyline(g, porchOpening.map(([x, y]) => [x * 1.05, y * 1.025])); g.lineWidth = 14; g.strokeStyle = '#6a4224'; g.stroke();
+  polyline(g, porchOpening.map(([x, y]) => [x * 1.11, y * 1.05])); g.lineWidth = 4; g.strokeStyle = '#a87a4a'; g.stroke();
+  leaves(g, -200, 200, -462, 14);
+  garland(g, -206, -456, 0, -420, 26, 14, 149, 8); garland(g, 0, -420, 206, -456, 26, 14, 150, 8);
+  strand(g, -208, -450, -250, 151); strand(g, 208, -450, -250, 152);
+});
+const porchBells = [{ x: -130, chain: 50 }, { x: 0, chain: 70 }, { x: 130, chain: 50 }];
+// The sanctum's tower rising behind the hall: courses of granite drawn in, a ribbed stone crown, and
+// a timber canopy roofed in slate over it.
+const tower = card(1300, 2500, 0.8, (g) => {
+  const H0 = 1700;
+  // A curved profile that draws in towards the top, its faces stepped forward towards the middle.
+  const hw = (u) => 440 * Math.cos(u * 1.12);
+  const r = rng(161);
+  const steps = [1, 0.8, 0.56, 0.3];
+  for (let y = 0; y > -H0; y -= 44) {
+    const u = -y / H0, w = hw(u);
+    steps.forEach((f, k) => {
+      const x0 = -w * f, x1 = w * f, v = 200 - k * 4 + (k % 2) * 10;
+      const cg = g.createLinearGradient(x0, 0, x1, 0);
+      cg.addColorStop(0, `rgb(${v + 14},${v + 10},${v + 2})`); cg.addColorStop(0.5, `rgb(${v - 40},${v - 42},${v - 46})`); cg.addColorStop(1, `rgb(${v - 96},${v - 96},${v - 92})`);
+      g.fillStyle = cg; g.fillRect(x0, y - 44, x1 - x0, 44);
+      // The return of each step: a narrow side in shade on the right, in light on the left.
+      g.fillStyle = 'rgba(40,40,50,0.35)'; g.fillRect(x1 - 6, y - 44, 6, 44);
+      g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(x0, y - 44, 5, 44);
+    });
+    g.fillStyle = 'rgba(40,40,48,0.4)'; g.fillRect(-w, y - 5, w * 2, 5);
+    g.fillStyle = 'rgba(255,255,255,0.2)'; g.fillRect(-w, y - 44, w * 2, 3);
+    // Snow caught on the ledges.
+    g.fillStyle = 'rgba(250,252,255,0.9)';
+    for (let k = 0; k < 4; k++) { const x = (r() - 0.5) * 2 * w; g.fillRect(x, y - 46, 20 + r() * 50, 4); }
+    if (Math.round(-y / 44) % 5 === 3) for (const sgn of [-1, 1]) {
+      const x = sgn * w * 0.68;
+      g.fillStyle = '#4a4a52'; g.beginPath(); g.moveTo(x - 16, y - 8); g.lineTo(x - 16, y - 34); g.quadraticCurveTo(x, y - 52, x + 16, y - 34); g.lineTo(x + 16, y - 8); g.fill();
+    }
+  }
+  const top = -H0;
+  g.fillStyle = '#8a8884'; g.fillRect(-140, top - 40, 280, 40);
+  // The ribbed crown stone.
+  const ag = g.createLinearGradient(-230, 0, 230, 0); ag.addColorStop(0, '#d8d6d0'); ag.addColorStop(0.5, '#a4a29c'); ag.addColorStop(1, '#5a5a60');
+  g.fillStyle = ag; g.beginPath(); g.ellipse(0, top - 90, 230, 56, 0, 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(40,40,48,0.5)'; g.lineWidth = 4;
+  for (let k = -6; k <= 6; k++) { const x = k * 34; g.beginPath(); g.moveTo(x * 0.9, top - 140); g.quadraticCurveTo(x * 1.12, top - 90, x * 0.9, top - 38); g.stroke(); }
+  g.fillStyle = 'rgba(250,252,255,0.95)'; g.beginPath(); g.ellipse(-10, top - 140, 150, 14, 0, 0, Math.PI * 2); g.fill();
+  // The timber canopy on four posts.
+  for (const x of [-170, -60, 60, 170]) { g.fillStyle = '#5a3820'; g.fillRect(x - 9, top - 300, 18, 160); }
+  slateRoof(g, 290, -300 + top, 20, -430 + top, 163);
+  g.fillStyle = '#c8962e'; g.fillRect(-5, top - 520, 10, 100);
+  for (const [y, rr] of [[-440, 16], [-480, 12], [-516, 8]]) { g.beginPath(); g.arc(0, top + y, rr, 0, Math.PI * 2); g.fill(); }
+});
+const plateauTrees = [];
+{ const r = rng(171); for (let z = 3500; z < 5600; z += 180) for (const sgn of [-1, 1]) plateauTrees.push({ x: sgn * (900 + r() * 500), z: z + r() * 90, k: Math.floor(r() * 3) }); }
+
+// ---------- the hall and the sanctum doors ----------
+const pillarCard = card(130, 580, 2, (g) => {
+  g.fillStyle = '#8e8c86'; g.fillRect(-48, -40, 96, 40); g.fillStyle = '#aeaca6'; g.fillRect(-52, -46, 104, 8);
+  // A square granite shaft: its face to the guest, and a narrow side in shade.
+  g.fillStyle = '#b4aa9c'; g.fillRect(-30, -500, 46, 460);
+  g.fillStyle = '#7a7266'; g.fillRect(16, -500, 14, 460);
+  g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(-30, -500, 4, 460);
+  // Carved bands: beads, and a panel of leaves between them.
+  for (const y of [-120, -300, -440]) {
+    g.fillStyle = '#968c7e'; g.fillRect(-34, y, 54, 18); g.fillStyle = '#6a6258'; g.fillRect(20, y, 14, 18);
+    g.fillStyle = 'rgba(236,228,212,0.7)'; for (let x = -28; x <= 16; x += 9) { g.beginPath(); g.arc(x, y + 9, 3, 0, Math.PI * 2); g.fill(); }
+  }
+  g.strokeStyle = 'rgba(80,72,62,0.6)'; g.lineWidth = 2;
+  for (let y = -150; y > -290; y -= 20) { g.beginPath(); g.moveTo(-22, y); g.quadraticCurveTo(-7, y - 13, 8, y); g.stroke(); }
+  g.strokeRect(-24, -420, 36, 100);
+  g.beginPath(); g.moveTo(-6, -414); g.lineTo(6, -370); g.lineTo(-6, -326); g.lineTo(-18, -370); g.closePath(); g.stroke();
+  // A timber bracket capital.
+  g.fillStyle = '#6a4224'; g.fillRect(-36, -520, 72, 22);
+  g.beginPath(); g.moveTo(-36, -520); g.lineTo(-64, -556); g.lineTo(64, -556); g.lineTo(36, -520); g.closePath(); g.fill();
+  g.fillStyle = '#8a5a34'; g.fillRect(-64, -576, 128, 20);
+});
+const doorCard = card(2 * HALL_X, 580, 2.2, (g) => {
+  // The sanctum wall of granite.
+  ashlar(g, -HALL_X, -560, HALL_X, 0, 34, 181, -22);
+  const fw = 220, fh = 500;
+  // A carved stone frame of three receding bands: beads, a running vine, a plain fillet.
+  g.fillStyle = '#a8a49a'; g.fillRect(-fw, -fh, fw * 2, fh);
+  g.fillStyle = '#8e8a82'; g.fillRect(-fw + 26, -fh + 26, (fw - 26) * 2, fh - 26);
+  g.fillStyle = 'rgba(236,230,216,0.7)';
+  for (let y = -fh + 14; y < 0; y += 16) for (const x of [-fw + 13, fw - 13]) { g.beginPath(); g.arc(x, y, 4.5, 0, Math.PI * 2); g.fill(); }
+  for (let x = -fw + 13; x <= fw - 13; x += 16) { g.beginPath(); g.arc(x, -fh + 13, 4.5, 0, Math.PI * 2); g.fill(); }
+  g.strokeStyle = 'rgba(60,56,50,0.7)'; g.lineWidth = 3;
+  for (const x of [-fw + 40, fw - 40]) {
+    g.beginPath(); for (let y = 0; y > -fh + 40; y -= 4) { const xx = x + Math.sin(y * 0.09) * 7; y === 0 ? g.moveTo(xx, y) : g.lineTo(xx, y); } g.stroke();
+    for (let y = -20; y > -fh + 50; y -= 35) { g.fillStyle = 'rgba(70,66,60,0.6)'; g.beginPath(); g.ellipse(x + (Math.sin(y * 0.09) > 0 ? -9 : 9), y, 7, 3.5, 0.6, 0, Math.PI * 2); g.fill(); }
+  }
+  g.fillStyle = '#76726a'; g.fillRect(-fw + 52, -fh + 52, (fw - 52) * 2, fh - 52);
+  // The lintel: a row of carved rosettes.
+  g.fillStyle = '#b4b0a6'; g.fillRect(-fw - 30, -fh - 44, (fw + 30) * 2, 44);
+  for (let x = -fw - 6; x <= fw + 6; x += 40) rosette(g, x, -fh - 22, 15, 'rgba(90,84,74,0.75)');
+  g.fillStyle = '#4a5058'; g.fillRect(-fw - 40, -fh - 58, (fw + 40) * 2, 14);
+  // Two carved wooden leaves, closed: panels, brass studs, ring handles.
+  const dw = DOOR.w / 2, dh = DOOR.h;
+  for (const sgn of [-1, 1]) {
+    const x0 = sgn < 0 ? -dw : 0;
+    const wg = g.createLinearGradient(x0, 0, x0 + dw, 0); wg.addColorStop(0, sgn < 0 ? '#7a4a26' : '#5a341a'); wg.addColorStop(1, sgn < 0 ? '#5a341a' : '#7a4a26');
+    g.fillStyle = wg; g.fillRect(x0, -dh, dw, dh);
+    for (let k = 0; k < 3; k++) {
+      const py = -dh + 18 + k * ((dh - 36) / 3), ph = (dh - 36) / 3 - 16;
+      g.fillStyle = '#4a2a14'; g.fillRect(x0 + 14, py, dw - 28, ph);
+      g.strokeStyle = '#a8784a'; g.lineWidth = 3; g.strokeRect(x0 + 20, py + 6, dw - 40, ph - 12);
+      const cx = x0 + dw / 2, cy = py + ph / 2;
+      g.fillStyle = '#8a5a34'; g.beginPath(); g.moveTo(cx, cy - ph * 0.32); g.lineTo(cx + dw * 0.26, cy); g.lineTo(cx, cy + ph * 0.32); g.lineTo(cx - dw * 0.26, cy); g.closePath(); g.fill();
+      rosette(g, cx, cy, Math.min(dw, ph) * 0.18, '#d8a85a');
+    }
+    g.fillStyle = '#d8b050';
+    for (let y = -dh + 10; y < -4; y += 30) for (const x of [x0 + 7, x0 + dw - 7]) { g.beginPath(); g.arc(x, y, 3.5, 0, Math.PI * 2); g.fill(); }
+    g.strokeStyle = '#d8b050'; g.lineWidth = 4; g.beginPath(); g.arc(sgn * 22, -dh * 0.5, 13, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = '#d8b050'; g.beginPath(); g.arc(sgn * 22, -dh * 0.5 - 13, 6, 0, Math.PI * 2); g.fill();
+  }
+  g.fillStyle = '#2a160a'; g.fillRect(-1.5, -dh, 3, dh);
+  g.fillStyle = '#c8a050'; g.fillRect(-dw, -dh * 0.5 - 4, DOOR.w, 8);
+  // The threshold stone.
+  g.fillStyle = '#c4c0b6'; g.fillRect(-fw - 10, -14, (fw + 10) * 2, 14);
+  // Marigolds and leaves across the lintel.
+  leaves(g, -fw, fw, -fh + 2, 16);
+  garland(g, -fw - 10, -fh, 0, -fh + 40, 22, 16, 183, 8); garland(g, 0, -fh + 40, fw + 10, -fh, 22, 16, 184, 8);
+  strand(g, -fw - 8, -fh, -fh + 240, 185, 7); strand(g, fw + 8, -fh, -fh + 240, 186, 7);
+});
+const doorBells = [{ x: -262, chain: 90 }, { x: 262, chain: 90 }];
+const standLamp = card(120, 300, 2, (g) => {
+  const bg = g.createLinearGradient(-50, 0, 50, 0); bg.addColorStop(0, '#6a4a12'); bg.addColorStop(0.3, '#f0d27a'); bg.addColorStop(0.6, '#b8862a'); bg.addColorStop(1, '#4a3008');
+  g.fillStyle = bg;
+  g.beginPath(); g.ellipse(0, -10, 48, 12, 0, 0, Math.PI * 2); g.fill();
+  g.fillRect(-7, -250, 14, 240);
+  for (const [y, w] of [[-90, 30], [-170, 38], [-250, 46]]) { g.beginPath(); g.ellipse(0, y, w, 8, 0, 0, Math.PI * 2); g.fill(); g.fillRect(-12, y - 4, 24, 14); }
+  g.beginPath(); g.ellipse(0, -282, 8, 18, 0, 0, Math.PI * 2); g.fill();
+});
+const lampWicks = [];
+for (const [y, w] of [[-90, 30], [-170, 38], [-250, 46]]) for (const k of [-1, 0, 1]) lampWicks.push({ x: k * (w - 8), y: y - 6 });
+const hallBells = [];
+for (const z of BAYS) for (const sgn of [-1, 1]) hallBells.push({ x: sgn * 96, z, chain: 120 + ((z / 220) % 2) * 30, ph: z * 0.013 + sgn });
+const windowsL = BAYS;
+const motes = [];
+{ const r = rng(191); for (let i = 0; i < 260; i++) motes.push({ w: Math.floor(r() * windowsL.length), u: r(), v: r(), k: r(), ph: r() * 20 }); }
+const SUN = [1, 0.95, 0.32];
+const hallPetals = [];
+{ const r = rng(193); for (let i = 0; i < 110; i++) hallPetals.push({ x: r() * W, ts: 16.0 + r() * 4, v: 90 + r() * 120, sway: 18 + r() * 34, ph: r() * 6, s: 7 + r() * 7, c: r() < 0.55 ? '#f29a2e' : r() < 0.6 ? '#f6c23e' : '#e0562a', y0: -40 - r() * 360 }); }
+const hallFloorPetals = [];
+{ const r = rng(197); for (let i = 0; i < 90; i++) hallFloorPetals.push({ x: (r() - 0.5) * 2 * (HALL_X - 40), z: DOOR_Z - 40 - r() * 520, a: r() * 3, c: r() < 0.6 ? '#f29a2e' : '#f6c23e' }); }
+
+// ---------- parts of a frame ----------
+function drawSky(t) {
+  ctx.drawImage(sky, 0, 0);
+  for (const c of clouds) {
+    const x = ((c.x + t * c.v + 400) % (W + 800)) - 400;
+    ctx.globalAlpha = c.a; ctx.drawImage(c.cv, x, c.y - c.cv.height); ctx.globalAlpha = 1;
+  }
+}
+function petal(p) { ctx.fillStyle = p.c; ctx.beginPath(); ctx.ellipse(p.q.x, p.q.y, 7 * p.q.s, 3 * p.q.s, p.a, 0, Math.PI * 2); ctx.fill(); }
+function strewn(list) { for (const p of list) { const q = P(p.x, p.y ?? 0, p.z); if (q.d < 30 || q.y > H || q.x < -20 || q.x > W + 20) continue; petal({ q, a: p.a, c: p.c }); } }
+
+function drawWorld(t) {
+  const items = [];
+  const inside = cam.z > HALL_Z + 30;
+  // Far away: the high snows, mist, the foothills.
+  if (!inside) {
+    items.push({ z: 90000, draw: () => put(farRange, 0, 0, 17500) });
+    items.push({ z: 80000, draw: () => {
+      // Clouds that sit between the ranges.
+      for (const c of clouds.slice(0, 2)) { const x = ((c.x * 1.7 + t * c.v * 0.6 + 600) % (W + 1200)) - 600; const p = P(0, -1600, 14000); ctx.globalAlpha = 0.55; ctx.drawImage(c.cv, x, p.y - c.cv.height * 0.6, c.cv.width * 1.3, c.cv.height * 0.6); ctx.globalAlpha = 1; }
+    } });
+    items.push({ z: 70000, draw: () => put(mainRange, 0, 0, 11000) });
+    items.push({ z: 60000, draw: () => {
+      const p = P(0, -500, 8500), mg = ctx.createLinearGradient(0, p.y - 120, 0, p.y + 120);
+      mg.addColorStop(0, 'rgba(226,238,248,0)'); mg.addColorStop(0.5, 'rgba(226,238,248,0.55)'); mg.addColorStop(1, 'rgba(226,238,248,0)');
+      ctx.fillStyle = mg; ctx.fillRect(0, p.y - 120, W, 240);
+    } });
+    items.push({ z: 50000, draw: () => put(foothills, 0, 0, 6500) });
+  }
+  // The ground: meadow, river, path, and the plateau the shrine stands on.
+  items.push({ z: 40000, draw: () => {
+    const hz = P(0, 0, 6500);
+    const gg = ctx.createLinearGradient(0, hz.y, 0, H); gg.addColorStop(0, '#b0bc98'); gg.addColorStop(0.2, '#94a462'); gg.addColorStop(1, '#5a6e34');
+    if (cam.y > TOP) floorStrip(-9000, 9000, 0, -2000, 6500, gg);
+    deck(-9000, 9000, TOP, STEP_END, 6400, '#7e9a5c');
+    if (cam.y <= TOP) return;
+    for (const s of meadow) {
+      const c = P(s.x, 0, s.z); if (c.d < 40 || c.y > H + 50) continue;
+      const n = P(s.x, 0, Math.max(s.z - s.rz, cam.z + 30)), f = P(s.x, 0, s.z + s.rz);
+      ctx.fillStyle = s.c; ctx.beginPath(); ctx.ellipse(c.x, (n.y + f.y) / 2, s.rx * c.s, Math.max(1, (n.y - f.y) / 2), 0, 0, Math.PI * 2); ctx.fill();
+    }
+    for (const s of snowPatches) {
+      const c = P(s.x, 0, s.z); if (c.d < 40 || c.y > H + 50) continue;
+      const n = P(s.x, 0, s.z - s.rz), f = P(s.x, 0, Math.max(s.z + s.rz, cam.z + 30));
+      ctx.fillStyle = 'rgba(246,250,255,0.92)'; ctx.beginPath(); ctx.ellipse(c.x, (n.y + f.y) / 2, s.rx * c.s, Math.max(1, (n.y - f.y) / 2), 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // The river: pebble banks, glacier water, foam running towards the guest, glints of sun.
+    const z0 = Math.max(-1600, cam.z + 22), z1 = STEP0 + 400;
+    const edge = (off, k) => { const pts = []; for (let z = z0; z <= z1; z += 24) { const w = Math.sin(z * 0.013 + k) * 22 + Math.sin(z * 0.047 + k * 3) * 10; const p = P(riverX(z) + off + w, 0, z); pts.push([p.x, p.y]); } return pts; };
+    const bankL = edge(-RIVER_HW - 60, 1), bankR = edge(RIVER_HW + 70, 2);
+    poly(ctx, bankL.concat(bankR.reverse())); ctx.fillStyle = '#bab4a6'; ctx.fill();
+    const wl = edge(-RIVER_HW, 3), wr = edge(RIVER_HW, 4);
+    const wg = ctx.createLinearGradient(0, HZ, 0, H); wg.addColorStop(0, '#b4e0e0'); wg.addColorStop(0.35, '#7cc4c8'); wg.addColorStop(1, '#3a8c9c');
+    poly(ctx, wl.concat(wr.reverse())); ctx.fillStyle = wg; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(70,96,96,0.45)'; ctx.stroke();
+    ctx.lineCap = 'round';
+    for (const f of foam) {
+      const z = -1400 + ((f.z0 + 4000 - t * f.v) % 2800); if (z < cam.z + 40 || z > STEP0 + 300) continue;
+      const a = P(riverX(z) + f.u * RIVER_HW, 0, z), b = P(riverX(z + f.len) + f.u * RIVER_HW, 0, z + f.len);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = Math.min(6, Math.max(1, 3 * a.s)); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const s of sparkles) {
+      const p = P(riverX(s.z) + s.u * RIVER_HW, 0, s.z); if (p.d < 40) continue;
+      const b = Math.max(0, Math.sin(t * 5 + s.ph)) ** 8; if (b < 0.05) continue;
+      const m = Math.min(10, 5 * p.s) * b; ctx.fillStyle = `rgba(255,255,240,${(0.9 * b).toFixed(3)})`;
+      ctx.fillRect(p.x - m, p.y - 0.8, m * 2, 1.6); ctx.fillRect(p.x - 0.8, p.y - m * 0.6, 1.6, m * 1.2);
+    }
+    ctx.restore();
+    // The stone path and its flags.
+    floorStrip(-PATH_X - 14, PATH_X + 14, 0, -2000, STEP0, '#948670');
+    ctx.strokeStyle = 'rgba(96,84,66,0.35)'; ctx.lineWidth = 1;
+    for (const s of pathStones) {
+      if (s.z1 < cam.z + 30) continue;
+      const z0 = Math.max(s.z0, cam.z + 25), a = P(s.x0 + 1.5, 0, z0), b = P(s.x1 - 1.5, 0, z0), c = P(s.x1 - 1.5, 0, s.z1 - 2), d = P(s.x0 + 1.5, 0, s.z1 - 2);
+      if (c.y > H + 10) continue;
+      poly(ctx, [[a.x, a.y], [b.x, b.y], [c.x, c.y], [d.x, d.y]]); ctx.fillStyle = `rgb(${s.c + 6},${s.c},${s.c - 14})`; ctx.fill(); ctx.stroke();
+    }
+    // Wildflowers and grass in the meadow.
+    for (const f of flowers) {
+      const p = P(f.x, 0, f.z); if (p.d < 40 || p.y > H + 10 || p.x < -10 || p.x > W + 10) continue;
+      if (f.grass) { ctx.strokeStyle = 'rgba(60,90,30,0.7)'; ctx.lineWidth = Math.max(1, 2 * p.s); ctx.beginPath(); ctx.moveTo(p.x - 4 * p.s, p.y); ctx.lineTo(p.x - 6 * p.s, p.y - 16 * p.s); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + 1 * p.s, p.y - 20 * p.s); ctx.moveTo(p.x + 4 * p.s, p.y); ctx.lineTo(p.x + 7 * p.s, p.y - 14 * p.s); ctx.stroke(); }
+      else { ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(p.x, p.y - 4 * p.s, Math.max(0.8, 4 * p.s), 0, Math.PI * 2); ctx.fill(); }
+    }
+  } });
+  // The stair between terraced fields, with a stepped stone parapet.
+  // Grassy banks either side of the stair, rising with it.
+  items.push({ z: STEP_END + 2, draw: () => {
+    const za = Math.max(STEP0, cam.z + 20); if (za >= STEP_END) return;
+    const ya = (TOP * (za - STEP0)) / (STEP_END - STEP0);
+    for (const sgn of [-1, 1]) {
+      const a = P(sgn * (STAIR_X + 30), ya, za), b = P(sgn * 3000, ya, za), c = P(sgn * 3000, TOP, STEP_END), d = P(sgn * (STAIR_X + 30), TOP, STEP_END);
+      const bg = ctx.createLinearGradient(0, d.y, 0, a.y); bg.addColorStop(0, '#94a462'); bg.addColorStop(1, '#6e8240');
+      poly(ctx, [[a.x, a.y], [b.x, b.y], [c.x, c.y], [d.x, d.y]]); ctx.fillStyle = bg; ctx.fill();
+    }
+    for (const f of bankFlowers) {
+      if (f.z < za + 10) continue;
+      const p = P(f.x, (TOP * (f.z - STEP0)) / (STEP_END - STEP0), f.z); if (p.y > H || p.x < -10 || p.x > W + 10) continue;
+      if (f.snow) { ctx.fillStyle = 'rgba(246,250,255,0.9)'; ctx.beginPath(); ctx.ellipse(p.x, p.y, 70 * p.s, 14 * p.s, 0, 0, Math.PI * 2); ctx.fill(); continue; }
+      ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(p.x, p.y, Math.max(0.8, 4 * p.s), 0, Math.PI * 2); ctx.fill();
+    }
+  } });
+  for (let i = 0; i < STEPS; i++) {
+    const z0 = STEP0 + i * STEP_D, z1 = z0 + STEP_D, top = -(i + 1) * RISE, tg = mix(0.86, 1, i / STEPS);
+    items.push({ z: z1, draw: () => {
+      deck(-STAIR_X, STAIR_X, top, z0, z1, `rgb(${Math.round(186 * tg)},${Math.round(176 * tg)},${Math.round(158 * tg)})`);
+      for (const sgn of [-1, 1]) {
+        wallPlane(sgn * STAIR_X, top - 60, top, z0, z1, '#8a8272');
+        deck(sgn > 0 ? STAIR_X : -STAIR_X - 30, sgn > 0 ? STAIR_X + 30 : -STAIR_X, top - 60, z0, z1, '#f2f5f8');
+      }
+      strewn(stairPetals.filter((p) => p.k === i).map((p) => ({ ...p, y: top })));
+    } });
+    items.push({ z: z0, draw: () => {
+      const c = P(-STAIR_X, top, z0), d = P(STAIR_X, top + RISE, z0); if (c.d < 20) return;
+      const sg = ctx.createLinearGradient(0, c.y, 0, d.y); sg.addColorStop(0, '#9a9080'); sg.addColorStop(1, '#6a6254');
+      ctx.fillStyle = sg; ctx.fillRect(c.x, c.y, d.x - c.x, d.y - c.y);
+      ctx.fillStyle = 'rgba(50,44,36,0.35)';
+      for (let x = -STAIR_X + 50 + (i % 2) * 30; x < STAIR_X; x += 70) { const q = P(x, top, z0); ctx.fillRect(q.x, c.y, Math.max(1, 1.5 * q.s), d.y - c.y); }
+      // The parapet's front faces.
+      for (const sgn of [-1, 1]) { const e = P(sgn > 0 ? STAIR_X : -STAIR_X - 30, top - 60, z0), f = P(sgn > 0 ? STAIR_X + 30 : -STAIR_X, top + RISE, z0); ctx.fillStyle = '#a89e8c'; ctx.fillRect(e.x, e.y, f.x - e.x, f.y - e.y); }
+    } });
+  }
+  items.push({ z: GATE_Z - 1, draw: () => { deck(-3000, 3000, TOP, STEP_END, GATE_Z, '#86a262'); deck(-STAIR_X, STAIR_X, TOP, STEP_END, GATE_Z, '#b8b2a6'); } });
+  for (const tr of valleyTrees) items.push({ z: tr.z, draw: () => put(deodars[tr.k], tr.x, 0, tr.z) });
+  for (const tr of plateauTrees) items.push({ z: tr.z, draw: () => put(deodars[tr.k], tr.x, TOP, tr.z) });
+  for (const sb of shrubs) items.push({ z: sb.z, draw: () => {
+    const p = P(sb.x, 0, sb.z); if (p.d < 40) return;
+    const cd = rhodos[sb.k], w = cd.w * p.s * sb.sc, h = cd.h * p.s * sb.sc; ctx.drawImage(cd.cv, p.x - w / 2, p.y - h, w, h);
+  } });
+  for (const rk of rocks) items.push({ z: rk.z, draw: () => {
+    const p = P(rk.x, 0, rk.z); if (p.d < 40) return;
+    if (rk.wet) { ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.ellipse(p.x, p.y, 150 * rk.sc * p.s, 22 * rk.sc * p.s, 0, 0, Math.PI * 2); ctx.fill(); }
+    const cd = boulders[rk.k], sc = rk.sc;
+    const d = rk.z - cam.z, s = F / d, w = cd.w * s * sc, h = cd.h * s * sc;
+    ctx.drawImage(cd.cv, p.x - w / 2, p.y - h + (rk.wet ? 8 * s : 0), w, h);
+  } });
+  // The gate in the courtyard wall.
+  if (cam.z < GATE_Z - 25) items.push({ z: GATE_Z, draw: () => {
+    put(gateCard, 0, TOP, GATE_Z);
+    for (const x of [-200, 200]) { const p = P(x, TOP - 366, GATE_Z - 2); bell(ctx, p.x, p.y, p.s, Math.sin(t * 1.6 + x) * 0.12, 40, 1, 0.12); }
+  } });
+  // The courtyard: flagstones, walls with lit niches, frames of bells, stone lamp pillars.
+  if (cam.z < HALL_Z - 30) items.push({ z: HALL_Z + 2, draw: () => {
+    const cg = ctx.createLinearGradient(0, P(0, TOP, HALL_Z).y, 0, H); cg.addColorStop(0, '#b4b0a8'); cg.addColorStop(1, '#6e6a64');
+    deck(-COURT_X, COURT_X, TOP, GATE_Z, HALL_Z, cg);
+    if (cam.y < TOP) {
+      ctx.strokeStyle = 'rgba(60,58,56,0.35)'; ctx.lineWidth = 1.5;
+      for (let z = GATE_Z + 90; z < HALL_Z; z += 90) { if (z < cam.z + 30) continue; const a = P(-COURT_X, TOP, z), b = P(COURT_X, TOP, z); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+      for (let x = -COURT_X + 120; x < COURT_X; x += 120) { const a = P(x, TOP, Math.max(GATE_Z, cam.z + 30)), b = P(x, TOP, HALL_Z); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+      strewn(courtPetals.map((p) => ({ ...p, y: TOP })));
+    }
+    for (const sgn of [-1, 1]) {
+      const x = sgn * COURT_X;
+      wallPlane(x, TOP - 380, TOP, GATE_Z, HALL_Z, sgn < 0 ? '#a8a6a0' : '#8a8884');
+      ctx.strokeStyle = 'rgba(50,50,56,0.3)'; ctx.lineWidth = 1.5;
+      for (let y = TOP - 46; y > TOP - 380; y -= 46) { const z0 = Math.max(GATE_Z, cam.z + 30); const a = P(x, y, z0), b = P(x, y, HALL_Z); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+      wallPlane(x, TOP - 404, TOP - 378, GATE_Z, HALL_Z, '#4a5058');
+      wallPlane(x, TOP - 414, TOP - 402, GATE_Z, HALL_Z, '#f6f9fd');
+      for (const z of courtNiches) {
+        const s = onWall(x, z, TOP - 110, [[-40, 0], [-40, -90], [-20, -112], [20, -112], [40, -90], [40, 0]]); if (!s) continue;
+        poly(ctx, s); ctx.fillStyle = '#3e3a36'; ctx.fill();
+        const f = P(x, TOP - 118, z); diya(ctx, f.x, f.y, 1.4 * f.s, t, z + sgn, 1);
+      }
+    }
+  } });
+  // Two long rows of bells either side of the path, on timber beams roofed in slate.
+  items.push({ z: ROW_Z1 + 1, draw: () => {
+    for (const sgn of [-1, 1]) {
+      wallPlane(sgn * ROW_X, TOP - 470, TOP - 444, ROW_Z0 - 20, ROW_Z1 + 20, '#6a4428');
+      wallPlane(sgn * ROW_X, TOP - 476, TOP - 468, ROW_Z0 - 20, ROW_Z1 + 20, '#f6f9fd');
+    }
+  } });
+  for (const z of [ROW_Z0, (ROW_Z0 + ROW_Z1) / 2, ROW_Z1]) for (const sgn of [-1, 1]) items.push({ z, draw: () => put(rowPost, sgn * ROW_X, TOP, z) });
+  for (const b of rowBells) items.push({ z: b.z, draw: () => { const p = P(b.x, TOP - 444, b.z); if (p.d < 40) return; bell(ctx, p.x, p.y, p.s, Math.sin(t * 2.1 + b.ph) * 0.14, b.chain, 0.8, 0.08); } });
+  for (const z of FRAMES_Z) items.push({ z, draw: () => {
+    put(bellFrame, 0, TOP, z);
+    for (const b of frameBells) { if (b.z !== z) continue; const p = P(b.x, TOP - 590, z - 1); if (p.d < 30) continue; bell(ctx, p.x, p.y, p.s, Math.sin(t * 2.1 + b.ph) * 0.14, b.chain, 0.8, 0.08); }
+  } });
+  for (const sgn of [-1, 1]) items.push({ z: 3250, draw: () => {
+    put(lampPillar, sgn * 470, TOP, 3250);
+    for (const l of pillarLamps) { const p = P(sgn * 470 + l.x, TOP + l.y, 3249); if (p.d > 25) flame(ctx, p.x, p.y, 1.1 * p.s, t, l.x + l.k + sgn, 1); }
+  } });
+  // The hall's front, the tower above it, the trees on the plateau.
+  if (!inside) items.push({ z: TOWER_Z, draw: () => put(tower, 0, TOP, TOWER_Z) });
+  if (cam.z < HALL_Z - 25) items.push({ z: HALL_Z, draw: () => {
+    put(porch, 0, TOP, HALL_Z);
+    for (const b of porchBells) { const p = P(b.x, TOP - 560, HALL_Z - 2); bell(ctx, p.x, p.y, p.s, Math.sin(t * 1.7 + b.x) * 0.12, b.chain, 1, 0.1); }
+    for (const d of plinthDiyas) { const p = P(d.x, TOP - 44, HALL_Z - 6); if (p.d > 25) diya(ctx, p.x, p.y, 1.3 * p.s, t, d.ph, 1); }
+  } });
+  // The hall: stone-and-timber walls, a wooden ceiling, sunlight through the windows on the left.
+  items.push({ z: DOOR_Z + 1, draw: () => {
+    const fg = ctx.createLinearGradient(0, P(0, TOP, DOOR_Z).y, 0, H); fg.addColorStop(0, '#b0a08a'); fg.addColorStop(1, '#6a5e50');
+    deck(-HALL_X, HALL_X, TOP, HALL_Z, DOOR_Z, fg);
+    if (cam.y < TOP) {
+      deck(-110, 110, TOP, HALL_Z, DOOR_Z - 20, '#9a8c78'); deck(-100, 100, TOP, HALL_Z, DOOR_Z - 20, '#a89a84');
+      ctx.strokeStyle = 'rgba(30,26,22,0.3)'; ctx.lineWidth = 1.5;
+      for (let z = HALL_Z + 110; z < DOOR_Z; z += 110) { if (z < cam.z + 30) continue; const a = P(-HALL_X, TOP, z), b = P(HALL_X, TOP, z); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+      strewn(hallFloorPetals.map((p) => ({ ...p, y: TOP })));
+    }
+    deck(-HALL_X, HALL_X, CEIL, HALL_Z, DOOR_Z, '#3e2c1e', true);
+    for (const z of BAYS) {
+      if (z - 100 < cam.z + 30) continue;
+      deck(-HALL_X + 40, HALL_X - 40, CEIL, z - 100, z + 100, '#523a26', true);
+      deck(-HALL_X + 70, HALL_X - 70, CEIL, z - 80, z + 80, '#3a2818', true);
+      const c = P(0, CEIL, z), n = P(0, CEIL, z - 60), f = P(0, CEIL, z + 60);
+      ctx.save(); ctx.translate(c.x, (n.y + f.y) / 2); ctx.scale(1, Math.max(0.05, Math.abs(n.y - f.y) / (120 * c.s))); rosette(ctx, 0, 0, 38 * c.s, 'rgba(190,140,80,0.42)'); ctx.restore();
+    }
+    for (const z of PILLARS) {
+      if (z - 16 < cam.z + 30) continue;
+      deck(-HALL_X, HALL_X, CEIL, z - 16, z + 16, '#6a4a2c', true);
+      const a = P(-HALL_X, CEIL, z - 16), b = P(HALL_X, CEIL, z - 16), c = P(HALL_X, CEIL + 26, z - 16), d = P(-HALL_X, CEIL + 26, z - 16);
+      poly(ctx, [[a.x, a.y], [b.x, b.y], [c.x, c.y], [d.x, d.y]]); ctx.fillStyle = '#5a3c22'; ctx.fill();
+    }
+    for (const sgn of [-1, 1]) {
+      const x = sgn * HALL_X;
+      wallPlane(x, CEIL, TOP, HALL_Z, DOOR_Z, sgn < 0 ? '#9a9084' : '#7e766a');
+      for (const y of [TOP - 130, TOP - 290, TOP - 450]) wallPlane(x, y - 26, y, HALL_Z, DOOR_Z, sgn < 0 ? '#7a5030' : '#5e3c24');
+      ctx.strokeStyle = 'rgba(40,36,34,0.3)'; ctx.lineWidth = 1.2;
+      for (const y of [TOP - 50, TOP - 90, TOP - 200, TOP - 245, TOP - 360, TOP - 405, TOP - 510]) { const z0 = Math.max(HALL_Z, cam.z + 30); const a = P(x, y, z0), b = P(x, y, DOOR_Z); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
+      for (const zc of windowsL) {
+        const s = onWall(x, zc, TOP - 340, [[-50, 0], [-50, -120], [50, -120], [50, 0]]); if (!s) continue;
+        poly(ctx, s); ctx.fillStyle = sgn < 0 ? '#f4f8fc' : '#bcd4ea'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#4a2e18'; ctx.stroke();
+        const m = onWall(x, zc, TOP - 340, [[0, 0], [0, -120]]); if (m) { polyline(ctx, m); ctx.stroke(); }
+      }
+    }
+    // Shafts of morning sun from the left windows, down across the floor.
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (const zc of windowsL) {
+      const corners = [];
+      for (const [y, dz] of [[TOP - 460, -50], [TOP - 460, 50], [TOP - 340, 50], [TOP - 340, -50]]) {
+        const k = (TOP - y) / SUN[1];
+        corners.push([-HALL_X, y, zc + dz], [-HALL_X + k * SUN[0], TOP, zc + dz + k * SUN[2]]);
+      }
+      const near = Math.min(...corners.map((c) => c[2])) - cam.z; if (near < 60) continue;
+      const fade = smooth((near - 60) / 300);
+      const pts = hull(corners.map(([x, y, z]) => { const p = P(x, y, z); return [p.x, p.y]; }));
+      poly(ctx, pts); ctx.fillStyle = `rgba(255,236,196,${(0.14 * fade).toFixed(3)})`; ctx.fill();
+      const fl = [0, 2, 4, 6].map((i) => corners[i + 1]).map(([x, y, z]) => { const p = P(x, y, z); return [p.x, p.y]; });
+      poly(ctx, hull(fl)); ctx.fillStyle = `rgba(255,228,178,${(0.32 * fade).toFixed(3)})`; ctx.fill();
+    }
+    for (const m of motes) {
+      const zc = windowsL[m.w], y = mix(TOP - 460, TOP - 340, m.v), k = ((TOP - y) / SUN[1]) * m.k;
+      const p = P(-HALL_X + k * SUN[0] + Math.sin(t * 0.5 + m.ph) * 10, y + k * SUN[1] + Math.sin(t * 0.3 + m.ph * 2) * 8, zc + (m.u - 0.5) * 100 + k * SUN[2]);
+      if (p.d < 80) continue;
+      const a = 0.5 * (0.5 + 0.5 * Math.sin(t * 1.5 + m.ph)) * smooth((p.d - 80) / 300);
+      ctx.fillStyle = `rgba(255,246,220,${a.toFixed(3)})`; const sz = Math.min(4, 2 * p.s); ctx.fillRect(p.x - sz / 2, p.y - sz / 2, sz, sz);
+    }
+    ctx.restore();
+  } });
+  items.push({ z: DOOR_Z, draw: () => {
+    put(doorCard, 0, TOP, DOOR_Z);
+    // Light from within, through the seam and under the doors.
+    const pulse = 0.85 + 0.15 * Math.sin(t * 1.3);
+    const top = P(0, TOP - DOOR.h + 6, DOOR_Z - 1), bot = P(0, TOP - 4, DOOR_Z - 1);
+    if (top.d > 30) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const sg = ctx.createLinearGradient(0, top.y, 0, bot.y); sg.addColorStop(0, 'rgba(255,200,120,0.3)'); sg.addColorStop(1, 'rgba(255,220,150,0.9)');
+      ctx.fillStyle = sg; ctx.fillRect(top.x - Math.max(1, 1.6 * top.s), top.y, Math.max(2, 3.2 * top.s), bot.y - top.y);
+      glow(ctx, bot.x, (top.y + bot.y) / 2, Math.min(300 * top.s, 420), 'rgba(255,180,100,A)', 0.24 * pulse);
+      glow(ctx, bot.x, (top.y + bot.y) / 2, Math.min(120 * top.s, 200), 'rgba(255,214,150,A)', 0.22 * pulse);
+      const th = P(-DOOR.w / 2, TOP - 2, DOOR_Z - 1), th2 = P(DOOR.w / 2, TOP, DOOR_Z - 1);
+      ctx.fillStyle = `rgba(255,214,140,${(0.8 * pulse).toFixed(3)})`; ctx.fillRect(th.x, th.y - 2 * th.s, th2.x - th.x, 3 * th.s);
+      ctx.restore();
+    }
+    floorGlow(0, TOP, DOOR_Z - 140, 180, 0.3 * pulse);
+    for (const b of doorBells) { const p = P(b.x, TOP - 520, DOOR_Z - 4); bell(ctx, p.x, p.y, p.s, Math.sin(t * 1.4 + b.x) * 0.08, b.chain, 1.1, 0.12); }
+  } });
+  for (const sgn of [-1, 1]) items.push({ z: DOOR_Z - 80, draw: () => {
+    put(standLamp, sgn * 236, TOP, DOOR_Z - 80);
+    for (const w of lampWicks) { const p = P(sgn * 236 + w.x, TOP + w.y, DOOR_Z - 81); if (p.d > 25) flame(ctx, p.x, p.y, 0.8 * p.s, t, w.x + w.y + sgn, 1); }
+    light(P(sgn * 236, TOP - 200, DOOR_Z - 82), 160, 'rgba(255,190,110,A)', 0.22);
+  } });
+  for (const z of PILLARS) for (const sgn of [-1, 1]) items.push({ z, draw: () => put(pillarCard, sgn * PILLAR_X, TOP, z) });
+  for (const b of hallBells) items.push({ z: b.z, draw: () => {
+    const p = P(b.x, CEIL, b.z); if (p.d < 40) return;
+    const near = smooth((1400 - p.d) / 800);
+    bell(ctx, p.x, p.y, p.s, Math.sin(t * 1.9 + b.ph) * (0.1 + 0.12 * near), b.chain, 0.95, 0.14);
+  } });
+  items.sort((a, b) => b.z - a.z).forEach((it) => it.draw());
+}
+
+window.render = function (t) {
+  cam.z = walkAt(t); cam.y = eyeAt(cam.z); cam.x = 0;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  drawSky(t);
+  drawWorld(t);
+  // Marigold petals drift down before the doors.
+  for (const p of hallPetals) {
+    const age = t - p.ts; if (age < 0) continue;
+    const y = p.y0 + age * p.v; if (y > H + 30) continue;
+    const x = p.x + Math.sin(age * 1.4 + p.ph) * p.sway;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(age * 2 + p.ph); ctx.fillStyle = p.c; ctx.globalAlpha = 0.9 * clamp(age / 0.4);
+    ctx.beginPath(); ctx.ellipse(0, 0, p.s, p.s * 0.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  // Indoors the stone takes on the warmth of lamps and sun.
+  const warm = smooth((cam.z - HALL_Z + 300) / 500);
+  if (warm > 0) { ctx.save(); ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = `rgba(255,180,100,${(0.45 * warm).toFixed(3)})`; ctx.fillRect(0, 0, W, H); ctx.restore(); }
+  // Indoors the light falls away from the windows; the floor nearest the guest dims.
+  const fl = ctx.createLinearGradient(0, H * 0.74, 0, H);
+  fl.addColorStop(0, 'rgba(14,18,22,0)'); fl.addColorStop(1, `rgba(14,18,22,${cam.z > HALL_Z ? 0.5 : 0.32})`);
+  ctx.fillStyle = fl; ctx.fillRect(0, H * 0.74, W, H * 0.26);
+  const v = ctx.createRadialGradient(540, 900, 460, 540, 900, 1320);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(10,16,30,0.3)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  ctx.save(); ctx.globalCompositeOperation = 'overlay'; ctx.globalAlpha = 0.05; ctx.drawImage(grain, 0, 0, W, H); ctx.restore();
+};
+render(0);
+</script>
+</body>
+</html>

@@ -1,19 +1,7 @@
 // The film behind the invitation: one canvas that stays put while the page scrolls over it. The
 // film's frames come in sprite sheets; scrolling through a travel spacer moves the film between two
 // moments, and sections sit over the frame held between travels.
-import {
-    blendFocus,
-    cameraAt,
-    exitAt,
-    type Focus,
-    frameAt,
-    frameCell,
-    momentAlpha,
-    sceneAt,
-    type TimedScene,
-    viewOf,
-    type ViewRect,
-} from '@shared/film';
+import { frameAt, frameCell, momentAlpha, sceneAt, type TimedScene } from '@shared/film';
 import { photoUrl } from '@shared/photos';
 import type { FilmMoment } from '@shared/types';
 import { type MotionValue, motionValue, useReducedMotion } from 'motion/react';
@@ -29,6 +17,7 @@ import {
 } from 'react';
 
 import { useInvite } from '../context';
+import { ASPECT, paint, paintFilm, type Picture, type Pictures } from './paint';
 
 export interface FilmTravelSpan {
     el: HTMLElement;
@@ -52,6 +41,10 @@ export const useFilmStage = () => use(FilmStageContext);
 // Decoded sheets are big (a 3×3 sheet of 540×960 frames is ~19 MB in memory): keep only a few.
 const DECODED = 4;
 const FETCHING = 3;
+// Seconds of film fetched ahead of the guest: the longest stretch between two chapters, so reaching a
+// chapter already brings the whole way to the next one. Less on a lean connection.
+const AHEAD = 6;
+const AHEAD_LEAN = 2;
 // How dark the film goes behind a chapter's words.
 const VEIL = 0.58;
 
@@ -172,67 +165,15 @@ interface StageProps {
     children: ReactNode;
 }
 
-const momentLook: Record<NonNullable<FilmMoment['style']>, string> = {
+// The looks of words on the film; the studio's film editor shows them the same way.
+export const momentLook: Record<NonNullable<FilmMoment['style']>, string> = {
     kicker: 'text-[3.4cqw] tracking-[0.38em] text-(--inv-gold) uppercase',
     line: 'inv-display text-[6.4cqw] leading-snug text-[#fff6e2]',
     script: 'inv-script text-[12cqw] leading-tight text-(--inv-gold)',
 };
 
-// A picture ready to draw: one frame cut from a sheet, or a whole still.
-interface Picture {
-    source: ImageBitmap;
-    sx: number;
-    sy: number;
-    sw: number;
-    sh: number;
-}
-
-interface Pictures {
-    a: Picture;
-    b?: Picture;
-    mix: number;
-}
-
-// Every scene is shown in the same upright column as the film.
-const ASPECT = 9 / 16;
 const range = (n: number) => Array.from({ length: n }, (_, i) => i);
-const ease = (p: number) => {
-    const x = clamp(p);
-    return x * x * (3 - 2 * x);
-};
-
-function paint(
-    ctx: CanvasRenderingContext2D,
-    pic: Picture,
-    focus: Focus,
-    rect: ViewRect,
-    alpha: number,
-) {
-    let { sx, sy, sw, sh } = pic;
-    // Crop to the upright column first (stills may be any shape), then to what the camera sees.
-    if (sw / sh > ASPECT) {
-        const nw = sh * ASPECT;
-        sx += (sw - nw) / 2;
-        sw = nw;
-    } else if (sw / sh < ASPECT) {
-        const nh = sw / ASPECT;
-        sy += (sh - nh) / 2;
-        sh = nh;
-    }
-    const v = viewOf(focus);
-    ctx.globalAlpha = alpha;
-    ctx.drawImage(
-        pic.source,
-        sx + v.x * sw,
-        sy + v.y * sh,
-        v.w * sw,
-        v.h * sh,
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
-    );
-}
+const span = (from: number, to: number) => range(Math.max(0, to - from + 1)).map((i) => from + i);
 
 export function FilmStage({
     scenes,
@@ -269,7 +210,8 @@ export function FilmStage({
     const caches = useRef<(SheetCache | null)[]>([]);
     const stills = useRef(new Map<string, ImageBitmap>());
 
-    // Load every scene: the first film's opening stretch first, later scenes a moment after.
+    // Load the opening's stretch of the first film up front (it plays on the tap); the rest follows
+    // the guest (below), so a page that's opened and closed never pulls the whole film.
     useEffect(() => {
         const lean = leanNetwork();
         const list = scenes.map((scene) =>
@@ -287,12 +229,7 @@ export function FilmStage({
                     const total = Math.ceil(f.count / (f.cols * f.rows));
                     const leadAt = clamp((first - scene.start) / Math.max(0.01, scene.duration));
                     const lead = frameCell(f, frameAt(f, leadAt * scene.duration).index).sheet;
-                    // On a lean connection only the opening's stretch loads ahead; the rest as it's reached.
-                    cache.prefetch(
-                        lean
-                            ? range(i === 0 ? lead + 1 : 1)
-                            : [...range(lead + 1), ...range(total)],
-                    );
+                    cache.prefetch(range(Math.min(total, i === 0 ? lead + 1 : 1)));
                 },
                 i === 0 ? 0 : 1200,
             ),
@@ -330,6 +267,40 @@ export function FilmStage({
             decoded.clear();
         };
     }, [scenes, first, schedule]);
+
+    // Ahead of the guest: once open, as the film moves, fetch its next few seconds; before the tap,
+    // only the opening's stretch. Only when the sheet in view changes, so scrolling costs nothing extra.
+    useEffect(() => {
+        const seconds = !opened ? 0 : leanNetwork() ? AHEAD_LEAN : AHEAD;
+        let last = '';
+        const ahead = (t: number) => {
+            const wanted = scenes.map((scene, i) => {
+                const f = scene.frames;
+                const local = t - scene.start;
+                if (!f || local > scene.duration || local < -seconds) return null;
+                const at = Math.max(0, local);
+                const end = Math.min(scene.duration, Math.max(at + seconds, first - scene.start));
+                return {
+                    i,
+                    from: frameCell(f, frameAt(f, at).index).sheet,
+                    to: frameCell(f, frameAt(f, end).index).sheet,
+                };
+            });
+            const key = wanted.map((w) => (w ? `${String(w.from)}-${String(w.to)}` : '')).join('|');
+            if (key === last) return;
+            last = key;
+            for (const w of wanted) if (w) caches.current[w.i]?.prefetch(span(w.from, w.to));
+        };
+        // After the loader above has made the caches.
+        const start = window.setTimeout(() => {
+            ahead(time.get());
+        }, 0);
+        const off = time.on('change', ahead);
+        return () => {
+            clearTimeout(start);
+            off();
+        };
+    }, [scenes, first, time, opened]);
 
     // Draw the film at its current time: the scene's frame (two nearest crossfaded) through its camera,
     // and during an exit, the next scene fading in or growing out of the door the camera flies into.
@@ -380,10 +351,9 @@ export function FilmStage({
             const ctx = el?.getContext('2d');
             if (!el || !ctx) return;
             const t = time.get();
+            // Not loaded yet: keep the frame already on screen rather than flash an empty one.
             const place = sceneAt(scenes, t);
-            const scene = scenes[place.index];
-            const current = pictures(place.index, place.local);
-            if (!scene || !current) return;
+            if (!pictures(place.index, place.local)) return;
             const dpr = Math.min(2, window.devicePixelRatio || 1);
             const w = Math.round(el.clientWidth * dpr);
             const h = Math.round(el.clientHeight * dpr);
@@ -399,45 +369,9 @@ export function FilmStage({
                 w: dw,
                 h,
             };
-            const focus = cameraAt(scene.camera, place.local / Math.max(0.01, scene.duration));
-            const exit = exitAt(scenes, place);
-            const next = exit.next;
             ctx.clearRect(0, 0, w, h);
-            if (exit.progress !== null && next && scene.exit === 'zoom' && scene.portal && !snap) {
-                const e = ease(exit.progress);
-                const fly = blendFocus(focus, scene.portal, e);
-                paint(ctx, current.a, fly, column, 1);
-                // The door's place on screen right now: it opens out to fill the column as the camera arrives.
-                const vf = viewOf(fly);
-                const vp = viewOf(scene.portal);
-                const door = {
-                    x: column.x + ((vp.x - vf.x) / vf.w) * column.w,
-                    y: column.y + ((vp.y - vf.y) / vf.h) * column.h,
-                    w: (vp.w / vf.w) * column.w,
-                    h: (vp.h / vf.h) * column.h,
-                };
-                const inside = pictures(place.index + 1, 0);
-                if (inside) {
-                    // Seen through an arched doorway whose curve flattens as it fills the screen.
-                    const round = (door.w / 2) * (1 - e);
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.roundRect(door.x, door.y, door.w, door.h, [round, round, 0, 0]);
-                    ctx.clip();
-                    paint(ctx, inside.a, cameraAt(next.camera, 0), door, Math.min(1, e * 1.6));
-                    ctx.restore();
-                }
-            } else {
-                paint(ctx, current.a, focus, column, 1);
-                if (current.b && current.mix > 0.02 && !snap)
-                    paint(ctx, current.b, focus, column, current.mix);
-                if (exit.progress !== null && next && scene.exit === 'fade') {
-                    const after = pictures(place.index + 1, 0);
-                    if (after)
-                        paint(ctx, after.a, cameraAt(next.camera, 0), column, ease(exit.progress));
-                }
-            }
-            ctx.globalAlpha = 1;
+            const drawn = paintFilm(ctx, column, scenes, t, pictures, snap);
+            if (!drawn) return;
             // The blurred fill either side, from a tiny copy of the same picture.
             const fill = blur.current?.getContext('2d');
             const tiny = {
@@ -446,7 +380,7 @@ export function FilmStage({
                 w: 24,
                 h: 42,
             };
-            if (fill && dw < w) paint(fill, current.a, focus, tiny, 1);
+            if (fill && dw < w) paint(fill, drawn.picture, drawn.focus, tiny, 1);
             if (posterEl.current) posterEl.current.style.opacity = '0';
             // The moment on screen, for checks and the editor's tests.
             el.parentElement?.setAttribute('data-film-time', t.toFixed(2));

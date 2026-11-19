@@ -121,6 +121,15 @@ What the walk adds on top:
 - The walks share `scripts/dev/films/walk-kit.js` (camera path, cards, walls, lamps, arches) and one
   layout (`walkLayout`; the garden holds the invitation card where the others hold the blessing).
 - Studio: **Library → Films** shows every film template; scroll the preview to walk through it.
+- Loading follows the guest (2026-11-19): before the tap only the opening's sheets load (5 of 27 for a
+  walk, about 1.3 MB); once open, the next 6 s of film is always fetched ahead (2 s on Data Saver or 2G).
+- **Film editor** (studio, 2026-11-19): "Film editor" in the editor's top bar (or "Edit on the film"
+  under Words) puts the film big in the middle: words dragged and widened on the picture, a timeline
+  with a filmstrip, playhead, chapter marks, word bars and scenes (Space plays, ← → step, undo works).
+- **WhatsApp video** (couples, 2026-11-19): "Share video" in the couple's editor once a film invitation
+  is live. Made on their device (WebCodecs, `src/invitation/film/video.ts`, our own MP4 writer in
+  `mp4.ts`): the walk holds on their names, shows the film's words, ends on a card with their link.
+  720×1280, ~27 s, ~9 MB, about 4 s to make on a laptop. No sound yet.
 
 Every film is our own original. Two ways to make them:
 1. **AI video from our own prompts** (Veo, Kling, Runway): 2–4 clips of 6–8 s, chained by first-frame

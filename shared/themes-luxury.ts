@@ -68,6 +68,7 @@ const yatraFrames = framesOf('deepmala', 135);
 const walkFrames = framesOf('haveli-walk', 240, 12);
 const palaceFrames = framesOf('palace-walk', 240, 12);
 const gardenFrames = framesOf('garden-walk', 240, 12);
+const himalayaFrames = framesOf('himalaya-walk', 240, 12);
 
 export const luxuryThemes: ThemeDefinition[] = [
     theme({
@@ -689,6 +690,113 @@ export const luxuryThemes: ThemeDefinition[] = [
             ],
         },
     }),
+    theme({
+        slug: 'himalaya-walk',
+        name: 'Himalaya Walk',
+        culture: 'hindu',
+        category: 'luxury',
+        description:
+            'A walk plays behind the whole invitation, in bright mountain morning: a stone path beside a glacial river below the snow peaks, a stair up to a granite shrine, a courtyard of brass bells and marigolds, a pillared hall where bells sway in shafts of sun, and closed carved doors glowing from within.',
+        palette: {
+            bg: '#14222e',
+            surface: '#1e2e3c',
+            ink: '#fbf6ec',
+            muted: '#c2ccd2',
+            primary: '#f0c674',
+            accent: '#e07a3a',
+            gold: '#e8bf6a',
+        },
+        display: 'cormorant',
+        body: 'cormorant',
+        opening: 'film',
+        generative: 'lotus',
+        texture: 'paper',
+        titles: 'script',
+        // Our own illustrated walk (scripts/dev/films/himalaya-walk), one 20 s film in frames. An
+        // invented shrine; no figures, symbols or sacred text, and it stops at closed doors.
+        film: {
+            src: '/kits/himalaya-walk/film.mp4',
+            first: '/kits/himalaya-walk/film-first.webp',
+            last: '/kits/himalaya-walk/film-last.webp',
+            namesAt: 3.6,
+            behind: true,
+            frames: himalayaFrames,
+            moments: [
+                {
+                    text: {
+                        en: 'Where the mountains meet the sky',
+                        hi: 'जहाँ पर्वत आकाश से मिलते हैं',
+                    },
+                    from: 4.2,
+                    to: 5.3,
+                    zone: {
+                        x: 0.5,
+                        y: 0.16,
+                        w: 0.84,
+                    },
+                    style: 'line',
+                },
+                {
+                    text: {
+                        en: 'Every step, a blessing',
+                        hi: 'हर क़दम एक आशीर्वाद',
+                    },
+                    from: 7,
+                    to: 8.2,
+                    zone: {
+                        x: 0.5,
+                        y: 0.16,
+                        w: 0.8,
+                    },
+                    style: 'kicker',
+                },
+                {
+                    text: {
+                        en: 'The bells ring for you',
+                        hi: 'घंटियाँ आपके लिए बजती हैं',
+                    },
+                    from: 10.4,
+                    to: 11.6,
+                    zone: {
+                        x: 0.5,
+                        y: 0.16,
+                        w: 0.84,
+                    },
+                    style: 'line',
+                },
+                {
+                    text: {
+                        en: 'Two families, one journey',
+                        hi: 'दो परिवार, एक यात्रा',
+                    },
+                    from: 13.2,
+                    to: 14.4,
+                    // Over the dark timber ceiling of the hall.
+                    zone: {
+                        x: 0.5,
+                        y: 0.2,
+                        w: 0.9,
+                    },
+                    style: 'script',
+                },
+                {
+                    text: {
+                        en: 'At the doors of a new beginning',
+                        hi: 'एक नई शुरुआत के द्वार पर',
+                    },
+                    from: 16.2,
+                    to: 17.6,
+                    // Narrow, so it wraps over the ceiling instead of running off a phone.
+                    zone: {
+                        x: 0.5,
+                        y: 0.18,
+                        w: 0.7,
+                    },
+                    style: 'line',
+                },
+            ],
+        },
+    }),
 ];
 
 // Every Deepmala page sits on the same midnight paper, so no seams are drawn between them.
@@ -774,6 +882,7 @@ const walkLayout: BlockPreset = {
 export const luxuryLayouts: Record<string, BlockPreset> = {
     'haveli-walk': walkLayout,
     'palace-walk': walkLayout,
+    'himalaya-walk': walkLayout,
     // The garden has no blessing page of its own, so the invitation card holds the third moment.
     'garden-walk': {
         ...walkLayout,

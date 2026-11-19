@@ -12,6 +12,7 @@ import {
     ArrowUp,
     CalendarHeart,
     Check,
+    Clapperboard,
     ExternalLink,
     Eye,
     EyeOff,
@@ -56,6 +57,8 @@ import {
 } from '@/admin/composer/panels';
 import { BlockEditor } from '@/admin/composer/SectionsPanel';
 import { applyText } from '@/admin/editor/apply-text';
+import { FilmEditorContext } from '@/admin/editor/film-editor-context';
+import { FilmEditor } from '@/admin/editor/FilmEditor';
 import { useDraftHistory } from '@/admin/editor/history';
 import { LanguagesSheet } from '@/admin/editor/LanguagesSheet';
 import { LayersPanel } from '@/admin/editor/LayersPanel';
@@ -239,6 +242,13 @@ function EditorPage({ id }: { id: string }) {
     const [picked, setLocale] = useState<string | null>(null);
     const [opening, setOpening] = useState(false);
     const [replay, setReplay] = useState(0);
+    // The film editor takes the middle of the screen; a panel can open it on a line of words.
+    const [filmOpen, setFilmOpen] = useState(false);
+    const [filmWord, setFilmWord] = useState<number | null>(null);
+    const openFilm = useCallback((word?: number) => {
+        setFilmWord(word ?? null);
+        setFilmOpen(true);
+    }, []);
     // Changing the entry screen (from any panel) plays it on the canvas straight away.
     const chosenOpening = draft?.design.opening;
     const [shownOpening, setShownOpening] = useState(chosenOpening);
@@ -441,443 +451,480 @@ function EditorPage({ id }: { id: string }) {
 
     return (
         <AutoTranslateProvider value={translator.status}>
-            <div className="flex h-svh flex-col overflow-hidden bg-background text-foreground">
-                {/* Top bar */}
-                <header className="flex h-12 shrink-0 items-center gap-2 border-b px-2">
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={template ? 'Back to templates' : 'Back to invitations'}
-                        asChild
-                    >
-                        <Link to={template ? '/admin/templates' : '/admin/invitations'}>
-                            <ArrowLeft />
-                        </Link>
-                    </Button>
-                    <div className="flex min-w-0 items-center gap-2 rounded-md border px-3 py-1">
-                        {template && <LayoutTemplate className="size-4 shrink-0 text-gold" />}
-                        <span className="truncate text-sm font-medium">
-                            {template ? template.name : title}
-                        </span>
-                        <InvitationStatusBadge
-                            status={template ? template.status : data.invitation.status}
-                        />
-                    </div>
-                    {history.dirty ? (
-                        <span className="text-xs text-amber-400">Unsaved changes</span>
-                    ) : (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Check className="size-3.5" /> Saved
-                        </span>
-                    )}
-
-                    <div className="mx-auto flex items-center gap-2">
-                        <ToggleGroup
-                            type="single"
-                            size="sm"
-                            variant="outline"
-                            aria-label="Device"
-                            value={device}
-                            onValueChange={(v) => {
-                                if (v === 'phone' || v === 'tablet' || v === 'desktop')
-                                    setDevice(v);
-                            }}
+            <FilmEditorContext value={draft.design.film?.behind ? openFilm : null}>
+                <div className="flex h-svh flex-col overflow-hidden bg-background text-foreground">
+                    {/* Top bar */}
+                    <header className="flex h-12 shrink-0 items-center gap-2 border-b px-2">
+                        <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={template ? 'Back to templates' : 'Back to invitations'}
+                            asChild
                         >
-                            <ToggleGroupItem value="phone" aria-label="Phone">
-                                <Smartphone />
-                            </ToggleGroupItem>
-                            <ToggleGroupItem value="tablet" aria-label="Tablet">
-                                <Tablet />
-                            </ToggleGroupItem>
-                            <ToggleGroupItem value="desktop" aria-label="Desktop">
-                                <Monitor />
-                            </ToggleGroupItem>
-                        </ToggleGroup>
-                        {draft.locales.length > 1 && (
-                            <Select value={locale} onValueChange={setLocale}>
-                                <SelectTrigger
-                                    size="sm"
-                                    className="h-8 w-32"
-                                    aria-label="Editing language"
-                                >
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {draft.locales.map((l) => (
-                                        <SelectItem key={l} value={l}>
-                                            {localeNames[l as keyof typeof localeNames]}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        )}
-                    </div>
-
-                    <IconButton
-                        label="Undo"
-                        shortcut="⌘Z"
-                        disabled={!history.canUndo}
-                        onClick={undo}
-                    >
-                        <Undo2 />
-                    </IconButton>
-                    <IconButton
-                        label="Redo"
-                        shortcut="⇧⌘Z"
-                        disabled={!history.canRedo}
-                        onClick={redo}
-                    >
-                        <Redo2 />
-                    </IconButton>
-                    <div className="flex items-center">
-                        <IconButton
-                            label="Zoom out"
-                            disabled={zoom <= (ZOOMS[0] ?? 0.5)}
-                            onClick={() => {
-                                setZoom(ZOOMS.findLast((z) => z < zoom) ?? zoom);
-                            }}
-                        >
-                            <Minus />
-                        </IconButton>
-                        <span className="w-11 text-center text-xs tabular-nums">
-                            {String(Math.round(zoom * 100))}%
-                        </span>
-                        <IconButton
-                            label="Zoom in"
-                            disabled={zoom >= (ZOOMS.at(-1) ?? 1.25)}
-                            onClick={() => {
-                                setZoom(ZOOMS.find((z) => z > zoom) ?? zoom);
-                            }}
-                        >
-                            <Plus />
-                        </IconButton>
-                    </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                            setOpening(true);
-                            setReplay((r) => r + 1);
-                        }}
-                    >
-                        <Play /> Play opening
-                    </Button>
-                    {!template && (
-                        <Button variant="outline" size="sm" asChild>
-                            <Link to="/admin/invitations/$id/guests" params={{ id }}>
-                                <Users /> Guests
+                            <Link to={template ? '/admin/templates' : '/admin/invitations'}>
+                                <ArrowLeft />
                             </Link>
                         </Button>
-                    )}
-                    <Button variant="outline" size="sm" asChild>
-                        <a href={previewUrl} target="_blank" rel="noreferrer">
-                            <ExternalLink /> Preview
-                        </a>
-                    </Button>
-                    <Button
-                        size="sm"
-                        disabled={!history.dirty || save.isPending}
-                        onClick={() => {
-                            save.mutate(draft);
-                        }}
-                    >
-                        {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-                        Save
-                    </Button>
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button size="sm" variant="gold">
-                                <Rocket /> Publish
+                        <div className="flex min-w-0 items-center gap-2 rounded-md border px-3 py-1">
+                            {template && <LayoutTemplate className="size-4 shrink-0 text-gold" />}
+                            <span className="truncate text-sm font-medium">
+                                {template ? template.name : title}
+                            </span>
+                            <InvitationStatusBadge
+                                status={template ? template.status : data.invitation.status}
+                            />
+                        </div>
+                        {history.dirty ? (
+                            <span className="text-xs text-amber-400">Unsaved changes</span>
+                        ) : (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Check className="size-3.5" /> Saved
+                            </span>
+                        )}
+
+                        <div className="mx-auto flex items-center gap-2">
+                            <ToggleGroup
+                                type="single"
+                                size="sm"
+                                variant="outline"
+                                aria-label="Device"
+                                value={device}
+                                onValueChange={(v) => {
+                                    if (v === 'phone' || v === 'tablet' || v === 'desktop')
+                                        setDevice(v);
+                                }}
+                            >
+                                <ToggleGroupItem value="phone" aria-label="Phone">
+                                    <Smartphone />
+                                </ToggleGroupItem>
+                                <ToggleGroupItem value="tablet" aria-label="Tablet">
+                                    <Tablet />
+                                </ToggleGroupItem>
+                                <ToggleGroupItem value="desktop" aria-label="Desktop">
+                                    <Monitor />
+                                </ToggleGroupItem>
+                            </ToggleGroup>
+                            {draft.locales.length > 1 && (
+                                <Select value={locale} onValueChange={setLocale}>
+                                    <SelectTrigger
+                                        size="sm"
+                                        className="h-8 w-32"
+                                        aria-label="Editing language"
+                                    >
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {draft.locales.map((l) => (
+                                            <SelectItem key={l} value={l}>
+                                                {localeNames[l as keyof typeof localeNames]}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </div>
+
+                        {draft.design.film?.behind && (
+                            <Button
+                                variant={filmOpen ? 'secondary' : 'outline'}
+                                size="sm"
+                                aria-pressed={filmOpen}
+                                onClick={() => {
+                                    setFilmOpen((o) => !o);
+                                }}
+                            >
+                                <Clapperboard /> Film editor
                             </Button>
-                        </PopoverTrigger>
-                        <PopoverContent align="end" className="w-96">
-                            {template ? (
-                                <TemplatePublishPanel
-                                    template={template}
-                                    invitationId={id}
-                                    dirty={history.dirty}
-                                />
-                            ) : (
-                                <PublishPanel id={id} data={data} dirty={history.dirty} />
-                            )}
-                        </PopoverContent>
-                    </Popover>
-                </header>
-
-                <div className="flex min-h-0 flex-1">
-                    {/* Left: everything you can add or change */}
-                    <aside className="flex w-[340px] shrink-0 flex-col border-e">
-                        <nav className="grid grid-cols-7 border-b p-1" aria-label="Editor panels">
-                            {leftTabs.map((t) => (
-                                <button
-                                    key={t.id}
-                                    type="button"
-                                    aria-pressed={tab === t.id}
-                                    onClick={() => {
-                                        setTab(t.id);
-                                    }}
-                                    className={cn(
-                                        'flex flex-col items-center gap-1 rounded-md py-1.5 text-[10px] font-medium whitespace-nowrap transition',
-                                        tab === t.id
-                                            ? 'bg-primary/15 text-foreground'
-                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                                    )}
-                                >
-                                    {t.icon}
-                                    {t.label}
-                                </button>
-                            ))}
-                        </nav>
-                        <ScrollArea className="min-h-0 flex-1">
-                            {/* Panels size their grids to this column, not to the (wide) screen. */}
-                            <div className="@container p-3">
-                                {tab === 'section' && selected && (
-                                    <SectionPanel
-                                        type={selected}
-                                        name={shortName(selected)}
-                                        draft={draft}
-                                        set={set}
-                                        invitationId={id}
-                                        photoLimit={data.order?.limits.photos}
-                                        eventLimit={data.order?.limits.events}
-                                        focusEvent={focusEvent}
-                                        photoFirst={photoFirst}
-                                        focusSlot={focusSlot}
-                                        onBack={() => {
-                                            setTab('sections');
-                                        }}
-                                    />
-                                )}
-                                {(tab === 'sections' || (tab === 'section' && !selected)) && (
-                                    <LayersPanel
-                                        draft={draft}
-                                        set={set}
-                                        selected={selected}
-                                        onSelect={(type) => {
-                                            select(type, true);
-                                        }}
-                                    />
-                                )}
-                                {tab === 'photos' && (
-                                    <AllPhotos
-                                        invitationId={id}
-                                        draft={draft}
-                                        set={set}
-                                        photoLimit={data.order?.limits.photos}
-                                    />
-                                )}
-                                {tab === 'design' && (
-                                    <DesignPanel draft={draft} set={set} invitationId={id} />
-                                )}
-                                {tab === 'details' && <ContentPanel draft={draft} set={set} />}
-                                {tab === 'ceremonies' && (
-                                    <EventsPanel
-                                        // Remount on a new focus so the clicked ceremony opens and scrolls into view.
-                                        key={`events-${String(focusEvent ?? 'none')}`}
-                                        draft={draft}
-                                        set={set}
-                                        focus={focusEvent}
-                                        limit={data.order?.limits.events}
-                                    />
-                                )}
-                                {tab === 'extras' && (
-                                    <ExtrasPanel draft={draft} set={set} invitationId={id} />
-                                )}
-                            </div>
-                        </ScrollArea>
-                    </aside>
-
-                    {/* Canvas: the real invitation, edited in place */}
-                    <main
-                        className="relative min-w-0 flex-1 overflow-hidden bg-[radial-gradient(circle,rgb(255_255_255/0.06)_1px,transparent_1px)] [background-size:18px_18px]"
-                        onClick={(e) => {
-                            if (e.target === e.currentTarget) deselect();
-                        }}
-                        onKeyDown={undefined}
-                        role="presentation"
-                    >
-                        <div
-                            className={cn(
-                                'mx-auto h-full overflow-hidden bg-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] ring-1 ring-white/10 transition-[width]',
-                                width ? 'my-0 rounded-none' : '',
-                            )}
-                            style={{
-                                width: width ? `${String(width)}px` : '100%',
-                                maxWidth: `${String(100 / zoom)}%`,
-                                height: `${String(100 / zoom)}%`,
-                                zoom,
+                        )}
+                        <IconButton
+                            label="Undo"
+                            shortcut="⌘Z"
+                            disabled={!history.canUndo}
+                            onClick={undo}
+                        >
+                            <Undo2 />
+                        </IconButton>
+                        <IconButton
+                            label="Redo"
+                            shortcut="⇧⌘Z"
+                            disabled={!history.canRedo}
+                            onClick={redo}
+                        >
+                            <Redo2 />
+                        </IconButton>
+                        <div className="flex items-center">
+                            <IconButton
+                                label="Zoom out"
+                                disabled={zoom <= (ZOOMS[0] ?? 0.5)}
+                                onClick={() => {
+                                    setZoom(ZOOMS.findLast((z) => z < zoom) ?? zoom);
+                                }}
+                            >
+                                <Minus />
+                            </IconButton>
+                            <span className="w-11 text-center text-xs tabular-nums">
+                                {String(Math.round(zoom * 100))}%
+                            </span>
+                            <IconButton
+                                label="Zoom in"
+                                disabled={zoom >= (ZOOMS.at(-1) ?? 1.25)}
+                                onClick={() => {
+                                    setZoom(ZOOMS.find((z) => z > zoom) ?? zoom);
+                                }}
+                            >
+                                <Plus />
+                            </IconButton>
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setOpening(true);
+                                setReplay((r) => r + 1);
                             }}
                         >
-                            <EditContext value={editing}>
-                                <div
-                                    ref={frame}
-                                    className="inv-editing relative h-full [transform:translateZ(0)] overflow-y-auto overscroll-contain"
-                                    // Links (maps, calendar) must not navigate away while editing.
-                                    onClickCapture={(e) => {
-                                        if ((e.target as HTMLElement).closest('a'))
-                                            e.preventDefault();
-                                    }}
-                                >
-                                    <InvitationView
-                                        key={`${locale}-${String(replay)}`}
-                                        data={preview}
-                                        initialLocale={locale}
-                                        embedded
-                                        skipOpening={!opening}
+                            <Play /> Play opening
+                        </Button>
+                        {!template && (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link to="/admin/invitations/$id/guests" params={{ id }}>
+                                    <Users /> Guests
+                                </Link>
+                            </Button>
+                        )}
+                        <Button variant="outline" size="sm" asChild>
+                            <a href={previewUrl} target="_blank" rel="noreferrer">
+                                <ExternalLink /> Preview
+                            </a>
+                        </Button>
+                        <Button
+                            size="sm"
+                            disabled={!history.dirty || save.isPending}
+                            onClick={() => {
+                                save.mutate(draft);
+                            }}
+                        >
+                            {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+                            Save
+                        </Button>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button size="sm" variant="gold">
+                                    <Rocket /> Publish
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent align="end" className="w-96">
+                                {template ? (
+                                    <TemplatePublishPanel
+                                        template={template}
+                                        invitationId={id}
+                                        dirty={history.dirty}
                                     />
+                                ) : (
+                                    <PublishPanel id={id} data={data} dirty={history.dirty} />
+                                )}
+                            </PopoverContent>
+                        </Popover>
+                    </header>
+
+                    <div className="flex min-h-0 flex-1">
+                        {/* Left: everything you can add or change */}
+                        <aside className="flex w-[340px] shrink-0 flex-col border-e">
+                            <nav
+                                className="grid grid-cols-7 border-b p-1"
+                                aria-label="Editor panels"
+                            >
+                                {leftTabs.map((t) => (
+                                    <button
+                                        key={t.id}
+                                        type="button"
+                                        aria-pressed={tab === t.id}
+                                        onClick={() => {
+                                            setTab(t.id);
+                                        }}
+                                        className={cn(
+                                            'flex flex-col items-center gap-1 rounded-md py-1.5 text-[10px] font-medium whitespace-nowrap transition',
+                                            tab === t.id
+                                                ? 'bg-primary/15 text-foreground'
+                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                        )}
+                                    >
+                                        {t.icon}
+                                        {t.label}
+                                    </button>
+                                ))}
+                            </nav>
+                            <ScrollArea className="min-h-0 flex-1">
+                                {/* Panels size their grids to this column, not to the (wide) screen. */}
+                                <div className="@container p-3">
+                                    {tab === 'section' && selected && (
+                                        <SectionPanel
+                                            type={selected}
+                                            name={shortName(selected)}
+                                            draft={draft}
+                                            set={set}
+                                            invitationId={id}
+                                            photoLimit={data.order?.limits.photos}
+                                            eventLimit={data.order?.limits.events}
+                                            focusEvent={focusEvent}
+                                            photoFirst={photoFirst}
+                                            focusSlot={focusSlot}
+                                            onBack={() => {
+                                                setTab('sections');
+                                            }}
+                                        />
+                                    )}
+                                    {(tab === 'sections' || (tab === 'section' && !selected)) && (
+                                        <LayersPanel
+                                            draft={draft}
+                                            set={set}
+                                            selected={selected}
+                                            onSelect={(type) => {
+                                                select(type, true);
+                                            }}
+                                        />
+                                    )}
+                                    {tab === 'photos' && (
+                                        <AllPhotos
+                                            invitationId={id}
+                                            draft={draft}
+                                            set={set}
+                                            photoLimit={data.order?.limits.photos}
+                                        />
+                                    )}
+                                    {tab === 'design' && (
+                                        <DesignPanel draft={draft} set={set} invitationId={id} />
+                                    )}
+                                    {tab === 'details' && <ContentPanel draft={draft} set={set} />}
+                                    {tab === 'ceremonies' && (
+                                        <EventsPanel
+                                            // Remount on a new focus so the clicked ceremony opens and scrolls into view.
+                                            key={`events-${String(focusEvent ?? 'none')}`}
+                                            draft={draft}
+                                            set={set}
+                                            focus={focusEvent}
+                                            limit={data.order?.limits.events}
+                                        />
+                                    )}
+                                    {tab === 'extras' && (
+                                        <ExtrasPanel draft={draft} set={set} invitationId={id} />
+                                    )}
                                 </div>
-                            </EditContext>
-                        </div>
-                        {/* The clicked text in every language, docked at the foot of the canvas. */}
-                        {selectedText && (
-                            <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center">
-                                <LanguagesSheet
-                                    key={selectedText}
+                            </ScrollArea>
+                        </aside>
+
+                        {/* Film editor: the film big in the middle, its words on it, a timeline below. */}
+                        {filmOpen && draft.design.film?.behind ? (
+                            <main className="relative min-w-0 flex-1 overflow-hidden">
+                                <FilmEditor
                                     draft={draft}
-                                    path={selectedText}
-                                    locale={locale}
                                     set={set}
+                                    locale={locale}
+                                    selected={filmWord}
+                                    onSelect={setFilmWord}
                                     onClose={() => {
-                                        setSelectedText(null);
+                                        setFilmOpen(false);
                                     }}
                                 />
-                            </div>
-                        )}
-                    </main>
-
-                    {/* Right: settings for whatever is selected */}
-                    <aside className="w-[320px] shrink-0 border-s">
-                        <ScrollArea className="h-full">
-                            <div className="space-y-5 p-4">
-                                {selectedText && (
-                                    <div className="border-b pb-5">
-                                        <TextStylePanel
-                                            path={selectedText}
-                                            style={draft.content.textStyles?.[selectedText] ?? {}}
-                                            palette={draft.design.palette}
-                                            onChange={(style) => {
-                                                setTextStyle(selectedText, style);
-                                            }}
-                                            onReset={() => {
-                                                setTextStyle(selectedText, {});
-                                            }}
-                                        />
-                                    </div>
-                                )}
-                                {section ? (
-                                    <>
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
-                                                    Section
-                                                </p>
-                                                <h2 className="text-base font-semibold">
-                                                    {shortName(section.type)}
-                                                </h2>
+                            </main>
+                        ) : (
+                            <>
+                                {/* Canvas: the real invitation, edited in place */}
+                                <main
+                                    className="relative min-w-0 flex-1 overflow-hidden bg-[radial-gradient(circle,rgb(255_255_255/0.06)_1px,transparent_1px)] [background-size:18px_18px]"
+                                    onClick={(e) => {
+                                        if (e.target === e.currentTarget) deselect();
+                                    }}
+                                    onKeyDown={undefined}
+                                    role="presentation"
+                                >
+                                    <div
+                                        className={cn(
+                                            'mx-auto h-full overflow-hidden bg-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6)] ring-1 ring-white/10 transition-[width]',
+                                            width ? 'my-0 rounded-none' : '',
+                                        )}
+                                        style={{
+                                            width: width ? `${String(width)}px` : '100%',
+                                            maxWidth: `${String(100 / zoom)}%`,
+                                            height: `${String(100 / zoom)}%`,
+                                            zoom,
+                                        }}
+                                    >
+                                        <EditContext value={editing}>
+                                            <div
+                                                ref={frame}
+                                                className="inv-editing relative h-full [transform:translateZ(0)] overflow-y-auto overscroll-contain"
+                                                // Links (maps, calendar) must not navigate away while editing.
+                                                onClickCapture={(e) => {
+                                                    if ((e.target as HTMLElement).closest('a'))
+                                                        e.preventDefault();
+                                                }}
+                                            >
+                                                <InvitationView
+                                                    key={`${locale}-${String(replay)}`}
+                                                    data={preview}
+                                                    initialLocale={locale}
+                                                    embedded
+                                                    skipOpening={!opening}
+                                                />
                                             </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon-sm"
-                                                aria-label="Deselect"
-                                                onClick={() => {
-                                                    deselect();
-                                                }}
-                                            >
-                                                <X />
-                                            </Button>
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-1.5">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={index <= 0}
-                                                onClick={() => {
-                                                    moveSection(-1);
-                                                }}
-                                            >
-                                                <ArrowUp /> Up
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={index >= draft.sections.length - 1}
-                                                onClick={() => {
-                                                    moveSection(1);
-                                                }}
-                                            >
-                                                <ArrowDown /> Down
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => {
-                                                    patchSection({ enabled: !section.enabled });
-                                                }}
-                                            >
-                                                {section.enabled ? <EyeOff /> : <Eye />}
-                                                {section.enabled ? 'Hide' : 'Show'}
-                                            </Button>
-                                        </div>
-                                        <BlockEditor
-                                            section={section}
-                                            previousScene={undefined}
-                                            calm={calm}
-                                            film={
-                                                draft.design.film?.behind
-                                                    ? timelineOf(draft.design.film)
-                                                    : undefined
-                                            }
-                                            update={patchSection}
-                                        />
-                                    </>
-                                ) : (
-                                    <div className="space-y-4 text-sm text-muted-foreground">
-                                        <div className="flex items-center gap-2 text-foreground">
-                                            <MousePointerClick className="size-4" />
-                                            <span className="font-medium">
-                                                Click anything to edit it
-                                            </span>
-                                        </div>
-                                        <ul className="list-disc space-y-1.5 ps-5 leading-relaxed">
-                                            <li>
-                                                Click a section on the page to choose its layout,
-                                                entrance, backdrop and edge here.
-                                            </li>
-                                            <li>
-                                                Click any text (names, messages, ceremony names,
-                                                venues) and type straight on it. Press Enter or
-                                                click away to keep it.
-                                            </li>
-                                            <li>
-                                                Drag sections in the left panel to reorder them; the
-                                                eye hides one.
-                                            </li>
-                                            <li>
-                                                Opening, Design, Details, Events and Extras are on
-                                                the left.
-                                            </li>
-                                        </ul>
-                                        <div className="space-y-1.5 rounded-lg border p-3 text-xs">
-                                            <p className="flex justify-between">
-                                                Save <Kbd>⌘S</Kbd>
-                                            </p>
-                                            <p className="flex justify-between">
-                                                Undo / Redo{' '}
-                                                <span>
-                                                    <Kbd>⌘Z</Kbd> <Kbd>⇧⌘Z</Kbd>
-                                                </span>
-                                            </p>
-                                            <p className="flex justify-between">
-                                                Deselect <Kbd>Esc</Kbd>
-                                            </p>
-                                        </div>
+                                        </EditContext>
                                     </div>
-                                )}
-                            </div>
-                        </ScrollArea>
-                    </aside>
+                                    {/* The clicked text in every language, docked at the foot of the canvas. */}
+                                    {selectedText && (
+                                        <div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center">
+                                            <LanguagesSheet
+                                                key={selectedText}
+                                                draft={draft}
+                                                path={selectedText}
+                                                locale={locale}
+                                                set={set}
+                                                onClose={() => {
+                                                    setSelectedText(null);
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </main>
+                            </>
+                        )}
+
+                        {/* Right: settings for whatever is selected (the film editor has its own). */}
+                        <aside className={cn('w-[320px] shrink-0 border-s', filmOpen && 'hidden')}>
+                            <ScrollArea className="h-full">
+                                <div className="space-y-5 p-4">
+                                    {selectedText && (
+                                        <div className="border-b pb-5">
+                                            <TextStylePanel
+                                                path={selectedText}
+                                                style={
+                                                    draft.content.textStyles?.[selectedText] ?? {}
+                                                }
+                                                palette={draft.design.palette}
+                                                onChange={(style) => {
+                                                    setTextStyle(selectedText, style);
+                                                }}
+                                                onReset={() => {
+                                                    setTextStyle(selectedText, {});
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                    {section ? (
+                                        <>
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <p className="text-[11px] tracking-wide text-muted-foreground uppercase">
+                                                        Section
+                                                    </p>
+                                                    <h2 className="text-base font-semibold">
+                                                        {shortName(section.type)}
+                                                    </h2>
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon-sm"
+                                                    aria-label="Deselect"
+                                                    onClick={() => {
+                                                        deselect();
+                                                    }}
+                                                >
+                                                    <X />
+                                                </Button>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-1.5">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={index <= 0}
+                                                    onClick={() => {
+                                                        moveSection(-1);
+                                                    }}
+                                                >
+                                                    <ArrowUp /> Up
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={index >= draft.sections.length - 1}
+                                                    onClick={() => {
+                                                        moveSection(1);
+                                                    }}
+                                                >
+                                                    <ArrowDown /> Down
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        patchSection({ enabled: !section.enabled });
+                                                    }}
+                                                >
+                                                    {section.enabled ? <EyeOff /> : <Eye />}
+                                                    {section.enabled ? 'Hide' : 'Show'}
+                                                </Button>
+                                            </div>
+                                            <BlockEditor
+                                                section={section}
+                                                previousScene={undefined}
+                                                calm={calm}
+                                                film={
+                                                    draft.design.film?.behind
+                                                        ? timelineOf(draft.design.film)
+                                                        : undefined
+                                                }
+                                                update={patchSection}
+                                            />
+                                        </>
+                                    ) : (
+                                        <div className="space-y-4 text-sm text-muted-foreground">
+                                            <div className="flex items-center gap-2 text-foreground">
+                                                <MousePointerClick className="size-4" />
+                                                <span className="font-medium">
+                                                    Click anything to edit it
+                                                </span>
+                                            </div>
+                                            <ul className="list-disc space-y-1.5 ps-5 leading-relaxed">
+                                                <li>
+                                                    Click a section on the page to choose its
+                                                    layout, entrance, backdrop and edge here.
+                                                </li>
+                                                <li>
+                                                    Click any text (names, messages, ceremony names,
+                                                    venues) and type straight on it. Press Enter or
+                                                    click away to keep it.
+                                                </li>
+                                                <li>
+                                                    Drag sections in the left panel to reorder them;
+                                                    the eye hides one.
+                                                </li>
+                                                <li>
+                                                    Opening, Design, Details, Events and Extras are
+                                                    on the left.
+                                                </li>
+                                            </ul>
+                                            <div className="space-y-1.5 rounded-lg border p-3 text-xs">
+                                                <p className="flex justify-between">
+                                                    Save <Kbd>⌘S</Kbd>
+                                                </p>
+                                                <p className="flex justify-between">
+                                                    Undo / Redo{' '}
+                                                    <span>
+                                                        <Kbd>⌘Z</Kbd> <Kbd>⇧⌘Z</Kbd>
+                                                    </span>
+                                                </p>
+                                                <p className="flex justify-between">
+                                                    Deselect <Kbd>Esc</Kbd>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </aside>
+                    </div>
                 </div>
-            </div>
+            </FilmEditorContext>
         </AutoTranslateProvider>
     );
 }

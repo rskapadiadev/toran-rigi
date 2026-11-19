@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { api, ApiError, post } from '@/lib/api';
 import { DownloadPdf } from '@/shop/DownloadPdf';
 import { FormEditor } from '@/shop/FormEditor';
+import { hasVideo, ShareVideo } from '@/shop/ShareVideo';
 import { ShopShell } from '@/shop/ShopShell';
 import { SignIn } from '@/shop/SignIn';
 import type { MyInvitation } from '@/shop/types';
@@ -204,6 +205,7 @@ function Editor({ data, onChanged }: EditorProps) {
                     {base.invitation.extras.pdf?.enabled && (
                         <DownloadPdf invitationId={id} slug={base.invitation.slug} />
                     )}
+                    {hasVideo(base) && <ShareVideo base={base} />}
                     <Button variant="outline" asChild>
                         <a href={link} target="_blank" rel="noreferrer">
                             <ExternalLink /> View

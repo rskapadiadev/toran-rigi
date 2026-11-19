@@ -3,7 +3,7 @@
 import { timelineLength, timelineOf } from '@shared/film';
 import { type ContentLocale, localeNames } from '@shared/locales';
 import type { FilmMoment } from '@shared/types';
-import { Plus, Trash2, Type } from 'lucide-react';
+import { Clapperboard, Plus, Trash2, Type } from 'lucide-react';
 import type { MouseEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import { Slider } from '@/components/ui/slider';
 
 import type { Draft } from '../composer/draft';
 import { SecondsInput } from '../kit/seconds-input';
+import { useOpenFilmEditor } from './film-editor-context';
 import { lookAt } from './FilmScenes';
 
 type Film = NonNullable<Draft['design']['film']>;
@@ -39,6 +40,7 @@ interface Props {
 }
 
 export function FilmWords({ film, locales, onChange }: Props) {
+    const openEditor = useOpenFilmEditor();
     const scenes = timelineOf(film);
     const length = timelineLength(scenes);
     const moments = film.moments ?? [];
@@ -223,55 +225,83 @@ export function FilmWords({ film, locales, onChange }: Props) {
                                     />
                                 </div>
                             </div>
-                            <div className="flex gap-3">
-                                <button
-                                    type="button"
-                                    aria-label={`Choose where words ${String(i + 1)} sit on the picture`}
-                                    className="relative w-24 shrink-0 overflow-hidden rounded-md bg-black"
-                                    style={look}
-                                    onClick={pick}
+                            {openEditor ? (
+                                // Placed on the big film in the middle of the screen, not on a thumbnail.
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full"
+                                    onClick={() => {
+                                        openEditor(i);
+                                    }}
                                 >
-                                    <span
-                                        aria-hidden
-                                        className="absolute -translate-y-1/2 truncate rounded-sm border border-white/80 bg-black/40 px-0.5 text-[7px] leading-tight text-white"
-                                        style={box}
+                                    <Clapperboard /> Edit on the film
+                                </Button>
+                            ) : (
+                                <div className="flex gap-3">
+                                    <button
+                                        type="button"
+                                        aria-label={`Choose where words ${String(i + 1)} sit on the picture`}
+                                        className="relative w-24 shrink-0 overflow-hidden rounded-md bg-black"
+                                        style={look}
+                                        onClick={pick}
                                     >
-                                        {m.text[first] ?? ''}
-                                    </span>
-                                </button>
-                                <div className="min-w-0 flex-1 space-y-2">
-                                    <p className="text-xs text-muted-foreground">
-                                        Tap the picture where the words should sit.
-                                    </p>
-                                    <Label className="text-[11px] text-muted-foreground uppercase">
-                                        Width
-                                    </Label>
-                                    <Slider
-                                        aria-label={`Words ${String(i + 1)} width`}
-                                        min={0.3}
-                                        max={1}
-                                        step={0.05}
-                                        value={[m.zone.w]}
-                                        onValueChange={([w]) => {
-                                            if (w !== undefined)
-                                                patch(i, {
-                                                    zone: {
-                                                        ...m.zone,
-                                                        w,
-                                                    },
-                                                });
-                                        }}
-                                    />
+                                        <span
+                                            aria-hidden
+                                            className="absolute -translate-y-1/2 truncate rounded-sm border border-white/80 bg-black/40 px-0.5 text-[7px] leading-tight text-white"
+                                            style={box}
+                                        >
+                                            {m.text[first] ?? ''}
+                                        </span>
+                                    </button>
+                                    <div className="min-w-0 flex-1 space-y-2">
+                                        <p className="text-xs text-muted-foreground">
+                                            Tap the picture where the words should sit.
+                                        </p>
+                                        <Label className="text-[11px] text-muted-foreground uppercase">
+                                            Width
+                                        </Label>
+                                        <Slider
+                                            aria-label={`Words ${String(i + 1)} width`}
+                                            min={0.3}
+                                            max={1}
+                                            step={0.05}
+                                            value={[m.zone.w]}
+                                            onValueChange={([w]) => {
+                                                if (w !== undefined)
+                                                    patch(i, {
+                                                        zone: {
+                                                            ...m.zone,
+                                                            w,
+                                                        },
+                                                    });
+                                            }}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </li>
                     );
                 })}
             </ol>
-            <Button variant="outline" size="sm" onClick={add}>
-                <Plus className="size-3.5" />
-                Add words
-            </Button>
+            <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={add}>
+                    <Plus className="size-3.5" />
+                    Add words
+                </Button>
+                {openEditor && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                            openEditor();
+                        }}
+                    >
+                        <Clapperboard className="size-3.5" />
+                        Open the film editor
+                    </Button>
+                )}
+            </div>
         </div>
     );
 }

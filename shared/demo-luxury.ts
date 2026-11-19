@@ -605,6 +605,15 @@ if (deepmalaDemo)
         seed: 7359,
     });
 
+// Himalaya Walk: the same wedding over the walk up to a mountain shrine in the morning sun.
+if (deepmalaDemo)
+    luxuryDemos.push({
+        ...deepmalaDemo,
+        slug: 'demo-himalaya-walk',
+        themeSlug: 'himalaya-walk',
+        seed: 7373,
+    });
+
 // Garden Walk: a wedding of no particular tradition, in a garden by a lake.
 luxuryDemos.push({
     slug: 'demo-garden-walk',
