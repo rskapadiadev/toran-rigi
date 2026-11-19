@@ -41,6 +41,8 @@ export default tseslint.config(
             'src/routeTree.gen.ts',
             'src/paraglide',
             'references',
+            // The walk films' drawing kit: a plain browser script whose globals the scene pages use.
+            'scripts/dev/films/walk-kit.js',
             'worker-configuration.d.ts',
         ],
     },
