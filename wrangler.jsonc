@@ -40,6 +40,10 @@
             // Same name as the top level, so the address stays toran.<account subdomain>.workers.dev.
             "name": "toran",
             "workers_dev": true,
+            // Workers Cache: Cloudflare answers repeat requests for cacheable responses (posters,
+            // photos, music under /media; share images) at the edge without running the Worker or
+            // reading R2. Everything else is marked private, no-store in server/app.ts.
+            "cache": { "enabled": true },
             "d1_databases": [
                 {
                     "binding": "DB",

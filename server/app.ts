@@ -17,6 +17,21 @@ export function createApp() {
     const app = new Hono<AppEnv>();
 
     app.use('*', async (c, next) => runWithPlatform(c.env, next));
+    // Cloudflare keeps a copy of any response whose headers allow it (Workers Cache, wrangler.jsonc),
+    // and its key ignores cookies. So pages and API answers, which can be personal, say "never
+    // store me" unless they chose otherwise; only /media files and share images opt in to caching.
+    app.use('*', async (c, next) => {
+        await next();
+        if (c.res.headers.has('cache-control')) return;
+        try {
+            c.res.headers.set('cache-control', 'private, no-store');
+        } catch {
+            // A response with locked headers: copy it once to add the header.
+            const res = new Response(c.res.body, c.res);
+            res.headers.set('cache-control', 'private, no-store');
+            c.res = res;
+        }
+    });
     app.route('/api', api);
     app.route('/og', og);
 
