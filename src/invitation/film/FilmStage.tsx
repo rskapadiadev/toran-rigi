@@ -49,6 +49,11 @@ const AHEAD_LEAN = 2;
 // How dark the film goes behind a chapter's words.
 const VEIL = 0.58;
 
+interface Decoded {
+    sheet: number;
+    bitmap: ImageBitmap;
+}
+
 class SheetCache {
     private blobs = new Map<number, Promise<Blob | null>>();
     private bitmaps = new Map<number, ImageBitmap>();
@@ -89,8 +94,25 @@ class SheetCache {
                 this.active--;
                 this.pump();
             });
+        // A failed download (a phone's network blinks) is tried again when it's next wanted,
+        // instead of leaving the film stuck on that sheet for the rest of the visit.
+        void blob.then((b) => {
+            if (!b) this.blobs.delete(i);
+        });
         this.blobs.set(i, blob);
         return blob;
+    }
+
+    // The decoded sheet nearest to i, to show while i itself is on its way.
+    nearest(i: number) {
+        let best: Decoded | undefined;
+        for (const [sheet, bitmap] of this.bitmaps)
+            if (!best || Math.abs(sheet - i) < Math.abs(best.sheet - i))
+                best = {
+                    sheet,
+                    bitmap,
+                };
+        return best;
     }
 
     get(i: number) {
@@ -293,7 +315,24 @@ export function FilmStage({
             const key = wanted.map((w) => (w ? `${String(w.from)}-${String(w.to)}` : '')).join('|');
             if (key === last) return;
             last = key;
-            for (const w of wanted) if (w) caches.current[w.i]?.prefetch(span(w.from, w.to));
+            // Once open (and not on Data Saver), the rest of the film follows quietly, nearest first,
+            // so even a guest who flicks to the end never waits on a frame.
+            const rest = opened && !leanNetwork();
+            scenes.forEach((scene, i) => {
+                const w = wanted[i];
+                const f = scene.frames;
+                if (!f) return;
+                const total = Math.ceil(f.count / (f.cols * f.rows));
+                const near = w ? span(w.from, w.to) : [];
+                const after = rest
+                    ? range(total)
+                          .filter((k) => !near.includes(k))
+                          .sort(
+                              (a, b) => Math.abs(a - (w?.from ?? 0)) - Math.abs(b - (w?.from ?? 0)),
+                          )
+                    : [];
+                if (near.length || after.length) caches.current[i]?.prefetch([...near, ...after]);
+            });
         };
         // After the loader above has made the caches.
         const start = window.setTimeout(() => {
@@ -335,8 +374,10 @@ export function FilmStage({
             const cb = frameCell(f, pick.next);
             const sheetA = cache.get(ca.sheet);
             const sheetB = cache.get(cb.sheet);
+            // Decoded ahead both ways, so a brisk scroll (or a scroll back) finds its frames ready.
             cache.want(ca.sheet + 1);
-            if (!sheetA) return null;
+            cache.want(ca.sheet + 2);
+            cache.want(ca.sheet - 1);
             const cut = (source: ImageBitmap, c: typeof ca): Picture => ({
                 source,
                 sx: c.col * f.width,
@@ -344,6 +385,18 @@ export function FilmStage({
                 sw: f.width,
                 sh: f.height,
             });
+            if (!sheetA) {
+                // Not here yet: the nearest frame that is, so the film keeps moving instead of
+                // freezing and then jumping.
+                const near = cache.nearest(ca.sheet);
+                if (!near) return null;
+                const per = f.cols * f.rows;
+                const index = near.sheet < ca.sheet ? near.sheet * per + per - 1 : near.sheet * per;
+                return {
+                    a: cut(near.bitmap, frameCell(f, Math.min(f.count - 1, index))),
+                    mix: 0,
+                };
+            }
             return {
                 a: cut(sheetA, ca),
                 b: sheetB ? cut(sheetB, cb) : undefined,

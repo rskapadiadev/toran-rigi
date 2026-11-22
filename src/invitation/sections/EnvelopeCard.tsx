@@ -342,8 +342,9 @@ export function EnvelopeCard({ children }: Props) {
     const clip = useMotionTemplate`inset(-80% -20% ${clipBottom}% -20%)`;
     const envY = useTransform(p, [0.5, 0.8], ['0%', '72%']);
     const envFade = useTransform(p, [0.6, 0.85], [1, 0]);
-    // A slow sheen travels across the silk as guests scroll.
-    const sheen = useTransform(p, [0, 0.5], ['130% 0%', '-30% 0%']);
+    // A slow sheen travels across the silk as guests scroll: a strip slid by the graphics card (the
+    // same path as moving the background 130% → -30%, without repainting the pocket each frame).
+    const sheen = useTransform(p, [0, 0.5], ['-80%', '18.5%']);
     const hint = useTransform(p, [0, 0.12], [1, 0]);
     const wax = mixHex(design.palette.primary, '#5e0815', 0.72);
 
@@ -395,17 +396,20 @@ export function EnvelopeCard({ children }: Props) {
                         }}
                     >
                         <EnvelopePocket mat={mat} />
-                        <m.div
+                        <div
                             aria-hidden
-                            className="pointer-events-none absolute inset-0 mix-blend-soft-light"
-                            style={{
-                                clipPath: POCKET_CLIP,
-                                backgroundImage:
-                                    'linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.55) 50%, transparent 62%)',
-                                backgroundSize: '260% 100%',
-                                backgroundPosition: sheen,
-                            }}
-                        />
+                            className="pointer-events-none absolute inset-0 overflow-hidden mix-blend-soft-light"
+                            style={{ clipPath: POCKET_CLIP }}
+                        >
+                            <m.div
+                                className="absolute inset-y-0 start-0 w-[260%]"
+                                style={{
+                                    backgroundImage:
+                                        'linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.55) 50%, transparent 62%)',
+                                    x: sheen,
+                                }}
+                            />
+                        </div>
                         {/* The couple's seal holds the bottom flap. */}
                         <div
                             className="absolute start-1/2 top-[84%] w-[19%] -translate-x-1/2 -translate-y-1/2 rtl:translate-x-1/2"

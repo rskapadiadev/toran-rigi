@@ -5,7 +5,7 @@ import { rng } from '@shared/generative';
 import { isDark, materialBackground, mixHex, svgDataUrl } from '@shared/materials';
 import { cultureMotifs, type MotifId } from '@shared/motifs';
 import type { EdgeKind, InvitationDesign, SceneKind } from '@shared/types';
-import { type CSSProperties, type ReactNode, useMemo } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef } from 'react';
 
 import { EnterContext } from '../motion/Reveal';
 import { useInvite } from './context';
@@ -722,8 +722,27 @@ export function Scene({ block, index, children }: SceneProps) {
     const selected = edit?.selected === block.type;
     // The section's one "Animate edge" switch; screenshots and the static tier always hold still.
     const live = block.edgeMotion && tier !== 'static';
+    // Its looping animations pause while it's well off screen (see [data-offscreen] in app.css):
+    // nobody sees them, yet animated drawings would still be repainted every frame.
+    const root = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const el = root.current;
+        if (!el) return;
+        const watch = new IntersectionObserver(
+            ([entry]) => {
+                if (entry?.isIntersecting) el.removeAttribute('data-offscreen');
+                else el.setAttribute('data-offscreen', '');
+            },
+            { rootMargin: '50% 0px' },
+        );
+        watch.observe(el);
+        return () => {
+            watch.disconnect();
+        };
+    }, []);
     return (
         <div
+            ref={root}
             className="relative isolate"
             style={style}
             data-scene={block.scene}

@@ -35,6 +35,13 @@ export interface FrameCell {
     row: number;
 }
 
+// The sheets the opening plays (from the start to the names), which the page asks for in its head so
+// they download alongside the code instead of after it.
+export function openingSheets(frames: FilmFrames, namesAt: number): string[] {
+    const last = frameCell(frames, frameAt(frames, Math.max(0, namesAt)).index).sheet;
+    return frames.sheets.slice(0, last + 1);
+}
+
 export const filmLength = (frames: FilmFrames) => (frames.count - 1) / frames.fps;
 
 export function frameCell(frames: FilmFrames, index: number): FrameCell {

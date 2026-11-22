@@ -1,5 +1,7 @@
+import { openingSheets } from '@shared/film';
+import { photoUrl } from '@shared/photos';
 import { createFileRoute, notFound } from '@tanstack/react-router';
-import { useMemo, useState } from 'react';
+import { type LinkHTMLAttributes, useMemo, useState } from 'react';
 import { z } from 'zod';
 
 import { InvitationView } from '../invitation/InvitationView';
@@ -34,7 +36,22 @@ export const Route = createFileRoute('/$slug')({
         if (!loaderData) return {};
         const { invitation, origin, guest } = loaderData;
         const g = guest ? `&g=${encodeURIComponent(guest.token)}` : '';
+        // A film behind the invitation: the opening's frames start downloading with the page, not
+        // after its code (the stage's fetch() picks these same requests up; the poster is already
+        // preloaded with the page).
+        const film = invitation.invitation.design.film;
+        const frames = film?.behind && match.search.print === undefined ? film.frames : undefined;
+        const links: LinkHTMLAttributes<HTMLLinkElement>[] = [];
+        if (frames)
+            for (const sheet of openingSheets(frames, film?.namesAt ?? 0))
+                links.push({
+                    rel: 'preload',
+                    as: 'fetch',
+                    href: photoUrl(sheet),
+                    crossOrigin: 'anonymous',
+                });
         return {
+            links,
             meta: shareMeta({
                 source: invitation,
                 origin,

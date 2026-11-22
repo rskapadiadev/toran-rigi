@@ -205,22 +205,31 @@
     }
 
     .texture-silk {
-        background-image:
-            linear-gradient(
-                115deg,
-                transparent 30%,
-                color-mix(in oklab, var(--inv-gold) 10%, transparent) 48%,
-                transparent 66%
-            ),
-            radial-gradient(
-                ellipse at top,
-                color-mix(in oklab, var(--inv-primary) 14%, transparent),
-                transparent 60%
-            );
-        background-size:
-            300% 300%,
-            100% 100%;
+        background-image: radial-gradient(
+            ellipse at top,
+            color-mix(in oklab, var(--inv-primary) 14%, transparent),
+            transparent 60%
+        );
+    }
+
+    /* The sheen slides across the screen on its own layer, moved by the graphics card. Animating the
+       invitation's background instead repainted the whole page, thousands of pixels tall, every frame. */
+    .texture-silk::before {
+        content: '';
+        position: fixed;
+        inset-block: 0;
+        inset-inline-start: -100%;
+        width: 300%;
+        z-index: -1;
+        pointer-events: none;
+        background-image: linear-gradient(
+            115deg,
+            transparent 30%,
+            color-mix(in oklab, var(--inv-gold) 10%, transparent) 48%,
+            transparent 66%
+        );
         animation: silk 18s ease-in-out infinite alternate;
+        will-change: transform;
     }
 
     .texture-linen {
@@ -240,15 +249,19 @@
 
 @keyframes silk {
     from {
-        background-position:
-            0% 50%,
-            0 0;
+        transform: translateX(33.3%);
     }
     to {
-        background-position:
-            100% 50%,
-            0 0;
+        transform: translateX(-33.3%);
     }
+}
+
+/* A section well off screen pauses its looping animations (processions, flickers, drifting edges):
+   nobody sees them, yet animated drawings would still be repainted on every frame. */
+[data-offscreen] *,
+[data-offscreen] *::before,
+[data-offscreen] *::after {
+    animation-play-state: paused !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
