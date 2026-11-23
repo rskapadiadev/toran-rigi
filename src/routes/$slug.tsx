@@ -49,6 +49,8 @@ export const Route = createFileRoute('/$slug')({
                     as: 'fetch',
                     href: photoUrl(sheet),
                     crossOrigin: 'anonymous',
+                    // After the page's code and fonts, which a slow line would otherwise starve.
+                    fetchPriority: 'low',
                 });
         return {
             links,

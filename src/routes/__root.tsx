@@ -29,10 +29,16 @@ export const Route = createRootRoute({
     shellComponent: RootDocument,
 });
 
+// Runs before any picture loads: a browser that can't show AVIF (iOS 15 and older) gets the WebP
+// that always sits beside it. Error events don't bubble, so this listens while they travel down.
+const avifFallback = String.raw`document.addEventListener('error',function(e){var t=e.target,s=t&&t.tagName==='IMG'&&t.getAttribute('src');if(s&&/^\/kits\/.+\.avif$/.test(s))t.setAttribute('src',s.slice(0,-5)+'.webp')},true)`;
+const fallbackScript = { __html: avifFallback };
+
 function RootDocument({ children }: { children: ReactNode }) {
     return (
         <html lang="en">
             <head>
+                <script dangerouslySetInnerHTML={fallbackScript} />
                 <HeadContent />
             </head>
             <body>

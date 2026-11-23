@@ -37,9 +37,12 @@
     // Bindings are not inherited by environments, so each one is listed again here.
     "env": {
         "production": {
-            // Same name as the top level, so the address stays toran.<account subdomain>.workers.dev.
+            // Same name as the top level. The workers.dev address stays on so links already shared keep working.
             "name": "toran",
             "workers_dev": true,
+            // Its own domain: Cloudflare serves it from the guest's nearest data centre, where the shared
+            // workers.dev address sent India through Singapore (0.5-2 s before each file's first byte).
+            "routes": [{ "pattern": "toran.therigi.shop", "custom_domain": true }],
             // Workers Cache: Cloudflare answers repeat requests for cacheable responses (posters,
             // photos, music under /media; share images) at the edge without running the Worker or
             // reading R2. Everything else is marked private, no-store in server/app.ts.
@@ -66,9 +69,9 @@
             // with `npx wrangler secret put NAME --env production`, never written here.
             "vars": {
                 "ENVIRONMENT": "production",
-                "PARENT_DOMAIN": "therigi.co",
-                "APP_HOST": "toran.therigi.workers.dev",
-                "APP_ORIGIN": "https://toran.therigi.workers.dev",
+                "PARENT_DOMAIN": "therigi.shop",
+                "APP_HOST": "toran.therigi.shop",
+                "APP_ORIGIN": "https://toran.therigi.shop",
                 "INVITE_URL_MODE": "path",
                 "MAILER_DRIVER": "resend",
                 // Resend's shared sender until therigi.co is verified; it only delivers to the
@@ -77,7 +80,6 @@
                 // Online payment is not live yet: orders are saved unpaid (see server/api/store.ts).
                 "PAYMENTS_DRIVER": "fake",
             },
-            // Later, with the domain: "routes": [{ "pattern": "toran.therigi.co", "custom_domain": true }]
         },
     },
 }

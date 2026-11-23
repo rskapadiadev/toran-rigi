@@ -119,6 +119,8 @@ export function FilmFoot({ shown }: { shown: boolean }) {
 }
 
 const DEFAULT_NAMES_AT = 0.55;
+// Milliseconds after which the film starts downloading even if the page is still loading.
+const WARM_AFTER = 4000;
 
 interface BehindProps extends OpeningProps {
     stage: FilmStageValue;
@@ -193,6 +195,20 @@ export function FilmOpening({ onBegin, onOpened }: OpeningProps) {
     const finish = useFinish(onOpened);
     const studio = use(StudioPreviewContext);
     const stage = useFilmStage();
+    // The film waits for the page's code, fonts and pictures: fetched alongside them, its 2 MB starves
+    // them on a slow line. A tap before then still plays it straight away.
+    useEffect(() => {
+        const warm = () => {
+            if (video.current) video.current.preload = 'auto';
+        };
+        if (document.readyState === 'complete') warm();
+        window.addEventListener('load', warm, { once: true });
+        const late = window.setTimeout(warm, WARM_AFTER);
+        return () => {
+            window.removeEventListener('load', warm);
+            window.clearTimeout(late);
+        };
+    }, []);
     // Guests without a film get the diya; the studio sees where its film will go instead.
     if (!film && studio)
         return (
@@ -275,7 +291,7 @@ export function FilmOpening({ onBegin, onOpened }: OpeningProps) {
                         ref={video}
                         src={photoUrl(film.src)}
                         poster={first}
-                        preload="auto"
+                        preload="none"
                         muted
                         playsInline
                         disablePictureInPicture

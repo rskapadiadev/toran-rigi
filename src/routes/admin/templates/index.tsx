@@ -673,7 +673,8 @@ function TemplateDetails({ template, onClose }: TemplateDetailsProps) {
     );
 }
 
-interface TemplateDetails {
+// Not named TemplateDetails: sharing the component's name keeps the component in every page's code.
+interface TemplateDetailsBody {
     name: string;
     description: string;
     prices: PriceMap | null;
@@ -691,7 +692,7 @@ function TemplateDetailsForm({
     const [own, setOwn] = useState(() => toDraft(template.prices));
     const [was, setWas] = useState(() => toDraft(template.comparePrices));
     const save = useMutation({
-        mutationFn: (body: TemplateDetails) => patch(`/admin/templates/${template.id}`, body),
+        mutationFn: (body: TemplateDetailsBody) => patch(`/admin/templates/${template.id}`, body),
         onSuccess: async () => {
             toast.success('Template updated');
             await client.invalidateQueries(templatesQuery);

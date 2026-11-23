@@ -3,6 +3,8 @@
 // in percent of the original illustration) so layers can move on their own: the stage rises, guests
 // step in one by one, flowers grow. Artwork lives in public/kits/phoolwari (trimmed, transparent WebP).
 
+import { photoUrl } from '@shared/photos';
+
 export const KIT = '/kits/phoolwari';
 
 // The pages are 843.75 × 1827 points; everything below is measured on that page.
@@ -38,7 +40,8 @@ export interface WardrobePage {
     lights?: boolean;
 }
 
-const at = (name: string) => `${KIT}/${name}.webp`;
+// Through photoUrl, so artwork with an AVIF copy is served as AVIF.
+const at = (name: string) => photoUrl(`${KIT}/${name}.webp`);
 
 export const coverPage = {
     ink: '#a3164f',

@@ -34,6 +34,9 @@ export function FilmCover() {
                     src={still}
                     alt=""
                     data-photo-slot={COVER_SLOT}
+                    // Hidden under the opening at first: the opening's own still comes first.
+                    fetchPriority="low"
+                    decoding="async"
                     className="size-full object-cover"
                 />
                 <FilmNames shown instant />

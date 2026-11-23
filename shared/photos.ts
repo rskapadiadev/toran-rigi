@@ -1,3 +1,5 @@
+import { kitAvif } from './kit-avif';
+
 // Invitation photos: the browser resizes to WebP before upload, the server only checks and stores.
 export const photoMimes = ['image/webp', 'image/jpeg', 'image/png', 'image/avif'] as const;
 export type PhotoMime = (typeof photoMimes)[number];
@@ -21,8 +23,12 @@ export const photoExtension = (mime: PhotoMime) => extension[mime];
 // Stored keys become public URLs through the /media route (long-cached, immutable).
 // A "blob:" key is a photo picked while trying a template: shown from the browser, never uploaded.
 // "blob:" = picked while trying a template (in the browser only); "/kits/…" = artwork shipped with a theme.
-export const photoUrl = (key: string) =>
-    key.startsWith('blob:') || key.startsWith('/') ? key : `/media/${key}`;
+// Kit artwork with an AVIF copy is served as AVIF (about half the bytes); browsers that can't show it
+// swap back to the WebP (the fallback script in src/routes/__root.tsx).
+export const photoUrl = (key: string) => {
+    if (kitAvif.has(key)) return `${key.slice(0, -'.webp'.length)}.avif`;
+    return key.startsWith('blob:') || key.startsWith('/') ? key : `/media/${key}`;
+};
 
 // ── Section photo frames ───────────────────────────────────────────────────────
 // Sections that show photos have their own named frames, so a photo sits exactly where it was put

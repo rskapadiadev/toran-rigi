@@ -60,6 +60,8 @@ class SheetCache {
     private decoding = new Set<number>();
     private recent: number[] = [];
     private queue: number[] = [];
+    // Sheets fetched only to fill the film in: they give way to the page's photos.
+    private spare = new Set<number>();
     private active = 0;
     private closed = false;
 
@@ -70,8 +72,10 @@ class SheetCache {
         private keep = DECODED,
     ) {}
 
-    prefetch(order: number[]) {
+    // The first `soon` sheets of the order are needed shortly; any after them only fill the film in.
+    prefetch(order: number[], soon = order.length) {
         this.queue = order.filter((i) => i >= 0 && i < this.urls.length);
+        this.spare = new Set(order.slice(soon));
         this.pump();
     }
 
@@ -87,7 +91,7 @@ class SheetCache {
         const url = this.urls[i];
         if (!url) return Promise.resolve(null);
         this.active++;
-        const blob = fetch(url)
+        const blob = fetch(url, { priority: this.spare.has(i) ? 'low' : 'auto' })
             .then((r) => (r.ok ? r.blob() : null))
             .catch(() => null)
             .finally(() => {
@@ -331,7 +335,8 @@ export function FilmStage({
                               (a, b) => Math.abs(a - (w?.from ?? 0)) - Math.abs(b - (w?.from ?? 0)),
                           )
                     : [];
-                if (near.length || after.length) caches.current[i]?.prefetch([...near, ...after]);
+                if (near.length || after.length)
+                    caches.current[i]?.prefetch([...near, ...after], near.length);
             });
         };
         // After the loader above has made the caches.
