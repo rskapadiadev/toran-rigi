@@ -38,6 +38,9 @@ function collect(d: Draft): Map<string, LocalizedText> {
     }
     for (const key of ['headline', 'welcome', 'story', 'family', 'closing'] as const)
         add(['content', key], c[key]);
+    for (const side of ['one', 'two'] as const)
+        for (const key of ['welcome', 'family', 'closing'] as const)
+            add(['content', 'families', side, key], c.families?.[side]?.[key]);
     d.events.forEach((e, i) => {
         add(['events', i, 'title'], e.title);
         add(['events', i, 'description'], e.description);
@@ -108,8 +111,12 @@ const AutoTranslateContext = createContext<Status | null>(null);
 
 export const useAutoTranslateStatus = () => use(AutoTranslateContext);
 
-export function AutoTranslateProvider({ value, children }: { value: Status;
-children: ReactNode }) {
+interface ProviderProps {
+    value: Status;
+    children: ReactNode;
+}
+
+export function AutoTranslateProvider({ value, children }: ProviderProps) {
     return <AutoTranslateContext value={value}>{children}</AutoTranslateContext>;
 }
 

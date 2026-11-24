@@ -40,6 +40,7 @@ import {
 } from '../repos/store';
 import { sendMail } from '../services/mailer';
 import { invitationPdf, pdfResponse } from '../services/pdf';
+import { guestListApi } from './guest-list';
 
 interface StoreEnv extends AppEnv {
     Variables: { customer: StoreCustomer };
@@ -228,6 +229,12 @@ storeApi.post('/me/orders/:id/pay', async (c) => {
     await payOrderFake(c.get('customer').id, c.req.param('id'));
     return c.json({ ok: true });
 });
+
+// The couple's guest list: families, links, groups, who sees what, and the replies.
+storeApi.route(
+    '/me/invitations',
+    guestListApi<StoreEnv>((c, id) => ownsInvitation(c.get('customer').id, id)),
+);
 
 storeApi.get('/me/invitations/:id', async (c) =>
     c.json(await myInvitation(c.get('customer').id, c.req.param('id'))),

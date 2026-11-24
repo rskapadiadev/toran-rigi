@@ -587,9 +587,36 @@ export const invitationEvents = sqliteTable(
         description: json<LocalizedText>('description'),
         dressCode: json<DressCode>('dress_code'),
         imageKey: text('image_key'),
+        // Who sees it (shared/guests.ts): null = everyone. Set on the Guests page; saves keep it.
+        audience: json<string[]>('audience'),
         sort: integer('sort').notNull().default(0),
     },
     (t) => [index('invitation_events_inv_idx').on(t.invitationId)],
+);
+
+// The people a couple invites together (close family, the office), and each family's main link.
+// A 'side' row is the main link for everyone one family invites; a 'group' row has its own link.
+export const guestGroups = sqliteTable(
+    'guest_groups',
+    {
+        id: id(),
+        invitationId: text('invitation_id')
+            .notNull()
+            .references(() => invitations.id),
+        kind: text('kind', { enum: ['group', 'side'] })
+            .notNull()
+            .default('group'),
+        name: text('name').notNull().default(''),
+        side: text('side', { enum: ['one', 'two'] }),
+        token: text('token').notNull().unique(),
+        sort: integer('sort').notNull().default(0),
+        createdAt: createdAt(),
+    },
+    // One main link per family; groups have no side, and SQLite never counts nulls as duplicates.
+    (t) => [
+        index('guest_groups_inv_idx').on(t.invitationId),
+        uniqueIndex('guest_groups_side_unique').on(t.invitationId, t.side),
+    ],
 );
 
 export const guests = sqliteTable(
@@ -605,6 +632,11 @@ export const guests = sqliteTable(
         email: text('email'),
         allowedEventIds: json<string[]>('allowed_event_ids'),
         maxGuests: integer('max_guests'),
+        // Whose guests they are: the first or the second person's family.
+        side: text('side', { enum: ['one', 'two'] }),
+        groupId: text('group_id').references(() => guestGroups.id, { onDelete: 'set null' }),
+        note: text('note'),
+        sentAt: text('sent_at'),
         openedAt: text('opened_at'),
         createdAt: createdAt(),
     },
@@ -624,6 +656,10 @@ export const rsvps = sqliteTable(
         attending: bool('attending').notNull(),
         guestCount: integer('guest_count').notNull().default(1),
         eventIds: json<string[]>('event_ids').notNull().default([]),
+        // People coming to each function (function id → count); older replies have only guestCount.
+        counts: json<Record<string, number>>('counts'),
+        // Typed in by the couple from a WhatsApp chat, not sent from the invitation.
+        manual: bool('manual').notNull().default(false),
         dietary: text('dietary'),
         message: text('message'),
         sheetSyncStatus: text('sheet_sync_status', { enum: ['off', 'pending', 'synced', 'failed'] })

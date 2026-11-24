@@ -117,6 +117,17 @@ export async function getInvitationIdBySlug(slug: string) {
         .get();
 }
 
+// Each function and who sees it: read live for a reply, never from the cached page.
+export async function eventAudiences(invitationId: string) {
+    return getPlatform()
+        .db.select({
+            id: invitationEvents.id,
+            audience: invitationEvents.audience,
+        })
+        .from(invitationEvents)
+        .where(eq(invitationEvents.invitationId, invitationId));
+}
+
 export async function listDemoInvitations() {
     const { db } = getPlatform();
     return db

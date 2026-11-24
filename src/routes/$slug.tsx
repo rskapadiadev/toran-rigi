@@ -1,7 +1,7 @@
 import { openingSheets } from '@shared/film';
 import { photoUrl } from '@shared/photos';
 import { createFileRoute, notFound } from '@tanstack/react-router';
-import { type LinkHTMLAttributes, useMemo, useState } from 'react';
+import { type LinkHTMLAttributes, useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 
 import { InvitationView } from '../invitation/InvitationView';
@@ -34,8 +34,8 @@ export const Route = createFileRoute('/$slug')({
     },
     head: ({ loaderData, params, match }) => {
         if (!loaderData) return {};
-        const { invitation, origin, guest } = loaderData;
-        const g = guest ? `&g=${encodeURIComponent(guest.token)}` : '';
+        const { invitation, origin, guest, link } = loaderData;
+        const g = link ? `&g=${encodeURIComponent(link)}` : '';
         // A film behind the invitation: the opening's frames start downloading with the page, not
         // after its code (the stage's fetch() picks these same requests up; the poster is already
         // preloaded with the page).
@@ -74,6 +74,19 @@ function InvitationPage() {
     // Demos are template previews: visitors can try their own names and start an order.
     const [trial, setTrial] = useState<Trial | null>(null);
     const data = useMemo(() => applyTrial(invitation, trial), [invitation, trial]);
+    const slug = invitation.invitation.slug;
+    const token = guest?.token;
+    // The couple sees who has opened their link; the PDF's own render doesn't count.
+    useEffect(() => {
+        if (!token || print !== undefined) return;
+        const body = JSON.stringify({ token });
+        void fetch(`/api/i/${slug}/opened`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body,
+            keepalive: true,
+        }).catch(() => undefined);
+    }, [slug, token, print]);
     return (
         <>
             <InvitationView data={data} initialLocale={lang} guest={guest} print={printUrl} />

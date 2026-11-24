@@ -1,12 +1,21 @@
-import { heartInput, rsvpInput, wishInput } from '@shared/schemas/guest';
+import { familyReplies } from '@shared/families';
+import { visibleEvents } from '@shared/guests';
+import { heartInput, openedInput, rsvpInput, wishInput } from '@shared/schemas/guest';
 import { Hono } from 'hono';
 
 import type { AppEnv } from '../app';
 import { clientIp, fail } from '../lib/http';
 import { verifyTurnstile } from '../lib/turnstile';
-import { createRsvp, createWish, findGuest, totalAttending } from '../repos/guests';
+import {
+    createRsvp,
+    createWish,
+    findGuest,
+    markOpened,
+    resolveLink,
+    totalAttending,
+} from '../repos/guests';
 import { addHeart, heartCounts, isHeartTarget } from '../repos/hearts';
-import { getInvitationIdBySlug, pdfSource } from '../repos/invitations';
+import { eventAudiences, getInvitationIdBySlug, pdfSource } from '../repos/invitations';
 import { invitationPdf, pdfResponse } from '../services/pdf';
 
 export const invitationsApi = new Hono<AppEnv>();
@@ -24,20 +33,51 @@ invitationsApi.post('/:slug/rsvp', async (c) => {
     if (!(await verifyTurnstile(parsed.data.turnstileToken, ip)))
         return fail(c, 403, 'Verification failed');
 
-    const guest = await findGuest(invitation.id, parsed.data.guestToken);
+    const { guest, viewer } = await resolveLink(invitation.id, parsed.data.guestToken);
+    if (!familyReplies(invitation.extras, invitation.rsvpEnabled, viewer?.side).enabled)
+        return fail(c, 404, 'Invitation not found');
     const maxGuests = guest?.maxGuests ?? 20;
+    // Only functions this link shows can be answered, and no more people than the family has.
+    const shown = new Set(
+        visibleEvents(await eventAudiences(invitation.id), viewer).map((e) => e.id),
+    );
+    const sent = parsed.data.counts;
+    const counts = sent
+        ? Object.fromEntries(
+              Object.entries(sent)
+                  .filter(([id, n]) => shown.has(id) && n > 0)
+                  .map(([id, n]) => [id, Math.min(n, maxGuests)]),
+          )
+        : undefined;
+    const eventIds = counts
+        ? Object.keys(counts)
+        : parsed.data.eventIds.filter((id) => shown.has(id));
+    const attending = parsed.data.attending && (!counts || eventIds.length > 0);
     const input = {
         ...parsed.data,
-        guestCount: Math.min(parsed.data.guestCount, maxGuests),
-        eventIds: guest?.allowedEventIds
-            ? parsed.data.eventIds.filter((id) => guest.allowedEventIds?.includes(id))
-            : parsed.data.eventIds,
+        attending,
+        guestCount: Math.min(
+            counts ? Math.max(1, ...Object.values(counts)) : parsed.data.guestCount,
+            maxGuests,
+        ),
+        eventIds: attending ? eventIds : [],
     };
-    await createRsvp(invitation.id, input, guest?.id, false);
+    await createRsvp(invitation.id, input, guest?.id, false, { counts });
     return c.json({
         ok: true,
         lights: await totalAttending(invitation.id),
     });
+});
+
+// Sent by the guest's own browser, so WhatsApp's link preview never counts as "opened".
+invitationsApi.post('/:slug/opened', async (c) => {
+    const parsed = openedInput.safeParse(await c.req.json().catch(() => null));
+    if (!parsed.success) return c.json({ ok: false });
+    const invitation = await getInvitationIdBySlug(c.req.param('slug'));
+    if (!invitation || invitation.status !== 'published') return c.json({ ok: false });
+    const guest = await findGuest(invitation.id, parsed.data.token);
+    if (guest && !guest.openedAt) await markOpened(guest.id);
+    return c.json({ ok: true });
 });
 
 invitationsApi.post('/:slug/wishes', async (c) => {

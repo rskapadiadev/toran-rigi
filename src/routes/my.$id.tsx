@@ -2,7 +2,7 @@ import { formatMoney } from '@shared/money';
 import { SHOW_SHOP_PRICES } from '@shared/pricing';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowLeft, Check, Copy, ExternalLink, Loader2, Lock } from 'lucide-react';
+import { ArrowLeft, Check, Copy, ExternalLink, Loader2, Lock, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -167,6 +167,13 @@ function Editor({ data, onChanged }: EditorProps) {
                     </button>
                 )}
             </div>
+            <Button variant="outline" asChild>
+                <Link to="/my/$id/guests" params={{ id }}>
+                    <Users />
+                    {/* Phones keep the room for the title; the name stays for screen readers. */}
+                    <span className="max-sm:sr-only">Guests</span>
+                </Link>
+            </Button>
             {locked ? (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Lock className="size-3.5" /> Editing closed after the celebration
@@ -245,6 +252,7 @@ function Editor({ data, onChanged }: EditorProps) {
             limits={base.order?.limits}
             bar={bar}
             locked={locked}
+            versions
             notice={
                 data.balance > 0
                     ? 'Complete payment to publish your invitation.'

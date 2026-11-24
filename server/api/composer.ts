@@ -32,11 +32,18 @@ import {
 import { pdfSource } from '../repos/invitations';
 import { OrderError } from '../repos/orders';
 import { invitationPdf, pdfResponse } from '../services/pdf';
+import { guestListApi } from './guest-list';
 import { uploadInvitationMusic } from './music';
 
 export const composerApi = new Hono<AdminEnv>();
 
 composerApi.use('*', requireAdmin, requirePermission('orders.update'));
+
+// The same guest list the couple sees, so the studio can set it up or fix it for them.
+composerApi.route(
+    '/',
+    guestListApi<AdminEnv>(() => Promise.resolve()),
+);
 composerApi.onError((error, c) => {
     if (error instanceof OrderError) return fail(c, 409, error.message);
     console.error('[composer]', error);

@@ -1,6 +1,9 @@
 // The customer's editor: a plain form on the left (names, photos, ceremonies, story), the real
 // invitation on the right updating as they type. No design controls: the studio's design stays.
 import { isRendered } from '@shared/blocks';
+import { familyContent, familyTexts } from '@shared/families';
+import type { Side } from '@shared/guests';
+import { isCouple, occasionOf } from '@shared/occasions';
 import type { SectionType } from '@shared/types';
 import { Eye, Monitor, PenLine, RotateCcw, Smartphone } from 'lucide-react';
 import { type ReactNode, useMemo, useState } from 'react';
@@ -23,6 +26,8 @@ import {
 import { InvitationView } from '@/invitation/InvitationView';
 import { cn } from '@/lib/utils';
 
+import { FamilyVersions } from './FamilyVersions';
+
 interface FormSection {
     id: string;
     title: string;
@@ -41,6 +46,8 @@ interface FormEditorProps {
     // A line under the bar ("You're trying this template…").
     notice?: ReactNode;
     locked?: boolean;
+    // A version for each family; offered once the invitation is bought and has family links to send.
+    versions?: boolean;
 }
 
 const parts = (present: Set<SectionType>, wanted: [SectionType, ContentPart[]][]): ContentPart[] =>
@@ -55,12 +62,24 @@ export function FormEditor({
     bar,
     notice,
     locked = false,
+    versions = false,
 }: FormEditorProps) {
     const [view, setView] = useState<'phone' | 'full'>('phone');
     // Phones show one pane at a time.
     const [pane, setPane] = useState<'edit' | 'preview'>('edit');
     const [replay, setReplay] = useState(0);
-    const preview = useMemo(() => draftToPreview(draft, base), [draft, base]);
+    const [family, setFamily] = useState<Side | null>(null);
+    const preview = useMemo(() => {
+        const data = draftToPreview(draft, base);
+        const content = familyContent(data.invitation.content, family);
+        return {
+            ...data,
+            invitation: {
+                ...data.invitation,
+                content,
+            },
+        };
+    }, [draft, base, family]);
 
     const present = new Set(
         draft.sections.filter((s) => s.enabled && isRendered(s.type)).map((s) => s.type),
@@ -113,6 +132,24 @@ export function FormEditor({
                       title: 'Your story & family',
                       hint: 'The words that make it personal',
                       body: <ContentPanel draft={draft} set={set} only={story} />,
+                  },
+              ]
+            : []),
+        ...(versions && isCouple(occasionOf(draft.occasion)) && draft.content.people.two
+            ? [
+                  {
+                      id: 'families',
+                      title: 'A version for each family',
+                      hint: 'Their own name first, in their own words',
+                      body: (
+                          <FamilyVersions
+                              draft={draft}
+                              set={set}
+                              side={family}
+                              onSide={setFamily}
+                              texts={familyTexts.filter((key) => present.has(key))}
+                          />
+                      ),
                   },
               ]
             : []),

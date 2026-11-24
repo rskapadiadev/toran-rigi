@@ -78,6 +78,20 @@
       "when": 1794934643476,
       "tag": "0010_refresh_template_descriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1795454325026,
+      "tag": "0011_guest_groups_and_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1795454621146,
+      "tag": "0012_guest_groups_one_main_link",
+      "breakpoints": true
     }
   ]
 }

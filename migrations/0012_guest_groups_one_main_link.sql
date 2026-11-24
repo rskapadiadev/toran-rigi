@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `guest_groups_side_unique` ON `guest_groups` (`invitation_id`,`side`);

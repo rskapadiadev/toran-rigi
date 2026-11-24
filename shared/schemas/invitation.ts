@@ -275,6 +275,13 @@ const legacyCouple = (value: unknown) => {
     return value;
 };
 
+// One family's own words for its version of the invitation (see shared/families.ts).
+const familyVersion = z.object({
+    welcome: localizedText.optional(),
+    family: localizedText.optional(),
+    closing: localizedText.optional(),
+});
+
 export const contentSchema = z.preprocess(
     legacyCouple,
     z.object({
@@ -285,6 +292,14 @@ export const contentSchema = z.preprocess(
         story: localizedText.optional(),
         family: localizedText.optional(),
         closing: localizedText,
+        // A version for each family: its own person's name first, and its own words where written.
+        families: z
+            .object({
+                enabled: z.boolean(),
+                one: familyVersion.optional(),
+                two: familyVersion.optional(),
+            })
+            .optional(),
         hashtag: z.string().optional(),
         coverPhotoKey: z.string().optional(),
         gallery: z.array(z.string()).default([]),
@@ -432,6 +447,11 @@ export const sectionConfigSchema = z.object({
     filmAt: z.number().min(0).max(600).optional(),
 });
 
+const familyRepliesSchema = z.object({
+    enabled: z.boolean().optional(),
+    whatsapp: z.string().max(32).optional(),
+});
+
 export const extrasSchema = z.object({
     shagun: z
         .object({
@@ -457,6 +477,23 @@ export const extrasSchema = z.object({
         })
         .optional(),
     wishes: z.object({ enabled: z.boolean() }).optional(),
+    // The couple's reply settings and the words sent with each family's link (their Guests page).
+    replies: z
+        .object({
+            // Guests can also send their reply to this WhatsApp number (digits with country code).
+            whatsapp: z.string().max(32).optional(),
+            by: z.iso.date().optional(),
+            message: z.string().max(1000).optional(),
+            reminder: z.string().max(1000).optional(),
+            // Each family can take its own replies, or none at all.
+            sides: z
+                .object({
+                    one: familyRepliesSchema.optional(),
+                    two: familyRepliesSchema.optional(),
+                })
+                .optional(),
+        })
+        .optional(),
     // Paid add-on: the couple and their guests can download the invitation as a PDF. Only the
     // studio switches it on; doing so adds the add-on to the order's invoice.
     pdf: z.object({ enabled: z.boolean() }).optional(),

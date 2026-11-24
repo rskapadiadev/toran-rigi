@@ -1,8 +1,9 @@
+import { forViewer } from '@shared/families';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 
 import { getPlatform } from '../../server/platform/context';
-import { findGuest } from '../../server/repos/guests';
+import { resolveLink } from '../../server/repos/guests';
 import {
     getInvitationByPreviewToken,
     getPublishedInvitation,
@@ -20,16 +21,21 @@ export const fetchInvitation = createServerFn({ method: 'GET' })
         }),
     )
     .handler(async ({ data }) => {
-        const invitation = await getPublishedInvitation(data.slug);
-        if (!invitation) return null;
-        const guest = await findGuest(invitation.invitation.id, data.guestToken);
+        const cached = await getPublishedInvitation(data.slug);
+        if (!cached) return null;
+        const { guest, viewer } = await resolveLink(cached.invitation.id, data.guestToken);
+        // Each link shows its own functions and family version; the rest never leaves the server.
+        const invitation = forViewer(cached, viewer);
         return {
             invitation,
             origin: shareOrigin(),
+            // Any working link's token (a family's, a group's or a side's), for its preview image.
+            link: viewer ? data.guestToken : undefined,
             guest: guest
                 ? {
                       name: guest.displayName,
                       token: guest.token,
+                      max: guest.maxGuests ?? undefined,
                   }
                 : undefined,
         };

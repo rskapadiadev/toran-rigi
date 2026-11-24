@@ -201,6 +201,8 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
     const pdfAfter = input.extras.pdf?.enabled ?? false;
     // Editing a live invitation bumps the version so guests see the change immediately.
     const version = wasLive ? current.invitation.version + 1 : current.invitation.version;
+    // Who sees each function is set on the Guests page, not in the editor: a save keeps it.
+    const audienceOf = new Map(current.events.map((e) => [e.id, e.audience]));
 
     await db.batch([
         db
@@ -215,7 +217,11 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
                 design: input.design,
                 content: input.content,
                 sections: input.sections,
-                extras: input.extras,
+                // Reply settings belong to the Guests page: a save from an older tab keeps them.
+                extras: {
+                    ...input.extras,
+                    replies: current.invitation.extras.replies,
+                },
                 // The server picks the file to play (see resolveMusic): never a key the browser sent.
                 ...(await resolveMusic(id, input.extras.music)),
                 rsvpEnabled: input.rsvpEnabled,
@@ -238,6 +244,7 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
                 mapsUrl: e.mapsUrl || null,
                 description: e.description,
                 dressCode: e.dressCode,
+                audience: e.id ? (audienceOf.get(e.id) ?? null) : null,
                 sort,
             }),
         ),

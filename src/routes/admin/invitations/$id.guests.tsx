@@ -1,4 +1,5 @@
 import { pickText } from '@shared/cultures';
+import { countsOf, latestReplies } from '@shared/guests';
 import { titleOf } from '@shared/people';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
@@ -41,11 +42,13 @@ interface Guest {
 
 interface Rsvp {
     id: string;
+    guestId: string | null;
     name: string;
     phone: string | null;
     attending: boolean;
     guestCount: number;
     eventIds: string[];
+    counts: Record<string, number> | null;
     dietary: string | null;
     message: string | null;
     createdAt: string;
@@ -132,16 +135,16 @@ function GuestsPage() {
     const locale = inv.invitation.locales[0] ?? 'en';
     const couple = titleOf(inv.invitation.content, locale);
     const base = `${window.location.origin}/${inv.invitation.slug}`;
-    const attending = rsvps.filter((r) => r.attending);
+    // Each family's latest answer (older replies carry one number for every function).
+    const latest = latestReplies(rsvps);
+    const attending = latest.filter((r) => r.attending);
     const headcount = attending.reduce((sum, r) => sum + r.guestCount, 0);
     const replied = guests.filter((g) => g.rsvped > 0).length;
     const pending = wishes.filter((w) => w.status === 'pending').length;
     const perEvent = inv.events.map((e) => ({
         id: e.id,
         title: pickText(e.title, locale) || e.kind,
-        count: attending
-            .filter((r) => r.eventIds.includes(e.id))
-            .reduce((sum, r) => sum + r.guestCount, 0),
+        count: latest.reduce((sum, r) => sum + (countsOf(r)[e.id] ?? 0), 0),
     }));
     const maxEvent = Math.max(1, ...perEvent.map((e) => e.count));
     const waLink = (g: Guest) => {
@@ -170,6 +173,11 @@ function GuestsPage() {
                         <Button variant="outline" asChild>
                             <a href={`/api/admin/invitations/${id}/rsvps.csv`}>
                                 <Download /> Export CSV
+                            </a>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <a href={`/api/admin/invitations/${id}/guest-list/headcount.csv`}>
+                                <Download /> Headcount per function
                             </a>
                         </Button>
                     </>

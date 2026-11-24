@@ -33,6 +33,7 @@ import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
 import { Route as AdminOrdersNewRouteImport } from './routes/admin/orders/new'
 import { Route as AdminTemplatesIndexRouteImport } from './routes/admin/templates/index'
 import { Route as AdminTemplatesIdRouteImport } from './routes/admin/templates/$id'
+import { Route as MyIdGuestsRouteImport } from './routes/my.$id_.guests'
 import { Route as AdminInvitationsIdIndexRouteImport } from './routes/admin/invitations/$id.index'
 import { Route as AdminInvitationsIdGuestsRouteImport } from './routes/admin/invitations/$id.guests'
 
@@ -156,6 +157,11 @@ const AdminTemplatesIdRoute = AdminTemplatesIdRouteImport.update({
   path: '/templates/$id',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const MyIdGuestsRoute = MyIdGuestsRouteImport.update({
+  id: '/my/$id_/guests',
+  path: '/my/$id/guests',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminInvitationsIdIndexRoute = AdminInvitationsIdIndexRouteImport.update({
   id: '/invitations/$id/',
   path: '/invitations/$id/',
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
+  '/my/$id/guests': typeof MyIdGuestsRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByTo {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
+  '/my/$id/guests': typeof MyIdGuestsRoute
   '/admin/customers': typeof AdminCustomersIndexRoute
   '/admin/invitations': typeof AdminInvitationsIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
@@ -245,6 +253,7 @@ export interface FileRoutesById {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
+  '/my/$id_/guests': typeof MyIdGuestsRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
@@ -275,6 +284,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/orders/new'
     | '/admin/templates/$id'
+    | '/my/$id/guests'
     | '/admin/customers/'
     | '/admin/invitations/'
     | '/admin/orders/'
@@ -302,6 +312,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/orders/new'
     | '/admin/templates/$id'
+    | '/my/$id/guests'
     | '/admin/customers'
     | '/admin/invitations'
     | '/admin/orders'
@@ -330,6 +341,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/orders/new'
     | '/admin/templates/$id'
+    | '/my/$id_/guests'
     | '/admin/customers/'
     | '/admin/invitations/'
     | '/admin/orders/'
@@ -348,6 +360,7 @@ export interface RootRouteChildren {
   PTokenRoute: typeof PTokenRoute
   TrySlugRoute: typeof TrySlugRoute
   MyIndexRoute: typeof MyIndexRoute
+  MyIdGuestsRoute: typeof MyIdGuestsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -520,6 +533,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTemplatesIdRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/my/$id_/guests': {
+      id: '/my/$id_/guests'
+      path: '/my/$id/guests'
+      fullPath: '/my/$id/guests'
+      preLoaderRoute: typeof MyIdGuestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/invitations/$id/': {
       id: '/admin/invitations/$id/'
       path: '/invitations/$id'
@@ -591,6 +611,7 @@ const rootRouteChildren: RootRouteChildren = {
   PTokenRoute: PTokenRoute,
   TrySlugRoute: TrySlugRoute,
   MyIndexRoute: MyIndexRoute,
+  MyIdGuestsRoute: MyIdGuestsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

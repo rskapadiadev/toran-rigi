@@ -61,9 +61,10 @@ export async function buildPdf(pages: CapturedPage[], title: string): Promise<Ui
     return pdf.save();
 }
 
-// Drafts keep the same version while edited, so their file is also keyed by the last edit.
+// Drafts keep the same version while edited, so their file is also keyed by the last edit. A draft's
+// file shows every function, so it is never the one handed out after publishing.
 const fileKey = (src: PdfSource) =>
-    `pdf/${src.id}/v${String(src.version)}-${src.updatedAt.replace(/[^0-9]/g, '')}.pdf`;
+    `pdf/${src.id}/${src.status === 'published' ? 'live' : 'draft'}-v${String(src.version)}-${src.updatedAt.replace(/[^0-9]/g, '')}.pdf`;
 
 // The stored PDF for this version, made now if it doesn't exist yet. `origin` is where this app
 // is reachable from the rendering browser.

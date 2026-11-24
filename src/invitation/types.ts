@@ -25,6 +25,8 @@ export interface PublicWishData {
 export interface GuestIdentity {
     name: string;
     token: string;
+    // The most people the couple expects from this family.
+    max?: number;
 }
 
 export interface PublicInvitationEvent {

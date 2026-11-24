@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ExternalLink, Loader2, PenLine } from 'lucide-react';
+import { ExternalLink, Loader2, PenLine, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { api, ApiError, post } from '@/lib/api';
@@ -126,6 +126,11 @@ function MyInvitations() {
                                             </a>
                                         </Button>
                                     )}
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link to="/my/$id/guests" params={{ id: inv.id }}>
+                                            <Users /> Guests
+                                        </Link>
+                                    </Button>
                                     <Button size="sm" asChild>
                                         <Link to="/my/$id" params={{ id: inv.id }}>
                                             <PenLine /> Edit
