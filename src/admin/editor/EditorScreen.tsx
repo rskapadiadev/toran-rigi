@@ -671,11 +671,18 @@ function EditorPage({ id }: { id: string }) {
                             <Play /> Play opening
                         </Button>
                         {!template && (
-                            <Button variant="outline" size="sm" asChild>
-                                <Link to="/admin/invitations/$id/guests" params={{ id }}>
-                                    <Users /> Guests
-                                </Link>
-                            </Button>
+                            <>
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link to="/admin/invitations/$id/guests" params={{ id }}>
+                                        <Users /> Guests
+                                    </Link>
+                                </Button>
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link to="/admin/invitations/$id/cards" params={{ id }}>
+                                        <Images /> Cards
+                                    </Link>
+                                </Button>
+                            </>
                         )}
                         <Button variant="outline" size="sm" asChild>
                             <a href={previewUrl} target="_blank" rel="noreferrer">

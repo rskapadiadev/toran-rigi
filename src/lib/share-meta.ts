@@ -13,17 +13,37 @@ interface ShareMetaInput {
     lang?: string;
 }
 
-export function shareMeta({ source, origin, path, image, guestName, lang }: ShareMetaInput) {
-    const facts = shareFacts(source, guestName, lang);
+interface PageMetaInput {
+    title: string;
+    description: string;
+    // Page path, e.g. "/".
+    path: string;
+    origin: string;
+    // Image path without origin; 1200×630.
+    image: string;
+    imageType: 'image/png' | 'image/jpeg';
+    imageAlt: string;
+}
+
+// The tags of one page: its title, description and preview card.
+export function pageMeta({
+    title,
+    description,
+    path,
+    origin,
+    image,
+    imageType,
+    imageAlt,
+}: PageMetaInput) {
     const base = origin.replace(/\/$/, '');
     const url = `${base}${path}`;
     const imageUrl = `${base}${image}`;
     const secure = imageUrl.startsWith('https:');
     return [
-        { title: facts.title },
+        { title },
         {
             name: 'description',
-            content: facts.description,
+            content: description,
         },
         {
             property: 'og:site_name',
@@ -39,11 +59,11 @@ export function shareMeta({ source, origin, path, image, guestName, lang }: Shar
         },
         {
             property: 'og:title',
-            content: facts.title,
+            content: title,
         },
         {
             property: 'og:description',
-            content: facts.description,
+            content: description,
         },
         {
             property: 'og:image',
@@ -59,7 +79,7 @@ export function shareMeta({ source, origin, path, image, guestName, lang }: Shar
             : []),
         {
             property: 'og:image:type',
-            content: 'image/png',
+            content: imageType,
         },
         {
             property: 'og:image:width',
@@ -71,7 +91,7 @@ export function shareMeta({ source, origin, path, image, guestName, lang }: Shar
         },
         {
             property: 'og:image:alt',
-            content: facts.imageAlt,
+            content: imageAlt,
         },
         {
             name: 'twitter:card',
@@ -79,11 +99,11 @@ export function shareMeta({ source, origin, path, image, guestName, lang }: Shar
         },
         {
             name: 'twitter:title',
-            content: facts.title,
+            content: title,
         },
         {
             name: 'twitter:description',
-            content: facts.description,
+            content: description,
         },
         {
             name: 'twitter:image',
@@ -91,8 +111,23 @@ export function shareMeta({ source, origin, path, image, guestName, lang }: Shar
         },
         {
             name: 'twitter:image:alt',
-            content: facts.imageAlt,
+            content: imageAlt,
         },
+    ];
+}
+
+export function shareMeta({ source, origin, path, image, guestName, lang }: ShareMetaInput) {
+    const facts = shareFacts(source, guestName, lang);
+    return [
+        ...pageMeta({
+            title: facts.title,
+            description: facts.description,
+            path,
+            origin,
+            image,
+            imageType: 'image/png',
+            imageAlt: facts.imageAlt,
+        }),
         {
             name: 'theme-color',
             content: source.invitation.design.palette.bg,

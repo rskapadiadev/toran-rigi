@@ -9,6 +9,7 @@ import {
     getPublishedInvitation,
     listDemoInvitations,
 } from '../../server/repos/invitations';
+import { cardData, cardLink } from '../../server/services/cards';
 
 // Absolute origin for share previews: crawlers need full URLs in og:url and og:image.
 const shareOrigin = () => getPlatform().config.APP_ORIGIN;
@@ -42,15 +43,40 @@ export const fetchInvitation = createServerFn({ method: 'GET' })
     });
 
 export const fetchPreview = createServerFn({ method: 'GET' })
-    .validator(z.object({ token: z.string().min(10).max(64) }))
+    .validator(
+        z.object({
+            token: z.string().min(10).max(64),
+            who: z.enum(['one', 'two']).optional(),
+        }),
+    )
     .handler(async ({ data }) => {
         const invitation = await getInvitationByPreviewToken(data.token);
-        return invitation
-            ? {
-                  invitation,
-                  origin: shareOrigin(),
-              }
-            : null;
+        if (!invitation) return null;
+        const who = data.who ?? null;
+        return {
+            // A draft shows the couple everything; one family's version shows only its own.
+            invitation: who ? forViewer(invitation, { side: who }) : invitation,
+            origin: shareOrigin(),
+            link: await cardLink(invitation, who),
+        };
+    });
+
+export const fetchCard = createServerFn({ method: 'GET' })
+    .validator(
+        z.object({
+            token: z.string().min(10).max(64),
+            who: z.enum(['one', 'two']).optional(),
+            event: z.string().max(64).optional(),
+        }),
+    )
+    .handler(async ({ data }) => {
+        const full = await getInvitationByPreviewToken(data.token);
+        if (!full) return null;
+        const who = data.who ?? null;
+        return {
+            data: cardData(full, who, data.event),
+            link: await cardLink(full, who),
+        };
     });
 
 export const fetchDemos = createServerFn({ method: 'GET' }).handler(() => listDemoInvitations());

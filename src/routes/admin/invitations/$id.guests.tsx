@@ -1,7 +1,7 @@
 import { latestReplies } from '@shared/guests';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Download, Link2, MailCheck, PenLine, UserCheck, Users, UserX } from 'lucide-react';
+import { Download, Images, Link2, MailCheck, PenLine, UserCheck, Users, UserX } from 'lucide-react';
 
 import { AudiencePanel } from '@/admin/guests/AudiencePanel';
 import { FamiliesTable } from '@/admin/guests/FamiliesTable';
@@ -63,6 +63,11 @@ function GuestsPage() {
                         <Button variant="outline" asChild>
                             <Link to="/admin/invitations/$id" params={{ id }}>
                                 <PenLine /> Editor
+                            </Link>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link to="/admin/invitations/$id/cards" params={{ id }}>
+                                <Images /> Cards
                             </Link>
                         </Button>
                         <Button variant="outline" asChild>

@@ -1,4 +1,5 @@
 import { openingSheets } from '@shared/film';
+import { inviteLink } from '@shared/guests';
 import { photoUrl } from '@shared/photos';
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { type LinkHTMLAttributes, useEffect, useMemo, useState } from 'react';
@@ -68,9 +69,11 @@ export const Route = createFileRoute('/$slug')({
 });
 
 function InvitationPage() {
-    const { invitation, guest, origin } = Route.useLoaderData();
+    const { invitation, guest, origin, link } = Route.useLoaderData();
     const { lang, embed, print } = Route.useSearch();
-    const printUrl = print === undefined ? undefined : `${origin}/${invitation.invitation.slug}`;
+    // The PDF's QR code opens the same link the PDF was made from.
+    const printUrl =
+        print === undefined ? undefined : inviteLink(origin, invitation.invitation.slug, link);
     // Demos are template previews: visitors can try their own names and start an order.
     const [trial, setTrial] = useState<Trial | null>(null);
     const data = useMemo(() => applyTrial(invitation, trial), [invitation, trial]);

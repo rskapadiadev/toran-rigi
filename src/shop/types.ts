@@ -53,7 +53,6 @@ export interface MyInvitationRow {
     design: InvitationDesign;
     createdAt: string;
     // The studio has switched on the PDF add-on.
-    pdf: boolean;
 }
 
 export interface Me {

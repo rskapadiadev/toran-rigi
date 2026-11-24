@@ -2,7 +2,7 @@ import { formatMoney } from '@shared/money';
 import { SHOW_SHOP_PRICES } from '@shared/pricing';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowLeft, Check, Copy, ExternalLink, Loader2, Lock, Users } from 'lucide-react';
+import { ArrowLeft, Check, Copy, ExternalLink, Images, Loader2, Lock, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -11,7 +11,6 @@ import { upload } from '@/admin/editor/PhotosPanel';
 import type { Uploader } from '@/admin/editor/uploader';
 import { Button } from '@/components/ui/button';
 import { api, ApiError, post } from '@/lib/api';
-import { DownloadPdf } from '@/shop/DownloadPdf';
 import { FormEditor } from '@/shop/FormEditor';
 import { hasVideo, ShareVideo } from '@/shop/ShareVideo';
 import { ShopShell } from '@/shop/ShopShell';
@@ -174,6 +173,12 @@ function Editor({ data, onChanged }: EditorProps) {
                     <span className="max-sm:sr-only">Guests</span>
                 </Link>
             </Button>
+            <Button variant="outline" asChild>
+                <Link to="/my/$id/cards" params={{ id }}>
+                    <Images />
+                    <span className="max-sm:sr-only">Cards</span>
+                </Link>
+            </Button>
             {locked ? (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Lock className="size-3.5" /> Editing closed after the celebration
@@ -209,13 +214,11 @@ function Editor({ data, onChanged }: EditorProps) {
                 </Button>
             ) : live ? (
                 <>
-                    {base.invitation.extras.pdf?.enabled && (
-                        <DownloadPdf invitationId={id} slug={base.invitation.slug} />
-                    )}
                     {hasVideo(base) && <ShareVideo base={base} />}
                     <Button variant="outline" asChild>
                         <a href={link} target="_blank" rel="noreferrer">
-                            <ExternalLink /> View
+                            <ExternalLink />
+                            <span className="max-sm:sr-only">View</span>
                         </a>
                     </Button>
                 </>

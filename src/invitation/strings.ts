@@ -344,6 +344,15 @@ const strings = {
         he: 'נא להשיב עד',
         pa: 'ਜਵਾਬ ਦੀ ਆਖ਼ਰੀ ਤਾਰੀਖ਼:',
     },
+    invitationToFollow: {
+        en: 'Invitation to follow',
+        hi: 'निमंत्रण शीघ्र ही',
+        gu: 'આમંત્રણ ટૂંક સમયમાં',
+        ar: 'الدعوة ستصلكم قريبًا',
+        ur: 'دعوت نامہ جلد ارسال ہوگا',
+        he: 'הזמנה תישלח בהמשך',
+        pa: 'ਸੱਦਾ ਪੱਤਰ ਜਲਦੀ ਹੀ',
+    },
     sendWhatsapp: {
         en: 'Send your reply on WhatsApp too',
         hi: 'इसे व्हाट्सऐप पर भी भेजें',

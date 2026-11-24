@@ -15,9 +15,8 @@ import {
     setSlug,
 } from '../repos/composer';
 import { listRsvps, listWishes, moderateWish } from '../repos/guests';
-import { pdfSource } from '../repos/invitations';
 import { OrderError } from '../repos/orders';
-import { invitationPdf, pdfResponse } from '../services/pdf';
+import { cardsApi } from './cards';
 import { guestListApi } from './guest-list';
 import { uploadInvitationMusic } from './music';
 
@@ -29,6 +28,14 @@ composerApi.use('*', requireAdmin, requirePermission('orders.update'));
 composerApi.route(
     '/',
     guestListApi<AdminEnv>(() => Promise.resolve()),
+);
+
+composerApi.route(
+    '/',
+    cardsApi<AdminEnv>({
+        see: () => Promise.resolve(),
+        download: () => Promise.resolve(),
+    }),
 );
 composerApi.onError((error, c) => {
     if (error instanceof OrderError) return fail(c, 409, error.message);
@@ -45,18 +52,6 @@ composerApi.onError((error, c) => {
 const json = async (c: { req: { json: () => Promise<unknown> } }) => c.req.json().catch(() => null);
 
 composerApi.get('/', async (c) => c.json(await listInvitations()));
-
-// The studio can always make the PDF (drafts too, add-on or not) to proof it or send it by hand.
-composerApi.get('/:id/pdf', async (c) => {
-    const src = await pdfSource({ id: c.req.param('id') });
-    if (!src) return fail(c, 404, 'Invitation not found');
-    try {
-        return pdfResponse(await invitationPdf(src, new URL(c.req.url).origin), src.slug);
-    } catch (error) {
-        console.error('[pdf]', error);
-        return fail(c, 409, 'The PDF couldn’t be made just now. Please try again in a minute.');
-    }
-});
 
 composerApi.post('/', async (c) => {
     const parsed = z

@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getCookie, getRequestHeader } from '@tanstack/react-start/server';
 
+import { getPlatform } from '../../server/platform/context';
 import { listStoreTemplates, shopCurrency } from '../../server/repos/store';
 
 // The shop's catalogue, rendered on the server so the landing and collections pages are indexable.
@@ -11,6 +12,8 @@ export const fetchCatalogue = createServerFn({ method: 'GET' }).handler(async ()
     const { currency, rates } = await shopCurrency(known, getCookie('toran_currency'));
     return {
         currency,
+        // Link previews need full addresses.
+        origin: getPlatform().config.APP_ORIGIN,
         templates: await listStoreTemplates(currency, rates),
     };
 });

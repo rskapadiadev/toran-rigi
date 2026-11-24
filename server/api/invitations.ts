@@ -15,7 +15,7 @@ import {
     totalAttending,
 } from '../repos/guests';
 import { addHeart, heartCounts, isHeartTarget } from '../repos/hearts';
-import { eventAudiences, getInvitationIdBySlug, pdfSource } from '../repos/invitations';
+import { cardSource, eventAudiences, getInvitationIdBySlug } from '../repos/invitations';
 import { invitationPdf, pdfResponse } from '../services/pdf';
 
 export const invitationsApi = new Hono<AppEnv>();
@@ -128,12 +128,19 @@ invitationsApi.post('/:slug/hearts', async (c) => {
 
 // Guests' "Download PDF": only for published invitations whose couple has the PDF add-on.
 invitationsApi.get('/:slug/pdf', async (c) => {
-    const src = await pdfSource({ slug: c.req.param('slug') });
-    if (!src || src.status !== 'published' || !src.enabled) return fail(c, 404, 'Not available');
+    const source = await cardSource({ slug: c.req.param('slug') });
+    const invitation = source?.full.invitation;
+    if (!source || invitation?.status !== 'published' || !invitation.extras.pdf?.enabled)
+        return fail(c, 404, 'Not available');
     if (!(await c.env.rateLimit.limit(`pdf:${clientIp(c)}`)).success)
         return fail(c, 429, 'Too many requests');
     try {
-        return pdfResponse(await invitationPdf(src, new URL(c.req.url).origin), src.slug);
+        const main = {
+            who: null,
+            lang: invitation.locales[0] ?? 'en',
+        };
+        const bytes = await invitationPdf(source, main, new URL(c.req.url).origin);
+        return pdfResponse(bytes, invitation.slug);
     } catch (error) {
         console.error('[pdf]', error);
         return fail(c, 409, 'The PDF couldn’t be made just now. Please try again in a minute.');

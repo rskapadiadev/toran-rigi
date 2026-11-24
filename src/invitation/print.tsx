@@ -19,6 +19,21 @@ export function printPages(root: HTMLElement): HTMLElement[] {
     return pages;
 }
 
+// Below this, words get too small to read: the section keeps this size and runs on to more pages.
+const SMALLEST = 0.72;
+const RUNNING_ON = 0.85;
+
+// Shrinks a section to `scale` with a transform: browsers disagree on how zoomed boxes measure.
+function shrink(page: HTMLElement, scale: number) {
+    const rtl = getComputedStyle(page).direction === 'rtl';
+    page.style.width = `${String(PAGE_W / scale)}px`;
+    page.style.minHeight = `${String(PAGE_H / scale)}px`;
+    page.style.transformOrigin = rtl ? '100% 0' : '0 0';
+    page.style.transform = `scale(${String(scale)})`;
+    // The room it no longer takes up.
+    page.style.marginBottom = `${String(-page.offsetHeight * (1 - scale))}px`;
+}
+
 // Fits each section to one page: short ones grow to fill it, tall ones shrink to fit it.
 export function usePrintFit(root: React.RefObject<HTMLElement | null>, on: boolean) {
     useEffect(() => {
@@ -27,13 +42,14 @@ export function usePrintFit(root: React.RefObject<HTMLElement | null>, on: boole
         const fit = () => {
             for (const page of printPages(el)) {
                 if (page.hasAttribute('data-print-page')) continue;
-                page.style.zoom = '';
                 page.style.minHeight = `${String(PAGE_H)}px`;
-                const h = page.scrollHeight;
-                if (h > PAGE_H + 2) {
-                    page.style.minHeight = '';
-                    page.style.zoom = String(Math.max(0.55, PAGE_H / page.scrollHeight));
-                }
+                if (page.scrollHeight <= PAGE_H + 2) continue;
+                // A shrunk section is also wider inside, so it comes out shorter: measure it twice.
+                const guess = Math.max(SMALLEST, PAGE_H / page.scrollHeight);
+                page.style.minHeight = '';
+                page.style.width = `${String(PAGE_W / guess)}px`;
+                const fitted = PAGE_H / page.scrollHeight;
+                shrink(page, fitted < SMALLEST ? RUNNING_ON : Math.min(1, fitted));
             }
             el.setAttribute('data-print-ready', '');
         };

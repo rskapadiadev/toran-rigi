@@ -74,9 +74,9 @@
                 "APP_ORIGIN": "https://toran.therigi.shop",
                 "INVITE_URL_MODE": "path",
                 "MAILER_DRIVER": "resend",
-                // Resend's shared sender until therigi.co is verified; it only delivers to the
-                // email the Resend account was made with.
-                "MAIL_FROM": "Toran <onboarding@resend.dev>",
+                // therigi.shop is verified in Resend (DKIM and the send. subdomain are in Cloudflare DNS).
+                // An unverified domain here makes Resend reject every email, sign-in codes included.
+                "MAIL_FROM": "Toran <hello@therigi.shop>",
                 // Online payment is not live yet: orders are saved unpaid (see server/api/store.ts).
                 "PAYMENTS_DRIVER": "fake",
             },

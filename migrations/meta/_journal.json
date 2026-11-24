@@ -92,6 +92,13 @@
       "when": 1795454621146,
       "tag": "0012_guest_groups_one_main_link",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1795521261707,
+      "tag": "0013_retire_pdf_addon",
+      "breakpoints": true
     }
   ]
 }

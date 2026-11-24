@@ -2386,6 +2386,16 @@ body:has([data-opening]) [data-preview-bar] {
     }
 }
 
+/* The PDF's pages are photographed on screen, one scroll at a time: nothing may stick and slide over
+   its neighbours, and stacked cards follow one another. */
+[data-print] main .sticky {
+    position: relative !important;
+    top: auto !important;
+}
+[data-print] main .sticky[data-event-index] {
+    margin-bottom: 2.5rem;
+}
+
 /* Falling petals backdrop: one element per petal. `translate` carries the fall, `transform` the
    sway and 3D flutter, so each petal is a single composited layer. cqh = the section's height. */
 .fx-petals {

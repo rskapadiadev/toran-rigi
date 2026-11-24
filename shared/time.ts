@@ -48,13 +48,19 @@ const intlLocale = (locale: string, calendar?: string) => {
 };
 
 export function formatEventDate(date: Date, timeZone: string, locale: string, calendar?: string) {
-    return new Intl.DateTimeFormat(intlLocale(locale, calendar), {
+    const format = new Intl.DateTimeFormat(intlLocale(locale, calendar), {
         timeZone,
         weekday: 'long',
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-    }).format(date);
+    });
+    if (locale !== 'en' || calendar) return format.format(date);
+    // Browsers punctuate Indian English differently from one version to the next, so a printed card
+    // could disagree with its preview: the order and commas are ours.
+    const parts = new Map(format.formatToParts(date).map((p) => [p.type, p.value]));
+    const part = (type: Intl.DateTimeFormatPartTypes) => parts.get(type) ?? '';
+    return `${part('weekday')}, ${part('day')} ${part('month')} ${part('year')}`;
 }
 
 export function formatEventTime(date: Date, timeZone: string, locale: string) {

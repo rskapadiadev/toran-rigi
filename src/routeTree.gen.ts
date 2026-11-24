@@ -33,8 +33,11 @@ import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
 import { Route as AdminOrdersNewRouteImport } from './routes/admin/orders/new'
 import { Route as AdminTemplatesIndexRouteImport } from './routes/admin/templates/index'
 import { Route as AdminTemplatesIdRouteImport } from './routes/admin/templates/$id'
+import { Route as MyIdCardsRouteImport } from './routes/my.$id_.cards'
 import { Route as MyIdGuestsRouteImport } from './routes/my.$id_.guests'
+import { Route as PTokenCardRouteImport } from './routes/p.$token_.card'
 import { Route as AdminInvitationsIdIndexRouteImport } from './routes/admin/invitations/$id.index'
+import { Route as AdminInvitationsIdCardsRouteImport } from './routes/admin/invitations/$id.cards'
 import { Route as AdminInvitationsIdGuestsRouteImport } from './routes/admin/invitations/$id.guests'
 
 const IndexRoute = IndexRouteImport.update({
@@ -157,14 +160,29 @@ const AdminTemplatesIdRoute = AdminTemplatesIdRouteImport.update({
   path: '/templates/$id',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const MyIdCardsRoute = MyIdCardsRouteImport.update({
+  id: '/my/$id_/cards',
+  path: '/my/$id/cards',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MyIdGuestsRoute = MyIdGuestsRouteImport.update({
   id: '/my/$id_/guests',
   path: '/my/$id/guests',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PTokenCardRoute = PTokenCardRouteImport.update({
+  id: '/p/$token_/card',
+  path: '/p/$token/card',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminInvitationsIdIndexRoute = AdminInvitationsIdIndexRouteImport.update({
   id: '/invitations/$id/',
   path: '/invitations/$id/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminInvitationsIdCardsRoute = AdminInvitationsIdCardsRouteImport.update({
+  id: '/invitations/$id/cards',
+  path: '/invitations/$id/cards',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminInvitationsIdGuestsRoute =
@@ -195,11 +213,14 @@ export interface FileRoutesByFullPath {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
+  '/my/$id/cards': typeof MyIdCardsRoute
   '/my/$id/guests': typeof MyIdGuestsRoute
+  '/p/$token/card': typeof PTokenCardRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/admin/templates/': typeof AdminTemplatesIndexRoute
+  '/admin/invitations/$id/cards': typeof AdminInvitationsIdCardsRoute
   '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
   '/admin/invitations/$id/': typeof AdminInvitationsIdIndexRoute
 }
@@ -223,11 +244,14 @@ export interface FileRoutesByTo {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
+  '/my/$id/cards': typeof MyIdCardsRoute
   '/my/$id/guests': typeof MyIdGuestsRoute
+  '/p/$token/card': typeof PTokenCardRoute
   '/admin/customers': typeof AdminCustomersIndexRoute
   '/admin/invitations': typeof AdminInvitationsIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
   '/admin/templates': typeof AdminTemplatesIndexRoute
+  '/admin/invitations/$id/cards': typeof AdminInvitationsIdCardsRoute
   '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
   '/admin/invitations/$id': typeof AdminInvitationsIdIndexRoute
 }
@@ -253,11 +277,14 @@ export interface FileRoutesById {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
+  '/my/$id_/cards': typeof MyIdCardsRoute
   '/my/$id_/guests': typeof MyIdGuestsRoute
+  '/p/$token_/card': typeof PTokenCardRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/admin/templates/': typeof AdminTemplatesIndexRoute
+  '/admin/invitations/$id/cards': typeof AdminInvitationsIdCardsRoute
   '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
   '/admin/invitations/$id/': typeof AdminInvitationsIdIndexRoute
 }
@@ -284,11 +311,14 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/orders/new'
     | '/admin/templates/$id'
+    | '/my/$id/cards'
     | '/my/$id/guests'
+    | '/p/$token/card'
     | '/admin/customers/'
     | '/admin/invitations/'
     | '/admin/orders/'
     | '/admin/templates/'
+    | '/admin/invitations/$id/cards'
     | '/admin/invitations/$id/guests'
     | '/admin/invitations/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -312,11 +342,14 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/orders/new'
     | '/admin/templates/$id'
+    | '/my/$id/cards'
     | '/my/$id/guests'
+    | '/p/$token/card'
     | '/admin/customers'
     | '/admin/invitations'
     | '/admin/orders'
     | '/admin/templates'
+    | '/admin/invitations/$id/cards'
     | '/admin/invitations/$id/guests'
     | '/admin/invitations/$id'
   id:
@@ -341,11 +374,14 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/orders/new'
     | '/admin/templates/$id'
+    | '/my/$id_/cards'
     | '/my/$id_/guests'
+    | '/p/$token_/card'
     | '/admin/customers/'
     | '/admin/invitations/'
     | '/admin/orders/'
     | '/admin/templates/'
+    | '/admin/invitations/$id/cards'
     | '/admin/invitations/$id/guests'
     | '/admin/invitations/$id/'
   fileRoutesById: FileRoutesById
@@ -360,7 +396,9 @@ export interface RootRouteChildren {
   PTokenRoute: typeof PTokenRoute
   TrySlugRoute: typeof TrySlugRoute
   MyIndexRoute: typeof MyIndexRoute
+  MyIdCardsRoute: typeof MyIdCardsRoute
   MyIdGuestsRoute: typeof MyIdGuestsRoute
+  PTokenCardRoute: typeof PTokenCardRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -533,6 +571,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTemplatesIdRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/my/$id_/cards': {
+      id: '/my/$id_/cards'
+      path: '/my/$id/cards'
+      fullPath: '/my/$id/cards'
+      preLoaderRoute: typeof MyIdCardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/my/$id_/guests': {
       id: '/my/$id_/guests'
       path: '/my/$id/guests'
@@ -540,11 +585,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyIdGuestsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/p/$token_/card': {
+      id: '/p/$token_/card'
+      path: '/p/$token/card'
+      fullPath: '/p/$token/card'
+      preLoaderRoute: typeof PTokenCardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/invitations/$id/': {
       id: '/admin/invitations/$id/'
       path: '/invitations/$id'
       fullPath: '/admin/invitations/$id/'
       preLoaderRoute: typeof AdminInvitationsIdIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/invitations/$id/cards': {
+      id: '/admin/invitations/$id/cards'
+      path: '/invitations/$id/cards'
+      fullPath: '/admin/invitations/$id/cards'
+      preLoaderRoute: typeof AdminInvitationsIdCardsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/invitations/$id/guests': {
@@ -573,6 +632,7 @@ interface AdminRouteRouteChildren {
   AdminInvitationsIndexRoute: typeof AdminInvitationsIndexRoute
   AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
   AdminTemplatesIndexRoute: typeof AdminTemplatesIndexRoute
+  AdminInvitationsIdCardsRoute: typeof AdminInvitationsIdCardsRoute
   AdminInvitationsIdGuestsRoute: typeof AdminInvitationsIdGuestsRoute
   AdminInvitationsIdIndexRoute: typeof AdminInvitationsIdIndexRoute
 }
@@ -593,6 +653,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminInvitationsIndexRoute: AdminInvitationsIndexRoute,
   AdminOrdersIndexRoute: AdminOrdersIndexRoute,
   AdminTemplatesIndexRoute: AdminTemplatesIndexRoute,
+  AdminInvitationsIdCardsRoute: AdminInvitationsIdCardsRoute,
   AdminInvitationsIdGuestsRoute: AdminInvitationsIdGuestsRoute,
   AdminInvitationsIdIndexRoute: AdminInvitationsIdIndexRoute,
 }
@@ -611,7 +672,9 @@ const rootRouteChildren: RootRouteChildren = {
   PTokenRoute: PTokenRoute,
   TrySlugRoute: TrySlugRoute,
   MyIndexRoute: MyIndexRoute,
+  MyIdCardsRoute: MyIdCardsRoute,
   MyIdGuestsRoute: MyIdGuestsRoute,
+  PTokenCardRoute: PTokenCardRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

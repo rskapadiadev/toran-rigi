@@ -64,10 +64,28 @@ export interface CapturedPage {
     anchors: string[];
 }
 
-// Photographs a print edition page by page in a real browser (Cloudflare Browser Rendering, or
-// local Chrome on Node). Absent where no browser is available.
+// One card to photograph: its page, the size it lays itself out at, and how many pixels per unit.
+export interface CardShot {
+    url: string;
+    width: number;
+    height: number;
+    scale: number;
+    type: 'png' | 'jpeg';
+    // Only this much of the card (a print card without its bleed).
+    clip?: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+// Photographs pages in a real browser (Cloudflare Browser Rendering, or local Chrome on Node).
+// Absent where no browser is available.
 export interface PageCapturer {
+    // A print edition, page by page.
     capture(url: string): Promise<CapturedPage[]>;
+    cards(shots: CardShot[]): Promise<Uint8Array[]>;
 }
 
 export interface Platform {

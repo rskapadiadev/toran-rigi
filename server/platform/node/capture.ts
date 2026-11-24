@@ -1,11 +1,15 @@
 // Local Chrome via Playwright for the Node build (and anywhere Browser Rendering isn't available).
 import {
+    captureCards,
     capturePages,
-    findPagesInDocument,
+    CARD_QUALITY,
     JPEG_QUALITY,
+    NAME_SHIM,
     PAGE_H,
     PAGE_W,
+    preparePage,
     SCALE,
+    wholeCard,
 } from '../shared/capture';
 import type { PageCapturer } from '../types';
 
@@ -33,19 +37,60 @@ export function nodeCapturer(): PageCapturer {
                         },
                         waitForReady: async () => {
                             await page.waitForSelector('[data-print-ready]', { timeout: 30_000 });
+                            await page.evaluate(NAME_SHIM);
                         },
-                        findPages: () => page.evaluate(findPagesInDocument),
+                        prepare: (n) => page.evaluate(preparePage, n),
                         shoot: async (clip) =>
                             new Uint8Array(
                                 await page.screenshot({
                                     type: 'jpeg',
                                     quality: JPEG_QUALITY,
                                     clip,
-                                    fullPage: true,
                                 }),
                             ),
                     },
                     url,
+                );
+            } finally {
+                await browser.close();
+            }
+        },
+        async cards(shots) {
+            const { chromium } = await import('@playwright/test');
+            const browser = await chromium.launch();
+            let close = () => Promise.resolve();
+            try {
+                let page = await browser.newPage();
+                return await captureCards(
+                    {
+                        // The pixel ratio is fixed when a page opens, so each card gets its own.
+                        open: async (shot) => {
+                            await close();
+                            const frame = {
+                                width: shot.width,
+                                height: shot.height,
+                            };
+                            page = await browser.newPage({
+                                viewport: frame,
+                                deviceScaleFactor: shot.scale,
+                            });
+                            close = () => page.close();
+                            await page.goto(shot.url, {
+                                waitUntil: 'networkidle',
+                                timeout: 45_000,
+                            });
+                            await page.waitForSelector('[data-card-ready]', { timeout: 30_000 });
+                        },
+                        shoot: async (shot) =>
+                            new Uint8Array(
+                                await page.screenshot({
+                                    type: shot.type,
+                                    ...(shot.type === 'jpeg' && { quality: CARD_QUALITY }),
+                                    clip: shot.clip ?? wholeCard(shot),
+                                }),
+                            ),
+                    },
+                    shots,
                 );
             } finally {
                 await browser.close();

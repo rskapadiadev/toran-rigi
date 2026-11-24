@@ -4,6 +4,7 @@ import { Eye, PenLine, Send } from 'lucide-react';
 
 import { LoginCrown } from '@/admin/shell/login-crown';
 import { ToranSeal } from '@/components/brand/toran-seal';
+import { pageMeta } from '@/lib/share-meta';
 import { cn } from '@/lib/utils';
 import {
     HeroFan,
@@ -20,15 +21,19 @@ import { fetchCatalogue } from '../server-fns/store';
 
 export const Route = createFileRoute('/')({
     loader: () => fetchCatalogue(),
-    head: () => ({
-        meta: [
-            { title: 'Toran · Digital invitations that open like a doorway' },
-            {
-                name: 'description',
-                content:
-                    'Living digital invitations for weddings and every celebration. Try any design free with your names and photos, pay only when you love it, share one link on WhatsApp.',
-            },
-        ],
+    head: ({ loaderData }) => ({
+        meta: pageMeta({
+            title: 'Toran · Digital invitations that open like a doorway',
+            description:
+                'Living digital invitations for weddings and every celebration. Try any design free with your names and photos, pay only when you love it, share one link on WhatsApp.',
+            path: '/',
+            origin: loaderData?.origin ?? '',
+            // Drawn by scripts/dev/share-image.mjs; bump ?v= after a redraw so chat apps fetch it again.
+            image: '/share/toran.jpg?v=1',
+            imageType: 'image/jpeg',
+            imageAlt:
+                'Three Toran invitations on phones: a palace at dusk, carved maroon doors and a green archway',
+        }),
     }),
     component: Home,
 });

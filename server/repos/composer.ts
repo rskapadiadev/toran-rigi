@@ -1,5 +1,4 @@
 import { applyLayout } from '@shared/blocks';
-import { PDF_ADDON } from '@shared/catalog';
 import { cultureOf } from '@shared/cultures';
 import { seedFrom } from '@shared/generative';
 import { newToken } from '@shared/ids';
@@ -22,7 +21,7 @@ import {
     wishes,
 } from '../db/schema';
 import { getPlatform } from '../platform/context';
-import { invoicesForOrder, setOrderAddon } from './billing';
+import { invoicesForOrder } from './billing';
 import { invalidateInvitationCache } from './invitations';
 import { resolveMusic } from './music';
 import { OrderError } from './orders';
@@ -196,9 +195,6 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
               .get()
         : undefined;
     const wasLive = current.invitation.status === 'published';
-    // The PDF download is a paid add-on: switching it puts it on (or takes it off) the invoice.
-    const pdfBefore = current.invitation.extras.pdf?.enabled ?? false;
-    const pdfAfter = input.extras.pdf?.enabled ?? false;
     // Editing a live invitation bumps the version so guests see the change immediately.
     const version = wasLive ? current.invitation.version + 1 : current.invitation.version;
     // Who sees each function is set on the Guests page, not in the editor: a save keeps it.
@@ -257,8 +253,6 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
     await pruneFilm(id, current.invitation.design.film, input.design.film).catch((e: unknown) => {
         console.warn('film cleanup failed', e);
     });
-    if (current.order && pdfBefore !== pdfAfter)
-        await setOrderAddon(current.order.id, PDF_ADDON, pdfAfter);
     return invitationForEdit(id);
 }
 

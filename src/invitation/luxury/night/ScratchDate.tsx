@@ -1,20 +1,16 @@
 // "The date": three gold-foil cards (day, month, year) that guests scratch away with a finger to
 // find the wedding date beneath, like a lottery card. A tap reveals each one too, and still devices
 // and reduced motion skip the scratching altogether.
+import { mainEvent } from '@shared/cards';
 import { zonedToUtc } from '@shared/time';
 import { useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 
 import { Reveal } from '../../../motion/Reveal';
 import { useInvite } from '../../context';
+import { usePrint } from '../../print';
 import type { StringKey } from '../../strings';
-import type { PublicInvitationEvent } from '../../types';
 import { SectionTitle } from '../typography/SectionTitle';
-
-// The ceremony the date belongs to: the wedding itself where there is one, else the first.
-const MAIN = /phera|wedding|vivah|nikah|anand|laavan|chuppah|muhurt|ceremony|church/;
-const mainEvent = (events: PublicInvitationEvent[]) =>
-    events.find((e) => MAIN.test(e.kind)) ?? events[0];
 
 const BRUSH = 22;
 // Share of the foil that must be gone before the rest falls away by itself.
@@ -71,7 +67,8 @@ interface CardProps {
 function FoilCard({ value, label, scratch }: CardProps) {
     const { data, copy } = useInvite();
     const canvas = useRef<HTMLCanvasElement>(null);
-    const [shown, setShown] = useState(false);
+    // Paper can't be scratched: the PDF shows the date.
+    const [shown, setShown] = useState(usePrint());
     const moves = useRef(0);
     const gold = data.invitation.design.palette.gold;
 
@@ -155,6 +152,7 @@ function FoilCard({ value, label, scratch }: CardProps) {
 
 export function ScratchDate() {
     const { data, locale, copy, tier } = useInvite();
+    const print = usePrint();
     const reduced = useReducedMotion();
     const event = mainEvent(data.events);
     if (!event) return null;
@@ -168,17 +166,19 @@ export function ScratchDate() {
     return (
         <section className="px-5 py-20 text-center">
             <SectionTitle>{copy('theDate')}</SectionTitle>
-            <Reveal>
-                <p className="mb-8 text-[clamp(1.05rem,4.6cqw,1.35rem)] italic opacity-85">
-                    <span aria-hidden className="me-2 text-(--inv-gold)">
-                        ✦
-                    </span>
-                    {copy('scratchDate')}
-                    <span aria-hidden className="ms-2 text-(--inv-gold)">
-                        ✦
-                    </span>
-                </p>
-            </Reveal>
+            {!print && (
+                <Reveal>
+                    <p className="mb-8 text-[clamp(1.05rem,4.6cqw,1.35rem)] italic opacity-85">
+                        <span aria-hidden className="me-2 text-(--inv-gold)">
+                            ✦
+                        </span>
+                        {copy('scratchDate')}
+                        <span aria-hidden className="ms-2 text-(--inv-gold)">
+                            ✦
+                        </span>
+                    </p>
+                </Reveal>
+            )}
             <Reveal delay={120} className="mx-auto flex max-w-lg gap-[4cqw]">
                 <FoilCard value={part({ day: 'numeric' })} label="day" scratch={scratch} />
                 <FoilCard value={part({ month: 'long' })} label="month" scratch={scratch} />

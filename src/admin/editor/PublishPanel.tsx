@@ -108,8 +108,8 @@ export function PublishPanel({ id, data, dirty }: PublishPanelProps) {
                     <span className="font-medium">PDF copy</span>
                     <span className="block text-xs text-muted-foreground">
                         {data.invitation.extras.pdf?.enabled
-                            ? 'The couple and guests can download it too.'
-                            : 'Only the studio can download it. Switch it on in Extras for the couple.'}
+                            ? 'Guests can download it from the invitation too.'
+                            : 'The couple have it on their Cards page. Switch on PDF for guests in Extras to share it there.'}
                     </span>
                 </p>
                 <DownloadPdf

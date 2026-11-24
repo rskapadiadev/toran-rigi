@@ -80,6 +80,13 @@ export function AdminBreadcrumbs() {
             });
             crumbs.push({ label: 'Guests & RSVPs' });
         }
+        if (routeId === '/admin/invitations/$id/cards') {
+            crumbs.push({
+                label: labels.invitation ?? 'Invitation',
+                to: '/admin/invitations/$id',
+            });
+            crumbs.push({ label: 'Cards' });
+        }
     }
     if (routeId.startsWith('/admin/customers')) {
         crumbs.push({

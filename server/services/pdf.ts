@@ -5,10 +5,14 @@ import { PDFDocument, PDFName, PDFString } from 'pdf-lib';
 
 import { getPlatform } from '../platform/context';
 import type { CapturedPage } from '../platform/types';
-import type { PdfSource } from '../repos/invitations';
+import type { CardSource } from '../repos/invitations';
+import { cardLink, type CardVersion } from './cards';
 
 const PAGE_W = 430;
 const PAGE_H = 932;
+
+// Bump when pages are laid out or cut differently, so stored files are made again.
+const DESIGN = 'p3';
 
 export class PdfUnavailable extends Error {}
 
@@ -63,21 +67,36 @@ export async function buildPdf(pages: CapturedPage[], title: string): Promise<Ui
 
 // Drafts keep the same version while edited, so their file is also keyed by the last edit. A draft's
 // file shows every function, so it is never the one handed out after publishing.
-const fileKey = (src: PdfSource) =>
-    `pdf/${src.id}/${src.status === 'published' ? 'live' : 'draft'}-v${String(src.version)}-${src.updatedAt.replace(/[^0-9]/g, '')}.pdf`;
+const fileKey = ({ full, updatedAt }: CardSource, v: CardVersion) =>
+    `pdf/${full.invitation.id}/${DESIGN}-${full.invitation.status === 'published' ? 'live' : 'draft'}-v${String(full.invitation.version)}-${updatedAt.replace(/[^0-9]/g, '')}-${v.lang}-${v.who ?? 'main'}.pdf`;
 
 // The stored PDF for this version, made now if it doesn't exist yet. `origin` is where this app
 // is reachable from the rendering browser.
-export async function invitationPdf(src: PdfSource, origin: string): Promise<Uint8Array> {
+export async function invitationPdf(
+    source: CardSource,
+    v: CardVersion,
+    origin: string,
+): Promise<Uint8Array> {
     const { blob, capturer } = getPlatform();
-    const key = fileKey(src);
+    const key = fileKey(source, v);
     const stored = await blob.get(key);
     if (stored) return new Uint8Array(await new Response(stored.body).arrayBuffer());
     if (!capturer) throw new PdfUnavailable('PDF export is not available on this server');
-    const path = src.status === 'published' ? `/${src.slug}` : `/p/${src.previewToken}`;
-    const pages = await capturer.capture(`${origin}${path}?print=1`);
+    const { status, slug } = source.full.invitation;
+    const query = new URLSearchParams({
+        print: '1',
+        lang: v.lang,
+    });
+    let path = `/p/${source.previewToken}`;
+    if (status === 'published') {
+        path = `/${slug}`;
+        // The family's own link, so its PDF is exactly what its guests see.
+        const token = new URL(await cardLink(source.full, v.who)).searchParams.get('g');
+        if (token) query.set('g', token);
+    } else if (v.who) query.set('who', v.who);
+    const pages = await capturer.capture(`${origin}${path}?${query.toString()}`);
     if (pages.length === 0) throw new PdfUnavailable('The invitation had no pages to export');
-    const bytes = await buildPdf(pages, src.slug);
+    const bytes = await buildPdf(pages, slug);
     await blob.put(key, bytes, {
         contentType: 'application/pdf',
         cacheControl: 'private, max-age=0',

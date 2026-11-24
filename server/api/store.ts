@@ -19,7 +19,6 @@ import {
     storeCode,
 } from '../repos/auth';
 import { setSlug } from '../repos/composer';
-import { pdfSource } from '../repos/invitations';
 import { OrderError } from '../repos/orders';
 import { storePhoto } from '../repos/photos';
 import {
@@ -39,7 +38,7 @@ import {
     storeTemplate,
 } from '../repos/store';
 import { sendMail } from '../services/mailer';
-import { invitationPdf, pdfResponse } from '../services/pdf';
+import { cardsApi } from './cards';
 import { guestListApi } from './guest-list';
 
 interface StoreEnv extends AppEnv {
@@ -236,6 +235,18 @@ storeApi.route(
     guestListApi<StoreEnv>((c, id) => ownsInvitation(c.get('customer').id, id)),
 );
 
+// Its matching cards and PDF, part of every invitation once it's paid for.
+storeApi.route(
+    '/me/invitations',
+    cardsApi<StoreEnv>({
+        see: (c, id) => ownsInvitation(c.get('customer').id, id),
+        download: async (c, id) => {
+            const { balance } = await myInvitation(c.get('customer').id, id);
+            if (balance > 0) throw new OrderError('Complete payment to download your cards');
+        },
+    }),
+);
+
 storeApi.get('/me/invitations/:id', async (c) =>
     c.json(await myInvitation(c.get('customer').id, c.req.param('id'))),
 );
@@ -276,17 +287,4 @@ storeApi.post('/me/invitations/:id/photos', async (c) => {
         },
         201,
     );
-});
-
-// The couple's "Download PDF" (works before publishing too), when the studio has switched it on.
-storeApi.get('/me/invitations/:id/pdf', async (c) => {
-    await ownsInvitation(c.get('customer').id, c.req.param('id'));
-    const src = await pdfSource({ id: c.req.param('id') });
-    if (!src?.enabled) return fail(c, 404, 'PDF download isn’t switched on for this invitation');
-    try {
-        return pdfResponse(await invitationPdf(src, new URL(c.req.url).origin), src.slug);
-    } catch (error) {
-        console.error('[pdf]', error);
-        return fail(c, 409, 'The PDF couldn’t be made just now. Please try again in a minute.');
-    }
 });

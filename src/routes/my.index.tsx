@@ -1,10 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ExternalLink, Loader2, PenLine, Users } from 'lucide-react';
+import { ExternalLink, Images, Loader2, PenLine, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { api, ApiError, post } from '@/lib/api';
-import { DownloadPdf } from '@/shop/DownloadPdf';
 import { ShopShell } from '@/shop/ShopShell';
 import { SignIn } from '@/shop/SignIn';
 import type { Me } from '@/shop/types';
@@ -111,10 +110,12 @@ function MyInvitations() {
                                         {inv.balance > 0 && ' · Payment pending'}
                                     </p>
                                 </div>
-                                <div className="flex gap-2">
-                                    {inv.pdf && (
-                                        <DownloadPdf invitationId={inv.id} slug={inv.slug} />
-                                    )}
+                                <div className="flex flex-wrap gap-2">
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link to="/my/$id/cards" params={{ id: inv.id }}>
+                                            <Images /> Cards
+                                        </Link>
+                                    </Button>
                                     {inv.status === 'published' && (
                                         <Button variant="outline" size="sm" asChild>
                                             <a

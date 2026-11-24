@@ -1796,19 +1796,14 @@ export function ExtrasPanel({ draft, set, invitationId, only }: ExtrasPanelProps
             {show('pdf') && (
                 <AccordionItem value="pdf">
                     <AccordionTrigger className={sectionTrigger}>
-                        <span className="flex items-center gap-2">
-                            PDF download
-                            <Badge variant="outline" className="font-normal">
-                                Paid add-on
-                            </Badge>
-                        </span>
+                        <span className="flex items-center gap-2">PDF for guests</span>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-2">
                         <SwitchRow
                             id="pdf-enabled"
                             icon={<FileDown />}
-                            label="Allow PDF download"
-                            description="The couple and their guests get a Download PDF button. Switching it on adds the PDF invitation add-on to the order’s invoice."
+                            label="Let guests download the PDF"
+                            description="Shows a PDF button on the invitation. The couple always have the PDF on their Cards page, at no extra charge."
                             checked={x.pdf?.enabled ?? false}
                             onChange={(enabled) => {
                                 setExtras({ pdf: { enabled } });
