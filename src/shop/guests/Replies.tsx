@@ -1,6 +1,6 @@
-import { countsOf, inviteMessage, type Side, sides } from '@shared/guests';
+import { sides } from '@shared/guests';
 import { Check, Loader2 } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,26 +8,16 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 
-import { useGuestAction } from './actions';
-import { type FamilyReplySettings, type GuestList, type ReplySettings, sideLabel } from './model';
+import { answerOf, useReplyDraft } from './drafts';
+import { type FamilyReplySettings, foodLabel, type GuestList, sideLabel, whenLabel } from './model';
 
 interface RepliesProps {
     list: GuestList;
     base: string;
 }
 
-const when = (iso: string) =>
-    new Intl.DateTimeFormat('en-IN', {
-        day: 'numeric',
-        month: 'short',
-        hour: 'numeric',
-        minute: '2-digit',
-    }).format(new Date(iso));
-
 export function Replies({ list, base }: RepliesProps) {
-    const act = useGuestAction(base);
-    const [form, setForm] = useState<ReplySettings>(list.replies);
-    const [busy, setBusy] = useState(false);
+    const { form, set, setSide, save, busy, dirty, example } = useReplyDraft(list, base);
     const ids = {
         on: useId(),
         wa: useId(),
@@ -35,25 +25,6 @@ export function Replies({ list, base }: RepliesProps) {
         msg: useId(),
         again: useId(),
     };
-    const dirty = JSON.stringify(form) !== JSON.stringify(list.replies);
-    const set = (patch: Partial<ReplySettings>) => {
-        setForm((f) => ({
-            ...f,
-            ...patch,
-        }));
-    };
-    const setSide = (side: Side, own: FamilyReplySettings) => {
-        set({
-            sides: {
-                ...form.sides,
-                [side]: own,
-            },
-        });
-    };
-    const example = inviteMessage(form.message || list.defaults.message, {
-        name: 'Sharma family',
-        link: `…/${list.slug}?g=…`,
-    });
 
     return (
         <div className="space-y-8">
@@ -170,17 +141,7 @@ export function Replies({ list, base }: RepliesProps) {
                         className="rounded-full"
                         disabled={!dirty || busy}
                         onClick={() => {
-                            setBusy(true);
-                            void act(
-                                {
-                                    path: '/replies',
-                                    method: 'PUT',
-                                    body: form,
-                                },
-                                'Saved',
-                            ).then(() => {
-                                setBusy(false);
-                            });
+                            void save();
                         }}
                     >
                         {busy ? <Loader2 className="animate-spin" /> : <Check />}
@@ -203,10 +164,7 @@ export function Replies({ list, base }: RepliesProps) {
                 ) : (
                     <ul className="divide-y rounded-2xl border bg-card">
                         {list.rsvps.map((r) => {
-                            const per = countsOf(r);
-                            const lines = list.events
-                                .filter((e) => (per[e.id] ?? 0) > 0)
-                                .map((e) => `${e.title} ${String(per[e.id])}`);
+                            const answer = answerOf(list.events, r);
                             return (
                                 <li key={r.id} className="space-y-1 p-4">
                                     <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -221,15 +179,12 @@ export function Replies({ list, base }: RepliesProps) {
                                         </p>
                                         <p className="text-xs text-muted-foreground">
                                             {r.manual ? 'Added by you · ' : ''}
-                                            {when(r.createdAt)}
+                                            {whenLabel(r.createdAt)}
                                         </p>
                                     </div>
-                                    <p
-                                        className={
-                                            lines.length ? 'text-sm text-emerald-900' : 'text-sm'
-                                        }
-                                    >
-                                        {lines.length ? lines.join(' · ') : 'Can’t come'}
+                                    <p className={answer ? 'text-sm text-emerald-900' : 'text-sm'}>
+                                        {answer || 'Can’t come'}
+                                        {r.dietary && ` · ${foodLabel(r.dietary)}`}
                                     </p>
                                     {r.message && (
                                         <p className="text-sm text-muted-foreground italic">

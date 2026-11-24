@@ -185,7 +185,7 @@ export function Links({ list, base, origin }: LinksProps) {
                                                 onClick={() => {
                                                     if (
                                                         window.confirm(
-                                                            `Remove ${g.name}? Its link stops working, and its families then see what everyone sees.`,
+                                                            `Remove ${g.name}? Its link then shows your main invitation, and its families see what everyone sees.`,
                                                         )
                                                     )
                                                         void act(

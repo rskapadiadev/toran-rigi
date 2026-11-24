@@ -93,11 +93,11 @@ await page.getByRole('link', {
 exact: true 
 }).click();
 await page.waitForURL(/\/guests$/);
-await page.waitForSelector('text=Personal guest links');
-await page.fill('textarea', 'Shah Parivar, +919800000002, 4\nKhan Family, +971500000001, 2');
-await page.getByRole('button', { name: 'Add guests' }).click();
+await page.getByRole('button', { name: 'Paste a list' }).click();
+await page.getByLabel('One family per line').fill('Shah Parivar, +919800000002, 4\nKhan Family, +971500000001, 2');
+await page.getByRole('button', { name: 'Add 2 families' }).click();
 await page.waitForSelector('text=Khan Family');
-const link = (await page.locator('[data-guest-link]').first().textContent()).trim();
+const link = await page.locator('[data-guest-link]').first().getAttribute('data-guest-link');
 step(`guest links created (${link})`);
 
 const guestPage = await browser.newPage({ ...devices['Pixel 7'] });

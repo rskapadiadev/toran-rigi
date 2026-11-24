@@ -1,12 +1,6 @@
 import { toCsv } from '@shared/csv';
-import { newToken } from '@shared/ids';
 import { can } from '@shared/permissions';
-import {
-    guestImportInput,
-    saveInvitationInput,
-    slugInput,
-    wishModerationInput,
-} from '@shared/schemas/composer';
+import { saveInvitationInput, slugInput, wishModerationInput } from '@shared/schemas/composer';
 import { Hono } from 'hono';
 import { z } from 'zod';
 
@@ -20,15 +14,7 @@ import {
     setInvitationStatus,
     setSlug,
 } from '../repos/composer';
-import {
-    deleteGuest,
-    importGuests,
-    listGuests,
-    listRsvps,
-    listWishes,
-    moderateWish,
-    parseGuestLines,
-} from '../repos/guests';
+import { listRsvps, listWishes, moderateWish } from '../repos/guests';
 import { pdfSource } from '../repos/invitations';
 import { OrderError } from '../repos/orders';
 import { invitationPdf, pdfResponse } from '../services/pdf';
@@ -137,27 +123,6 @@ composerApi.patch('/:id/status', async (c) => {
     await setInvitationStatus(c.req.param('id'), parsed.data.status, allow);
     return c.json({ ok: true });
 });
-
-composerApi.get('/:id/guests', async (c) => c.json(await listGuests(c.req.param('id'))));
-
-composerApi.post('/:id/guests', async (c) => {
-    const parsed = guestImportInput.safeParse(await json(c));
-    if (!parsed.success) return fail(c, 422, 'Paste one guest per line');
-    const added = await importGuests(c.req.param('id'), parseGuestLines(parsed.data.lines), () =>
-        newToken().slice(0, 12),
-    );
-    return c.json({
-        ok: true,
-        added,
-    });
-});
-
-composerApi.delete('/:id/guests/:guestId', async (c) => {
-    await deleteGuest(c.req.param('id'), c.req.param('guestId'));
-    return c.json({ ok: true });
-});
-
-composerApi.get('/:id/rsvps', async (c) => c.json(await listRsvps(c.req.param('id'))));
 
 composerApi.get('/:id/rsvps.csv', async (c) => {
     const [rows, detail] = await Promise.all([

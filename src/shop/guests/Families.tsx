@@ -1,11 +1,4 @@
-import {
-    countsOf,
-    inviteLink,
-    inviteMessage,
-    isSide,
-    type Side,
-    whatsappLink,
-} from '@shared/guests';
+import { inviteLink, isSide, type Side } from '@shared/guests';
 import {
     ClipboardPaste,
     Copy,
@@ -41,15 +34,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 import { copyText, useGuestAction } from './actions';
+import { answerOf, answersByFamily, asksAgain, useSend } from './drafts';
 import {
     type FamilyStatus,
     firstName,
     functionsFor,
     type GuestList,
-    inviteWords,
     type ListGuest,
-    type ListReply,
-    reminderWords,
     sideLabel,
     statusLabel,
     statusOf,
@@ -89,21 +80,7 @@ export function Families({ list, base, origin }: FamiliesProps) {
     const searchId = useId();
 
     const groupName = useMemo(() => new Map(list.groups.map((g) => [g.id, g.name])), [list.groups]);
-    // Replies arrive newest first, so a family's first one is its answer now.
-    const replyOf = useMemo(() => {
-        const latest = new Map<string, ListReply>();
-        for (const r of list.rsvps)
-            if (r.guestId && !latest.has(r.guestId)) latest.set(r.guestId, r);
-        return latest;
-    }, [list.rsvps]);
-    const answer = (r: ListReply | undefined) => {
-        if (!r) return null;
-        const per = countsOf(r);
-        return list.events
-            .filter((e) => (per[e.id] ?? 0) > 0)
-            .map((e) => `${e.title} ${String(per[e.id])}`)
-            .join(' · ');
-    };
+    const replyOf = useMemo(() => answersByFamily(list), [list]);
 
     const shown = list.guests.filter((g) => {
         if (query && !g.displayName.toLowerCase().includes(query.trim().toLowerCase()))
@@ -114,23 +91,7 @@ export function Families({ list, base, origin }: FamiliesProps) {
         return true;
     });
 
-    // Sent but not answered: the same button asks again, in gentler words.
-    const asksAgain = (g: ListGuest) =>
-        list.replies.enabled && g.rsvped === 0 && Boolean(g.sentAt ?? g.openedAt);
-
-    const send = (g: ListGuest) => {
-        const again = asksAgain(g);
-        const words = inviteMessage(again ? reminderWords(list) : inviteWords(list), {
-            name: g.displayName,
-            link: inviteLink(origin, list.slug, g.token),
-        });
-        const text = g.note && !again ? `${g.note}\n\n${words}` : words;
-        window.open(whatsappLink(g.phone, text), '_blank', 'noopener');
-        void act({
-            path: `/families/${g.id}/sent`,
-            method: 'POST',
-        });
-    };
+    const send = useSend(list, base, origin);
 
     const filters: FilterOption[] = [
         {
@@ -226,7 +187,7 @@ export function Families({ list, base, origin }: FamiliesProps) {
                     {shown.map((g) => {
                         const status = statusOf(g);
                         const reply = replyOf.get(g.id);
-                        const answered = answer(reply);
+                        const answered = reply && answerOf(list.events, reply);
                         const meta = [
                             list.names.two && g.side ? sideLabel(list, g.side) : null,
                             g.groupId ? groupName.get(g.groupId) : null,
@@ -270,7 +231,7 @@ export function Families({ list, base, origin }: FamiliesProps) {
                                             send(g);
                                         }}
                                     >
-                                        <MessageCircle /> {asksAgain(g) ? 'Remind' : 'Send'}
+                                        <MessageCircle /> {asksAgain(list, g) ? 'Remind' : 'Send'}
                                     </Button>
                                     <Button
                                         size="icon"
@@ -313,7 +274,7 @@ export function Families({ list, base, origin }: FamiliesProps) {
                                                 onSelect={() => {
                                                     if (
                                                         window.confirm(
-                                                            `Remove ${g.displayName}? Their link stops working. Any reply they sent stays counted.`,
+                                                            `Remove ${g.displayName}? Their link then shows your main invitation. Any reply they sent stays counted.`,
                                                         )
                                                     )
                                                         void act(

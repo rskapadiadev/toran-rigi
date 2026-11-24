@@ -9,6 +9,8 @@ import {
     type Side,
 } from '@shared/guests';
 
+import { dietaryLabels } from '@/invitation/strings';
+
 export interface ListEvent {
     id: string;
     kind: string;
@@ -50,6 +52,7 @@ export interface ListReply {
     eventIds: string[];
     counts: Record<string, number> | null;
     manual: boolean;
+    dietary: string | null;
     message: string | null;
     createdAt: string;
     guestName: string | null;
@@ -163,6 +166,18 @@ export const statusLabel: Record<FamilyStatus, string> = {
     opened: 'Opened',
     replied: 'Replied',
 };
+
+// "jain" → "Jain": food choices are stored as short ids.
+export const foodLabel = (dietary: string) =>
+    dietaryLabels[dietary]?.en ?? dietary.replace(/[-_]/g, ' ');
+
+export const whenLabel = (iso: string) =>
+    new Intl.DateTimeFormat('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+    }).format(new Date(iso));
 
 export const dayLabel = (iso: string) =>
     new Intl.DateTimeFormat('en-IN', {

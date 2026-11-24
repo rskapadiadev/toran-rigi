@@ -71,9 +71,4 @@ export const slugInput = z.object({
         ),
 });
 
-export const guestImportInput = z.object({
-    // One guest per line: "Shah Parivar, +9198xxxxxx, 4"
-    lines: z.string().max(50_000),
-});
-
 export const wishModerationInput = z.object({ status: z.enum(['approved', 'hidden', 'pending']) });

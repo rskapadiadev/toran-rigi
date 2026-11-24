@@ -250,13 +250,14 @@ export function guestListApi<E extends Env>(
                 return [e.title, e.startsAt.slice(0, 10), n?.coming, n?.replied, n?.waiting];
             }),
             [],
-            ['Family', 'Coming', ...events.map((e) => e.title), 'Message', 'Replied on'],
+            ['Family', 'Coming', ...events.map((e) => e.title), 'Food', 'Message', 'Replied on'],
             ...latestReplies(rsvps).map((r) => {
                 const per = countsOf(r);
                 return [
                     (r.guestId && family.get(r.guestId)) || r.name,
                     r.attending ? 'Yes' : 'No',
                     ...events.map((e) => per[e.id] ?? 0),
+                    r.dietary,
                     r.message,
                     r.createdAt.slice(0, 10),
                 ];
