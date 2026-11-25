@@ -53,14 +53,21 @@ export const useCards = (base: string, choice: CardsChoice) =>
         placeholderData: (previous: CardsSet | undefined) => previous,
     });
 
-// Saves a file the server makes, under the name it gives; the first one takes a few seconds.
-export async function saveFile(path: string): Promise<void> {
-    const init: RequestInit = { credentials: 'same-origin' };
-    const res = await fetch(`/api${path}`, init);
+export async function fetchFile(path: string, signal?: AbortSignal): Promise<Response> {
+    const res = await fetch(`/api${path}`, {
+        credentials: 'same-origin',
+        signal,
+    });
     if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? 'That couldn’t be made just now');
     }
+    return res;
+}
+
+// Saves a file the server makes, under the name it gives; the first one takes a few seconds.
+export async function saveFile(path: string): Promise<void> {
+    const res = await fetchFile(path);
     const named = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '');
     const url = URL.createObjectURL(await res.blob());
     const a = document.createElement('a');

@@ -6,9 +6,9 @@ import { type MotifId, motifs } from '@shared/motifs';
 import { photoUrl } from '@shared/photos';
 import type { FilmLayer, FilmMoment } from '@shared/types';
 
+import { encodeVideo } from './encode';
 import { drawEffect, enterLook, initialsOf, poseAt, shapeAspect } from './layers';
 import { filmLoader } from './loader';
-import { mp4, type Mp4Sample } from './mp4';
 import { paintFilm } from './paint';
 
 const W = 720;
@@ -49,9 +49,6 @@ export interface VideoFonts {
 }
 
 type Ctx = CanvasRenderingContext2D & { letterSpacing?: string };
-
-export const canMakeVideo = () =>
-    typeof window !== 'undefined' && 'VideoEncoder' in window && 'VideoFrame' in window;
 
 export const videoSeconds = (scenes: TimedScene[]) => timelineLength(scenes) + NAMES_HOLD + END;
 
@@ -337,35 +334,6 @@ function drawLayers(
     }
 }
 
-// The best H.264 setting this device can encode, at the video's size.
-async function encoderConfig(): Promise<VideoEncoderConfig | null> {
-    for (const codec of ['avc1.640028', 'avc1.4d0028', 'avc1.42e028', 'avc1.42e01f']) {
-        const config: VideoEncoderConfig = {
-            codec,
-            width: W,
-            height: H,
-            bitrate: 3_000_000,
-            framerate: FPS,
-            avc: { format: 'avc' },
-        };
-        const support = await VideoEncoder.isConfigSupported(config).catch(() => null);
-        if (support?.supported) return config;
-    }
-    return null;
-}
-
-interface Encoded {
-    samples: Mp4Sample[];
-    avcC: Uint8Array | null;
-    error: Error | null;
-}
-
-// A copy of the encoder's decoder configuration, whichever kind of buffer it arrives in.
-const bytesOf = (source: AllowSharedBufferSource) =>
-    ArrayBuffer.isView(source)
-        ? new Uint8Array(source.buffer, source.byteOffset, source.byteLength).slice()
-        : new Uint8Array(source).slice();
-
 export async function makeFilmVideo(
     scenes: TimedScene[],
     text: VideoText,
@@ -373,8 +341,6 @@ export async function makeFilmVideo(
     onProgress: (share: number) => void,
     signal?: AbortSignal,
 ): Promise<Blob> {
-    const config = await encoderConfig();
-    if (!config) throw new Error('This device can’t make videos yet.');
     // The fonts the titles use, ready before the first frame is drawn.
     await Promise.all(
         [`86px ${fonts.script}`, `30px ${fonts.display}`, `24px ${fonts.body}`].map((font) =>
@@ -382,85 +348,38 @@ export async function makeFilmVideo(
         ),
     );
 
-    const canvas = document.createElement('canvas');
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('This device can’t make videos yet.');
     const loader = filmLoader(scenes, () => undefined, 6);
     const photos = await photosOf(text.layers);
     const length = timelineLength(scenes);
     const filmEnd = length + NAMES_HOLD;
-    const total = Math.round(videoSeconds(scenes) * FPS);
     const column = {
         x: 0,
         y: 0,
         w: W,
         h: H,
     };
-
-    const out: Encoded = {
-        samples: [],
-        avcC: null,
-        error: null,
-    };
-    const encoder = new VideoEncoder({
-        output: (chunk, meta) => {
-            const data = new Uint8Array(chunk.byteLength);
-            chunk.copyTo(data);
-            out.samples.push({
-                data,
-                key: chunk.type === 'key',
-            });
-            const description = meta?.decoderConfig?.description;
-            if (description && !out.avcC) out.avcC = bytesOf(description);
-        },
-        error: (e) => {
-            out.error = e;
-        },
-    });
-    encoder.configure(config);
     try {
-        for (let i = 0; i < total; i++) {
-            if (signal?.aborted) throw new DOMException('Stopped', 'AbortError');
-            if (out.error) throw out.error;
-            const t = i / FPS;
-            const at = filmTime(t, text.namesAt, length);
-            await loader.ready(at);
-            ctx.globalAlpha = 1;
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, W, H);
-            paintFilm(ctx, column, scenes, at, loader.pictures, false);
-            if (t < filmEnd) drawLayers(ctx, text, fonts, photos, at, t);
-            drawTitles(ctx, text, fonts, t, at, filmEnd);
-            const frame = new VideoFrame(canvas, {
-                timestamp: Math.round((i * 1e6) / FPS),
-                duration: Math.round(1e6 / FPS),
-            });
-            encoder.encode(frame, { keyFrame: i % (FPS * 2) === 0 });
-            frame.close();
-            // Don't run ahead of the encoder: phones have little memory for waiting frames.
-            while (encoder.encodeQueueSize > 4)
-                await new Promise((r) => {
-                    setTimeout(r, 4);
-                });
-            if (i % 6 === 0) onProgress(i / total);
-        }
-        await encoder.flush();
+        return await encodeVideo({
+            width: W,
+            height: H,
+            fps: FPS,
+            bitrate: 3_000_000,
+            seconds: videoSeconds(scenes),
+            onProgress,
+            signal,
+            draw: async (ctx, t) => {
+                const at = filmTime(t, text.namesAt, length);
+                await loader.ready(at);
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, W, H);
+                paintFilm(ctx, column, scenes, at, loader.pictures, false);
+                if (t < filmEnd) drawLayers(ctx, text, fonts, photos, at, t);
+                drawTitles(ctx, text, fonts, t, at, filmEnd);
+            },
+        });
     } finally {
-        if (encoder.state !== 'closed') encoder.close();
         loader.close();
         for (const bitmap of photos.values()) bitmap.close();
     }
-    if (out.error) throw out.error;
-    if (!out.avcC) throw new Error('The video couldn’t be finished. Please try again.');
-    onProgress(1);
-    const file = mp4({
-        width: W,
-        height: H,
-        fps: FPS,
-        avcC: out.avcC,
-        samples: out.samples,
-    });
-    return new Blob([file.buffer as ArrayBuffer], { type: 'video/mp4' });
 }

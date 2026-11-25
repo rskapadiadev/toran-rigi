@@ -54,6 +54,41 @@ export interface CardInfo {
     ext: 'png' | 'pdf';
     face: CardFace;
     eventId?: string;
+    // Part of the story, for its video: the picture without words, or the words on nothing.
+    layer?: CardLayer;
+}
+
+export const cardLayers = ['art', 'words'] as const;
+export type CardLayer = (typeof cardLayers)[number];
+
+export const storyLayer = (layer: CardLayer): CardInfo => ({
+    id: `story.${layer}`,
+    kind: 'story',
+    title: `Story ${layer}`,
+    size: '1080 × 1920',
+    ext: 'png',
+    face: 'story',
+    layer,
+});
+
+// What falls through the air in the story's video.
+export type StoryEffect = 'petals' | 'marigold' | 'sparkles' | 'lanterns';
+
+interface StoryLook {
+    culture: string;
+    tone: string;
+    dark: boolean;
+}
+
+// Each tradition's own, and nothing for a formal occasion. Light on light can't be seen, so pale
+// designs have petals in place of sparkles and lanterns.
+export function storyEffect({ culture, tone, dark }: StoryLook): StoryEffect | null {
+    if (tone === 'formal' || tone === 'solemn') return null;
+    const root = culture.split('.')[0];
+    if (root === 'hindu' || root === 'sikh') return 'marigold';
+    if (root === 'islamic') return dark ? 'lanterns' : 'petals';
+    if (root === 'universal' && dark) return 'sparkles';
+    return 'petals';
 }
 
 interface CardEvent {

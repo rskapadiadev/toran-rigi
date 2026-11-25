@@ -91,6 +91,7 @@ export function cloudflareCapturer(binding: Fetcher): PageCapturer {
                                 await page.screenshot({
                                     type: shot.type,
                                     ...(shot.type === 'jpeg' && { quality: CARD_QUALITY }),
+                                    omitBackground: shot.transparent ?? false,
                                     clip: shot.clip ?? wholeCard(shot),
                                     captureBeyondViewport: false,
                                 }),

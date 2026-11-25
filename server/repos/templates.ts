@@ -4,6 +4,7 @@ import { applyLayout } from '@shared/blocks';
 import { cultureOf } from '@shared/cultures';
 import { seedFrom } from '@shared/generative';
 import { newToken } from '@shared/ids';
+import { defaultMusicStyle } from '@shared/music';
 import { defaultSectionsFor, occasionOf } from '@shared/occasions';
 import type { PhotoMime } from '@shared/photos';
 import {
@@ -137,7 +138,17 @@ export async function createTemplate(input: CreateTemplateInput) {
                 })),
                 themeLayouts[theme.slug],
             ),
-            extras: { wishes: { enabled: true } },
+            extras: {
+                wishes: { enabled: true },
+                music: {
+                    source: 'generated',
+                    style: defaultMusicStyle({
+                        culture: input.culture,
+                        tone: occasion.tone,
+                        category: occasion.category,
+                    }),
+                },
+            },
             previewToken: newToken(),
             status: 'draft',
             isDemo: true,

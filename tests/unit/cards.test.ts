@@ -3,10 +3,12 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { cardFileName, cardsFor, mainEvent } from '@shared/cards';
+import { cardFileName, cardsFor, mainEvent, storyEffect } from '@shared/cards';
 import { formatEventDate } from '@shared/time';
 import { crc32, zipStore } from '@shared/zip';
 import { describe, expect, it } from 'vitest';
+
+import { bandsOf } from '../../src/invitation/cards/storyVideo';
 
 const haldi = {
     id: 'h1',
@@ -99,5 +101,41 @@ describe('dates on cards', () => {
     it('are written one way whichever browser draws them', () => {
         const at = new Date('2027-01-22T05:00:00Z');
         expect(formatEventDate(at, 'Asia/Kolkata', 'en')).toBe('Friday, 22 January 2027');
+    });
+});
+
+describe('the story video', () => {
+    const look = {
+        tone: 'festive',
+        dark: true,
+    };
+    it('has each tradition’s own in the air, and nothing at a formal or solemn gathering', () => {
+        const effect = (culture: string, over = {}) =>
+            storyEffect({
+                ...look,
+                culture,
+                ...over,
+            });
+        expect(effect('hindu.gujarati')).toBe('marigold');
+        expect(effect('islamic.arab')).toBe('lanterns');
+        expect(effect('islamic.arab', { dark: false })).toBe('petals');
+        expect(effect('christian.catholic')).toBe('petals');
+        expect(effect('universal', { tone: 'formal' })).toBeNull();
+        expect(effect('hindu', { tone: 'solemn' })).toBeNull();
+    });
+
+    it('finds the lines of writing, keeping dots and marks with their letters', () => {
+        const rows = (text: string) => Array.from(text, (c) => c === '#');
+        expect(bandsOf(rows('..##.##....###.'), 3)).toEqual([
+            {
+                top: 2,
+                bottom: 7,
+            },
+            {
+                top: 11,
+                bottom: 14,
+            },
+        ]);
+        expect(bandsOf(rows('....'), 3)).toEqual([]);
     });
 });

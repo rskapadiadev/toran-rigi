@@ -172,24 +172,6 @@ export interface AddonDefinition {
 
 export const addonCatalog: AddonDefinition[] = [
     {
-        code: 'guest_links',
-        name: 'Personal guest links',
-        description: 'A personal link for every family, with a WhatsApp send list.',
-        prices: {
-            INR: 49900,
-            AED: 3900,
-        },
-    },
-    {
-        code: 'qr_card',
-        name: 'Printable QR card',
-        description: 'A print-ready card with a QR code to your invitation.',
-        prices: {
-            INR: 29900,
-            AED: 2500,
-        },
-    },
-    {
         code: 'photo_wall',
         name: 'Guest photo wall',
         description: 'Guests scan a QR at the venue and share photos into one album.',

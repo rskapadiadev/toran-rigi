@@ -1,4 +1,4 @@
-import { cardFaces, faceSize } from '@shared/cards';
+import { cardFaces, cardLayers, faceSize } from '@shared/cards';
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { z } from 'zod';
@@ -14,6 +14,7 @@ export const Route = createFileRoute('/p/$token_/card')({
         lang: z.string().max(5).optional(),
         who: z.enum(['one', 'two']).optional(),
         event: z.string().max(64).optional(),
+        layer: z.enum(cardLayers).optional(),
     }),
     loaderDeps: ({ search: { who, event } }) => ({
         who,
@@ -44,7 +45,7 @@ export const Route = createFileRoute('/p/$token_/card')({
 
 function CardPage() {
     const { data, link } = Route.useLoaderData();
-    const { face, lang, event } = Route.useSearch();
+    const { face, lang, event, layer } = Route.useSearch();
     const root = useRef<HTMLDivElement>(null);
     // Says so once every letter and picture is in, and the words have been fitted.
     useEffect(() => {
@@ -65,7 +66,17 @@ function CardPage() {
     }, []);
     return (
         <div ref={root} style={faceSize[face]}>
-            <CardView data={data} face={face} locale={lang} eventId={event} link={link} />
+            {layer === 'words' && (
+                <style>{'html, body { background: transparent !important; }'}</style>
+            )}
+            <CardView
+                data={data}
+                face={face}
+                locale={lang}
+                eventId={event}
+                link={link}
+                layer={layer}
+            />
         </div>
     );
 }

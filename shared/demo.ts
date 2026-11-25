@@ -6,7 +6,8 @@ import { cultures } from './cultures';
 import { type DemoInvitation, maps, t } from './demo-kit';
 import { luxuryDemos } from './demo-luxury';
 import { occasionDemos } from './demo-occasions';
-import type { OccasionId } from './occasions';
+import { defaultMusicStyle, type MusicStyle } from './music';
+import { type OccasionId, occasionOf } from './occasions';
 import { themeBySlug, themeLayouts } from './themes';
 import type { SectionConfig } from './types';
 
@@ -826,8 +827,8 @@ const rawDemos: DemoInvitation[] = [
     },
 ];
 
-// Each demo's finishing touches: generated music that suits the tradition (none where the culture
-// keeps music off, or for a notice of passing) and the footer credit style. Phoolwari sets its own.
+// Each demo's finishing touches: generated music that suits the tradition and the footer credit style.
+// Every demo has music; where the culture keeps it off, or on solemn occasions, it waits to be tapped.
 const demoFinish: Partial<Record<string, DemoInvitation['extras']>> = {
     mehfil: {
         music: {
@@ -1001,6 +1002,34 @@ const demoFinish: Partial<Record<string, DemoInvitation['extras']>> = {
     },
 };
 
+// Designs whose mood calls for something other than their tradition's usual sound.
+const demoMusic: Partial<Record<string, MusicStyle>> = {
+    'demo-phoolwari': 'santoor',
+    'demo-sitara': 'santoor',
+    'demo-deepam': 'bells',
+    'demo-deepmala': 'santoor',
+    'demo-deepmala-yatra': 'santoor',
+    'demo-palace-walk': 'santoor',
+    'demo-himalaya-walk': 'bells',
+};
+
+function musicFor(demo: DemoInvitation) {
+    const own = demoFinish[demo.themeSlug]?.music ?? demo.extras.music;
+    if (own) return own;
+    const occasion = occasionOf(demo.occasion);
+    const style =
+        demoMusic[demo.slug] ??
+        defaultMusicStyle({
+            culture: demo.culture,
+            tone: occasion.tone,
+            category: occasion.category,
+        });
+    return {
+        source: 'generated' as const,
+        style,
+    };
+}
+
 // Demos ship with their theme's full layout preset and finishing touches applied.
 export const demoInvitations: (DemoInvitation & { occasion: OccasionId })[] = [
     ...rawDemos,
@@ -1013,6 +1042,7 @@ export const demoInvitations: (DemoInvitation & { occasion: OccasionId })[] = [
     extras: {
         ...demo.extras,
         ...demoFinish[demo.themeSlug],
+        music: musicFor(demo),
     },
 }));
 

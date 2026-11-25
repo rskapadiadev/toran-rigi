@@ -1,6 +1,6 @@
 // The matching cards: save-the-date, the invitation's front and back, one per function, and a story.
 // Still pictures at a fixed size, shown on the Cards page and photographed by the server.
-import { BLEED, type CardFace, faceSize, mainEvent } from '@shared/cards';
+import { BLEED, type CardFace, type CardLayer, faceSize, mainEvent } from '@shared/cards';
 import { type CultureId, eventLabel, pickText } from '@shared/cultures';
 import { mixHex } from '@shared/materials';
 import { greetingFits, isSolemn } from '@shared/occasions';
@@ -27,32 +27,36 @@ interface CardViewProps {
     eventId?: string;
     // Where the printed card's QR code leads.
     link?: string;
+    // Only the story's picture, or only its words (for its video).
+    layer?: CardLayer;
 }
 
-export function CardView({ data, face, locale, eventId, link }: CardViewProps) {
+export function CardView({ data, face, locale, eventId, link, layer }: CardViewProps) {
     // Remounted per language: the provider reads its first language once.
     return (
         <InviteProvider key={locale} data={data} initialLocale={locale} tier="static">
-            <Card face={face} eventId={eventId} link={link} />
+            <Card face={face} eventId={eventId} link={link} layer={layer} />
         </InviteProvider>
     );
 }
 
-type CardProps = Pick<CardViewProps, 'face' | 'eventId' | 'link'>;
+type CardProps = Pick<CardViewProps, 'face' | 'eventId' | 'link' | 'layer'>;
 
-function Card({ face, eventId, link }: CardProps) {
+function Card({ face, eventId, link, layer }: CardProps) {
     const { data, dir, locale } = useInvite();
     const box = faceSize[face];
     const style: CSSProperties = {
         ...designStyle(data.invitation.design),
         width: box.width,
         height: box.height,
+        // The words alone are photographed on nothing.
+        ...(layer === 'words' && { background: 'transparent' }),
     };
     const event = data.events.find((e) => e.id === eventId);
     return (
         <div className="inv-root overflow-hidden" dir={dir} lang={locale} style={style} data-card>
             {face === 'save' && <SaveCard />}
-            {face === 'story' && <StoryCard />}
+            {face === 'story' && <StoryCard layer={layer} />}
             {face === 'front' && <FrontCard />}
             {face === 'back' && <BackCard link={link} />}
             {face === 'event' && event && <EventCard event={event} />}
@@ -271,8 +275,11 @@ function SaveCard() {
 
 // ── Story ──────────────────────────────────────────────────────────────────
 
-function StoryCard() {
+function StoryCard({ layer }: Pick<CardProps, 'layer'>) {
     const { data } = useInvite();
+    // Both layers are laid out in full, so each piece stays exactly where the still has it.
+    const art = layer === 'words' ? 'invisible' : '';
+    const words = layer === 'art' ? 'invisible' : '';
     const tones = useTones();
     const box = faceSize.story;
     const { content, design } = data.invitation;
@@ -281,31 +288,35 @@ function StoryCard() {
     if (!picture)
         return (
             <>
-                <Ground {...box} />
-                <ArchFrame {...box} left={58} top={96} right={482} />
-                <Fit className="inset-x-[92px] top-[250px] bottom-[150px]">
+                <div className={`absolute inset-0 ${art}`}>
+                    <Ground {...box} />
+                    <ArchFrame {...box} left={58} top={96} right={482} />
+                    <MotifBand {...box} y={box.height - 78} />
+                </div>
+                <Fit className={`inset-x-[92px] top-[250px] bottom-[150px] ${words}`}>
                     <Crest size={170} />
                     <div className="mt-6 flex w-full flex-col items-center">
                         <Announcement width={350} largest={62} />
                     </div>
                 </Fit>
-                <MotifBand {...box} y={box.height - 78} />
             </>
         );
     const fade = `linear-gradient(to bottom, transparent 62%, ${tones.bg} 98%)`;
     return (
         <>
-            <Ground {...box} />
-            <div className="absolute inset-x-0 top-0 h-[530px]">
-                <img
-                    src={photoUrl(picture)}
-                    alt=""
-                    className="size-full object-cover object-[50%_42%]"
-                />
-                <div className="absolute inset-0" style={{ background: fade }} />
+            <div className={`absolute inset-0 ${art}`}>
+                <Ground {...box} />
+                <div className="absolute inset-x-0 top-0 h-[530px]">
+                    <img
+                        src={photoUrl(picture)}
+                        alt=""
+                        className="size-full object-cover object-[50%_42%]"
+                    />
+                    <div className="absolute inset-0" style={{ background: fade }} />
+                </div>
             </div>
             {/* Instagram's own controls cover the top and foot of a story. */}
-            <Fit className="inset-x-[56px] top-[478px] bottom-[92px]">
+            <Fit className={`inset-x-[56px] top-[478px] bottom-[92px] ${words}`}>
                 <Announcement width={428} largest={64} />
             </Fit>
         </>

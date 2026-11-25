@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { firstName } from '@/shop/guests/model';
 
 import { type CardsChoice, cardsQuery, type CardsSet, saveFile } from './model';
+import { StoryVideo } from './StoryVideo';
 
 // The ceremony drawings are heavy: they load with the cards, not with the page.
 const CardView = lazy(() =>
@@ -150,6 +151,15 @@ export function CardsGrid({ base, set, choice, onChoice, buttonClass = '' }: Car
                                 </p>
                                 <p className="text-xs text-muted-foreground">{card.size}</p>
                             </div>
+                            {card.kind === 'story' && (
+                                <StoryVideo
+                                    base={base}
+                                    set={set}
+                                    query={query}
+                                    disabled={!set.ready || busy !== null}
+                                    buttonClass={buttonClass}
+                                />
+                            )}
                             <Button
                                 variant="outline"
                                 size="icon"

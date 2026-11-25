@@ -71,6 +71,8 @@ export interface CardShot {
     height: number;
     scale: number;
     type: 'png' | 'jpeg';
+    // Leave out the page's background (a PNG only).
+    transparent?: boolean;
     // Only this much of the card (a print card without its bleed).
     clip?: {
         x: number;

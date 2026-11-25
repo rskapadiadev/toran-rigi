@@ -1,6 +1,6 @@
 // The matching cards of an invitation, for the couple and for the studio: what there is, each file,
 // and everything in one zip. Each caller brings its own check.
-import { cardFileName } from '@shared/cards';
+import { cardFileName, cardLayers, storyLayer } from '@shared/cards';
 import { isSide } from '@shared/guests';
 import { namesOf } from '@shared/people';
 import type { Context, Env } from 'hono';
@@ -118,7 +118,10 @@ export function cardsApi<E extends AppEnv>({ see, download }: Checks<E>) {
         const source = await cardSource({ id });
         if (!source) return fail(c, 404, 'Invitation not found');
         const v = versionOf(c, source);
-        const card = cardList(source.full, v.who, v.lang).find((x) => x.id === c.req.param('card'));
+        const list = cardList(source.full, v.who, v.lang);
+        // The story's layers come with the story, for its video.
+        const layers = list.some((x) => x.kind === 'story') ? cardLayers.map(storyLayer) : [];
+        const card = [...list, ...layers].find((x) => x.id === c.req.param('card'));
         if (!card) return fail(c, 404, 'That card isn’t part of this invitation');
         if (!(await c.env.rateLimit.limit(`cards:${id}`)).success)
             return fail(c, 429, 'Give it a minute, then try again');

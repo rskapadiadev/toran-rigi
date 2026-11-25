@@ -53,7 +53,14 @@ export async function priceLines(packageCode: string, addonCodes: string[], curr
               })
               .from(addons)
               .innerJoin(addonPrices, eq(addonPrices.addonCode, addons.code))
-              .where(and(inArray(addons.code, addonCodes), eq(addonPrices.currency, currency)))
+              .where(
+                  and(
+                      inArray(addons.code, addonCodes),
+                      eq(addonPrices.currency, currency),
+                      // A retired add-on is never charged, whoever asks for it.
+                      eq(addons.isActive, true),
+                  ),
+              )
         : [];
     return {
         pkg,

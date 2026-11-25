@@ -23,7 +23,7 @@ import { ensureSideLinks, listGroups } from '../repos/guests';
 import type { CardSource, PublicInvitation } from '../repos/invitations';
 
 // Bump when the cards are redrawn, so stored pictures are made again.
-const DESIGN = 'c3';
+const DESIGN = 'c4';
 
 export class CardUnavailable extends Error {}
 
@@ -92,12 +92,14 @@ function shotOf(
         lang: v.lang,
         ...(v.who && { who: v.who }),
         ...(card.eventId && { event: card.eventId }),
+        ...(card.layer && { layer: card.layer }),
     });
     const shot: CardShot = {
         url: `${origin}/p/${source.previewToken}/card?${query.toString()}`,
         ...faceSize[face],
         scale: 2,
         type: 'png',
+        transparent: card.layer === 'words',
     };
     if (card.kind === 'print')
         return {

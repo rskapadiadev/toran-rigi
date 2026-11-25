@@ -56,6 +56,29 @@ export const musicStyleInfo: Record<MusicStyle, MusicStyleInfo> = {
     },
 };
 
+interface MusicFit {
+    culture: string;
+    tone: string;
+    category: string;
+}
+
+/**
+ * The sound a design starts with, so none is silent. Whether it starts by itself is decided when
+ * the invitation opens: never for a solemn occasion, nor where the tradition keeps music off.
+ */
+export function defaultMusicStyle({ culture, tone, category }: MusicFit): MusicStyle {
+    if (tone === 'solemn') return 'ambient';
+    const root = culture.split('.')[0];
+    if (root === 'islamic') return 'oud';
+    if (root === 'hindu' || root === 'jain' || root === 'sikh') {
+        if (tone === 'formal') return 'santoor';
+        if (category === 'celebrations' && tone === 'festive') return 'shehnai';
+        // Temple bells belong to the mandir, not the gurdwara.
+        return root === 'sikh' ? 'santoor' : 'bells';
+    }
+    return 'piano';
+}
+
 /** Audio the studio library and custom uploads accept, and the largest file. */
 export const musicMimes = [
     'audio/mpeg',
