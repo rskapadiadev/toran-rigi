@@ -182,6 +182,8 @@ for (const demo of demoInvitations) {
                 content: demo.content,
                 sections: demo.sections,
                 extras: demo.extras,
+                music_track_id: demo.extras.music?.trackId ?? null,
+                music_blob_key: demo.extras.music?.blobKey ?? null,
                 rsvp_enabled: true,
                 status: 'published',
                 is_demo: true,

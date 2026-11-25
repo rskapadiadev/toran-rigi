@@ -46,6 +46,8 @@ export async function createTrack(input: NewTrack): Promise<MusicTrackRow> {
         culture: input.culture ?? null,
         blobKey,
         licenseUrl: input.licenseUrl,
+        license: null,
+        sourceUrl: null,
         durationSec: input.durationSec ?? null,
         isActive: true,
     };
@@ -73,22 +75,46 @@ export async function trackFromStock(asset: StockAsset): Promise<MusicTrackRow> 
     if (existing) {
         if (!existing.isActive) await updateTrack(existing.id, { isActive: true });
         return {
- ...existing,
-isActive: true 
-};
+            ...existing,
+            isActive: true,
+        };
     }
     const row = {
         id: newId(),
         title: asset.title.slice(0, 120),
-        artist: `${asset.creator} · ${asset.license}`.slice(0, 120),
+        artist: asset.creator.slice(0, 120),
         culture: null,
         blobKey: asset.blobKey,
         licenseUrl: asset.licenseUrl,
+        license: asset.license,
+        sourceUrl: asset.sourceUrl,
         durationSec: asset.durationSec ?? null,
         isActive: true,
     };
     await db.insert(musicTracks).values(row);
     return row;
+}
+
+export interface MusicCredit {
+    title: string;
+    artist: string | null;
+    license: string;
+    licenseUrl: string;
+    sourceUrl: string | null;
+}
+
+/** What to say about the track an invitation plays, when its licence asks for a credit. */
+export async function musicCredit(trackId: string | null): Promise<MusicCredit | null> {
+    const track = trackId ? await getTrack(trackId) : undefined;
+    if (!track?.license?.startsWith('CC BY')) return null;
+    const { title, artist, license, licenseUrl, sourceUrl } = track;
+    return {
+        title,
+        artist,
+        license,
+        licenseUrl,
+        sourceUrl,
+    };
 }
 
 /** Stores a customer's own song for one invitation; the caller has already confirmed the rights. */
@@ -102,6 +128,11 @@ export async function storeUpload(invitationId: string, mime: string, body: Arra
     return key;
 }
 
+interface ResolvedMusic {
+    musicBlobKey: string | null;
+    musicTrackId: string | null;
+}
+
 /**
  * Which stored file the invitation plays, decided on the server: a library pick uses the track's own
  * file (never a key the browser sent), an upload must live in this invitation's own folder, and
@@ -110,8 +141,7 @@ export async function storeUpload(invitationId: string, mime: string, body: Arra
 export async function resolveMusic(
     invitationId: string,
     music: InvitationExtras['music'],
-): Promise<{ musicBlobKey: string | null;
-musicTrackId: string | null }> {
+): Promise<ResolvedMusic> {
     const none = {
         musicBlobKey: null,
         musicTrackId: null,

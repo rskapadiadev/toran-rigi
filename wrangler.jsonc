@@ -16,6 +16,8 @@
         },
     ],
     "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "toran-media" }],
+    // The app's own files (public/), read by the Worker when it must cut byte ranges from one.
+    "assets": { "binding": "ASSETS" },
     // Browser Rendering: photographs invitations page by page for their PDF.
     "browser": { "binding": "BROWSER" },
     "ratelimits": [
@@ -56,6 +58,7 @@
                 },
             ],
             "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "toran-media" }],
+            "assets": { "binding": "ASSETS" },
             "browser": { "binding": "BROWSER" },
             "ratelimits": [
                 {

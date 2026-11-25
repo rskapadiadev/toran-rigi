@@ -7,6 +7,7 @@ import {
     type MusicStyle,
     musicStyleInfo,
     musicStyles,
+    musicUrl,
 } from '@shared/music';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -63,8 +64,6 @@ const sources: SourceOption[] = [
         label: 'Generated',
     },
 ];
-
-const media = (key: string) => `/media/${key}`;
 
 interface MusicPanelProps {
     invitationId: string;
@@ -188,7 +187,7 @@ export function MusicPanel({ invitationId, draft, setMusic }: MusicPanelProps) {
                                             onClick={() =>
                                                 void preview.toggle(track.id, {
                                                     kind: 'file',
-                                                    src: media(track.blobKey),
+                                                    src: musicUrl(track.blobKey),
                                                 })
                                             }
                                         />
@@ -310,6 +309,12 @@ interface OwnSongProps {
     onUploaded: (music: Music) => void;
 }
 
+interface StoredSong {
+    blobKey: string;
+    title: string;
+    rightsConfirmedAt: string;
+}
+
 // B: the couple's own song. Shared invitations are public, so the rights are confirmed first.
 function OwnSong({ invitationId, music, playing, onPreview, onUploaded }: OwnSongProps) {
     const [file, setFile] = useState<File | null>(null);
@@ -319,12 +324,7 @@ function OwnSong({ invitationId, music, playing, onPreview, onUploaded }: OwnSon
             const form = new FormData();
             if (file) form.set('file', file);
             form.set('rights', rights ? 'yes' : 'no');
-            return upload<{ blobKey: string;
-title: string;
-rightsConfirmedAt: string }>(
-                `/admin/invitations/${invitationId}/music`,
-                form,
-            );
+            return upload<StoredSong>(`/admin/invitations/${invitationId}/music`, form);
         },
         onSuccess: (res) => {
             toast.success('Song uploaded — save to keep it');
@@ -350,7 +350,7 @@ rightsConfirmedAt: string }>(
                         on={playing}
                         label={music.title ?? 'their song'}
                         onClick={() => {
-                            onPreview(media(current));
+                            onPreview(musicUrl(current));
                         }}
                     />
                     <span className="min-w-0 flex-1">

@@ -220,6 +220,9 @@ export const musicTracks = sqliteTable('music_tracks', {
     culture: text('culture'),
     blobKey: text('blob_key').notNull(),
     licenseUrl: text('license_url').notNull(),
+    // As it is credited ("CC BY 4.0"), and the page the track came from.
+    license: text('license'),
+    sourceUrl: text('source_url'),
     durationSec: integer('duration_sec'),
     isActive: bool('is_active').notNull().default(true),
 });

@@ -1,5 +1,5 @@
 import { cultureIds } from '@shared/cultures';
-import { musicMimes, type MusicStyle, musicStyleInfo, musicStyles } from '@shared/music';
+import { musicMimes, type MusicStyle, musicStyleInfo, musicStyles, musicUrl } from '@shared/music';
 import { can } from '@shared/permissions';
 import { PIXABAY_LICENSE_URL } from '@shared/stock';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -131,7 +131,7 @@ function MusicPage() {
                         onClick={() =>
                             void preview.toggle(row.original.id, {
                                 kind: 'file',
-                                src: `/media/${row.original.blobKey}`,
+                                src: musicUrl(row.original.blobKey),
                             })
                         }
                     />

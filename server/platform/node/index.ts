@@ -9,7 +9,7 @@ import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from '../../db/schema';
 import { createMemoryCache, createMemoryRateLimiter } from '../shared/memory';
 import { createS3Blob } from '../shared/s3-blob';
-import type { BlobStore, Db, Platform } from '../types';
+import type { BlobObject, BlobStore, Db, Platform } from '../types';
 import { nodeCapturer } from './capture';
 
 function diskBlob(root: string): BlobStore {
@@ -62,6 +62,20 @@ function diskBlob(root: string): BlobStore {
     };
 }
 
+// The app's own files: its public folder, beside the process.
+async function shippedFile(path: string): Promise<BlobObject | null> {
+    try {
+        const data = await readFile(join('public', path.replace(/\.\./g, '')));
+        return {
+            body: Readable.toWeb(Readable.from(data)) as ReadableStream,
+            contentType: path.endsWith('.m4a') ? 'audio/mp4' : 'application/octet-stream',
+            size: data.length,
+        };
+    } catch {
+        return null;
+    }
+}
+
 let platform: Platform | undefined;
 
 // Built once per process from process.env; adapters chosen by *_DRIVER variables.
@@ -88,6 +102,7 @@ export function getNodePlatform(): Platform {
         config,
         db: drizzle(client, { schema }) as unknown as Db,
         blob,
+        asset: shippedFile,
         cache: createMemoryCache(),
         rateLimit: createMemoryRateLimiter(30, 60),
         background: (task) => {

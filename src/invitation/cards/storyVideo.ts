@@ -4,6 +4,7 @@ import type { StoryEffect } from '@shared/cards';
 
 import { canEncode, encodeVideo } from '../film/encode';
 import { drawEffect } from '../film/layers';
+import type { MusicPlan } from '../music/player';
 
 export const STORY_SECONDS = 7;
 const FPS = 30;
@@ -18,6 +19,9 @@ interface StoryParts {
     words: Blob;
     bg: string;
     effect: StoryEffect | null;
+    music: MusicPlan;
+    // The music's credit, when its licence asks for one.
+    credit: string;
 }
 
 export interface Band {
@@ -78,6 +82,23 @@ const sizes = [
     },
 ];
 
+// Dark or light, whichever reads over what is painted at the credit's place. Read from a small copy:
+// reading the video's own canvas would move it off the graphics card and shift its colours.
+function inkOver(ctx: CanvasRenderingContext2D, width: number, height: number): string {
+    const copy = document.createElement('canvas');
+    copy.width = 32;
+    copy.height = 4;
+    const small = copy.getContext('2d', { willReadFrequently: true });
+    if (!small) return '#fff6e2';
+    const top = height * 0.972;
+    small.drawImage(ctx.canvas, 0, top, width, height - top, 0, 0, 32, 4);
+    const { data } = small.getImageData(0, 0, 32, 4);
+    let light = 0;
+    for (let i = 0; i < data.length; i += 4)
+        light += 0.299 * (data[i] ?? 0) + 0.587 * (data[i + 1] ?? 0) + 0.114 * (data[i + 2] ?? 0);
+    return light / (data.length / 4) > 150 ? '#1c1410' : '#fff6e2';
+}
+
 export async function makeStoryVideo(
     parts: StoryParts,
     onProgress: (share: number) => void,
@@ -102,6 +123,7 @@ export async function makeStoryVideo(
     const scale = height / words.height;
     const bands = bandsOf(inkedRows(words), Math.round(words.height * 0.004));
     const apart = bands.length > 1 ? Math.min(0.4, (LAST - FIRST) / (bands.length - 1)) : 0;
+    let ink: string | undefined;
     try {
         return await encodeVideo({
             ...size,
@@ -109,6 +131,7 @@ export async function makeStoryVideo(
             seconds: STORY_SECONDS,
             onProgress,
             signal,
+            music: parts.music,
             draw: (ctx, t) => {
                 ctx.globalAlpha = 1;
                 ctx.fillStyle = parts.bg;
@@ -139,6 +162,14 @@ export async function makeStoryVideo(
                         width,
                         tall * scale,
                     );
+                }
+                if (parts.music && parts.credit && t > 4.6) {
+                    ctx.globalAlpha = 0.85 * clamp((t - 4.6) / 0.6);
+                    ink ??= inkOver(ctx, width, height);
+                    ctx.fillStyle = ink;
+                    ctx.textAlign = 'center';
+                    ctx.font = `${String(Math.round(width * 0.017))}px sans-serif`;
+                    ctx.fillText(parts.credit, width / 2, height * 0.988, width * 0.92);
                 }
             },
         });

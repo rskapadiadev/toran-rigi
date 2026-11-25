@@ -23,7 +23,7 @@ import {
 import { getPlatform } from '../platform/context';
 import { invoicesForOrder } from './billing';
 import { invalidateInvitationCache } from './invitations';
-import { resolveMusic } from './music';
+import { musicCredit, resolveMusic } from './music';
 import { OrderError } from './orders';
 import { pruneFilm } from './photos';
 import { isSlugFree, starterContent, uniqueSlug } from './slugs';
@@ -119,7 +119,7 @@ export async function invitationForEdit(id: string) {
     const { db } = getPlatform();
     const invitation = await db.select().from(invitations).where(eq(invitations.id, id)).get();
     if (!invitation) return null;
-    const [events, theme, order, counts, template] = await Promise.all([
+    const [events, theme, order, counts, template, credit] = await Promise.all([
         db
             .select()
             .from(invitationEvents)
@@ -155,6 +155,7 @@ export async function invitationForEdit(id: string) {
             .where(eq(invitations.id, id))
             .get(),
         invitation.isDemo ? templateForInvitation(id) : undefined,
+        musicCredit(invitation.musicTrackId),
     ]);
     return {
         invitation,
@@ -162,6 +163,7 @@ export async function invitationForEdit(id: string) {
         themeSlug: theme?.slug ?? null,
         order: order ?? null,
         template: template ?? null,
+        musicCredit: credit,
         counts: counts ?? {
             guests: 0,
             rsvps: 0,

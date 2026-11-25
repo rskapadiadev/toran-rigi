@@ -6,10 +6,11 @@ import { cultures } from './cultures';
 import { type DemoInvitation, maps, t } from './demo-kit';
 import { luxuryDemos } from './demo-luxury';
 import { occasionDemos } from './demo-occasions';
-import { defaultMusicStyle, type MusicStyle } from './music';
+import { defaultMusicStyle } from './music';
 import { type OccasionId, occasionOf } from './occasions';
 import { themeBySlug, themeLayouts } from './themes';
-import type { SectionConfig } from './types';
+import { trackForDesign } from './tracks';
+import type { InvitationExtras, SectionConfig } from './types';
 
 function sectionsFor(culture: CultureId, extra: SectionConfig['type'][] = []): SectionConfig[] {
     const base = cultures[culture].defaultSections;
@@ -827,43 +828,22 @@ const rawDemos: DemoInvitation[] = [
     },
 ];
 
-// Each demo's finishing touches: generated music that suits the tradition and the footer credit style.
-// Every demo has music; where the culture keeps it off, or on solemn occasions, it waits to be tapped.
+// Each demo's finishing touches: the footer credit style.
 const demoFinish: Partial<Record<string, DemoInvitation['extras']>> = {
     mehfil: {
-        music: {
-            source: 'generated',
-            style: 'shehnai',
-        },
         branding: {
             style: 'seal',
             dark: true,
         },
     },
     rajwada: {
-        music: {
-            source: 'generated',
-            style: 'shehnai',
-        },
         branding: {
             style: 'seal',
             dark: true,
         },
     },
-    bandhani: {
-        music: {
-            source: 'generated',
-            style: 'shehnai',
-        },
-        branding: { style: 'pill' },
-    },
-    gulmohar: {
-        music: {
-            source: 'generated',
-            style: 'santoor',
-        },
-        branding: { style: 'signature' },
-    },
+    bandhani: { branding: { style: 'pill' } },
+    gulmohar: { branding: { style: 'signature' } },
     mashrabiya: {
         branding: {
             style: 'stamp',
@@ -876,60 +856,14 @@ const demoFinish: Partial<Record<string, DemoInvitation['extras']>> = {
             dark: true,
         },
     },
-    kamal: {
-        music: {
-            source: 'generated',
-            style: 'bells',
-        },
-        branding: { style: 'line' },
-    },
-    phulkari: {
-        music: {
-            source: 'generated',
-            style: 'shehnai',
-        },
-        branding: { style: 'seal' },
-    },
-    'cathedral-garden': {
-        music: {
-            source: 'generated',
-            style: 'piano',
-        },
-        branding: { style: 'signature' },
-    },
-    chuppah: {
-        music: {
-            source: 'generated',
-            style: 'piano',
-        },
-        branding: { style: 'stamp' },
-    },
-    editorial: {
-        music: {
-            source: 'generated',
-            style: 'piano',
-        },
-        branding: { style: 'line' },
-    },
-    resham: {
-        music: {
-            source: 'generated',
-            style: 'ambient',
-        },
-        branding: { style: 'pill' },
-    },
-    shanti: {
-        music: {
-            source: 'generated',
-            style: 'ambient',
-        },
-        branding: { style: 'line' },
-    },
+    kamal: { branding: { style: 'line' } },
+    phulkari: { branding: { style: 'seal' } },
+    'cathedral-garden': { branding: { style: 'signature' } },
+    chuppah: { branding: { style: 'stamp' } },
+    editorial: { branding: { style: 'line' } },
+    resham: { branding: { style: 'pill' } },
+    shanti: { branding: { style: 'line' } },
     deepanjali: {
-        music: {
-            source: 'generated',
-            style: 'santoor',
-        },
         branding: {
             style: 'line',
             dark: true,
@@ -937,63 +871,27 @@ const demoFinish: Partial<Record<string, DemoInvitation['extras']>> = {
     },
     smriti: { branding: { style: 'line' } },
     chandni: {
-        music: {
-            source: 'generated',
-            style: 'bells',
-        },
         branding: {
             style: 'pill',
             dark: true,
         },
     },
-    palna: {
-        music: {
-            source: 'generated',
-            style: 'bells',
-        },
-        branding: { style: 'pill' },
-    },
-    griha: {
-        music: {
-            source: 'generated',
-            style: 'bells',
-        },
-        branding: { style: 'seal' },
-    },
-    utsav: {
-        music: {
-            source: 'generated',
-            style: 'bells',
-        },
-        branding: { style: 'pill' },
-    },
+    palna: { branding: { style: 'pill' } },
+    griha: { branding: { style: 'seal' } },
+    utsav: { branding: { style: 'pill' } },
     legacy: {
-        music: {
-            source: 'generated',
-            style: 'piano',
-        },
         branding: {
             style: 'signature',
             dark: true,
         },
     },
     aarti: {
-        music: {
-            source: 'generated',
-            style: 'bells',
-        },
         branding: {
             style: 'seal',
             dark: true,
         },
     },
-    mangal: {
-        music: {
-            source: 'generated',
-            style: 'shehnai',
-        },
-        branding: { style: 'stamp' },
-    },
+    mangal: { branding: { style: 'stamp' } },
     summit: {
         branding: {
             style: 'line',
@@ -1002,31 +900,25 @@ const demoFinish: Partial<Record<string, DemoInvitation['extras']>> = {
     },
 };
 
-// Designs whose mood calls for something other than their tradition's usual sound.
-const demoMusic: Partial<Record<string, MusicStyle>> = {
-    'demo-phoolwari': 'santoor',
-    'demo-sitara': 'santoor',
-    'demo-deepam': 'bells',
-    'demo-deepmala': 'santoor',
-    'demo-deepmala-yatra': 'santoor',
-    'demo-palace-walk': 'santoor',
-    'demo-himalaya-walk': 'bells',
-};
-
-function musicFor(demo: DemoInvitation) {
-    const own = demoFinish[demo.themeSlug]?.music ?? demo.extras.music;
-    if (own) return own;
+// Every demo has music; where the culture keeps it off, or on solemn occasions, it waits to be tapped.
+function musicFor(demo: DemoInvitation): InvitationExtras['music'] {
+    if (demo.extras.music) return demo.extras.music;
+    const track = trackForDesign(demo.slug.replace(/^demo-/, ''));
+    if (track)
+        return {
+            source: 'library',
+            trackId: track.id,
+            blobKey: track.blobKey,
+            title: track.title,
+        };
     const occasion = occasionOf(demo.occasion);
-    const style =
-        demoMusic[demo.slug] ??
-        defaultMusicStyle({
+    return {
+        source: 'generated',
+        style: defaultMusicStyle({
             culture: demo.culture,
             tone: occasion.tone,
             category: occasion.category,
-        });
-    return {
-        source: 'generated' as const,
-        style,
+        }),
     };
 }
 

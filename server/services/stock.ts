@@ -222,11 +222,15 @@ async function openverseSearch(kind: StockKind, q: string, page: number): Promis
         page: String(page),
         page_size: '20',
         // Only licences that allow use in a commercial product (an invitation the studio sells), so
-        // never NC. Images must also allow modification (never ND): invitations crop and frame them.
-        // Music is played unchanged, so ND tracks are fine.
-        license_type: kind === 'audio' ? 'commercial' : 'commercial,modification',
+        // never NC. They must also allow modification (never ND): invitations crop and frame images.
+        license_type: 'commercial,modification',
         mature: 'false',
     });
+    // Music goes into the couple's videos too, which share-alike would bind to its own licence.
+    if (kind === 'audio') {
+        query.delete('license_type');
+        query.set('license', 'cc0,pdm,by');
+    }
     if (kind === 'photo') query.set('category', 'photograph');
     if (kind === 'illustration') query.set('category', 'illustration');
     if (kind === 'audio') query.set('category', 'music');
@@ -285,8 +289,8 @@ export async function searchStock(
     if (provider === 'pixabay' && kind === 'audio')
         throw new StockError('Pixabay has no music API');
     const { cache } = getPlatform();
-    // v2: images exclude ND licences (cached v1 results could include them).
-    const key = `stock:v2:${provider}:${kind}:${q.trim().toLowerCase()}:${String(page)}`;
+    // v3: music excludes ND and SA licences (cached v2 results could include them).
+    const key = `stock:v3:${provider}:${kind}:${q.trim().toLowerCase()}:${String(page)}`;
     const hit = await cache.get<StockPage>(key);
     if (hit) return hit;
     const result =

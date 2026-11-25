@@ -6,6 +6,7 @@ import { type MotifId, motifs } from '@shared/motifs';
 import { photoUrl } from '@shared/photos';
 import type { FilmLayer, FilmMoment } from '@shared/types';
 
+import type { MusicPlan } from '../music/player';
 import { encodeVideo } from './encode';
 import { drawEffect, enterLook, initialsOf, poseAt, shapeAspect } from './layers';
 import { filmLoader } from './loader';
@@ -36,6 +37,8 @@ export interface VideoText {
     invite: string;
     link: string;
     credit: string;
+    // The music's credit, when there is music that asks for one.
+    sound: string;
     namesAt: number;
     words: VideoWords[];
     layers: FilmLayer[];
@@ -215,6 +218,10 @@ function drawTitles(
         write(ctx, text.link, 830, `${String(linkSize)}px ${fonts.display}`, '#fff6e2');
         ctx.globalAlpha = end * 0.7;
         write(ctx, text.credit, H - 64, `18px ${fonts.body}`, '#f6ead2', '3px');
+        if (text.sound) {
+            const soundSize = fit(ctx, text.sound, fonts.body, 15, W * 0.86);
+            write(ctx, text.sound, H - 34, `${String(soundSize)}px ${fonts.body}`, '#f6ead2');
+        }
     }
     ctx.restore();
 }
@@ -340,6 +347,7 @@ export async function makeFilmVideo(
     fonts: VideoFonts,
     onProgress: (share: number) => void,
     signal?: AbortSignal,
+    music?: MusicPlan,
 ): Promise<Blob> {
     // The fonts the titles use, ready before the first frame is drawn.
     await Promise.all(
@@ -367,6 +375,7 @@ export async function makeFilmVideo(
             seconds: videoSeconds(scenes),
             onProgress,
             signal,
+            music,
             draw: async (ctx, t) => {
                 const at = filmTime(t, text.namesAt, length);
                 await loader.ready(at);

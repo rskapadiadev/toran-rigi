@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { InviteProvider, useInvite } from '@/invitation/context';
 import { makeFilmVideo, videoSeconds, type VideoText } from '@/invitation/film/video';
+import { musicPlan, musicStartsItself, soundCredit } from '@/invitation/music/plan';
 import { useCoverFacts } from '@/invitation/sections/covers';
 import { VideoMaker } from '@/shop/VideoMaker';
 
@@ -53,7 +54,8 @@ function FilmVideo({ base }: Props) {
     const slug = base.invitation.slug;
     const link = `${window.location.host}/${slug}`;
 
-    const make = (onProgress: (share: number) => void, signal: AbortSignal) => {
+    const plan = musicPlan(data.invitation);
+    const make = (onProgress: (share: number) => void, signal: AbortSignal, withMusic: boolean) => {
         const text: VideoText = {
             kicker: occasion.id === 'wedding' ? copy('theWeddingOf') : copy('saveTheDate'),
             one: facts.one,
@@ -64,6 +66,7 @@ function FilmVideo({ base }: Props) {
             invite: copy('openInvitation'),
             link,
             credit: copy('madeWith'),
+            sound: withMusic && plan ? soundCredit(data.musicCredit) : '',
             namesAt: film?.namesAt ?? 0,
             words: (film?.moments ?? []).map((m) => ({
                 text: t(m.text),
@@ -80,7 +83,7 @@ function FilmVideo({ base }: Props) {
             script: fontStack(design.fonts.script ?? design.fonts.display),
             body: fontStack(design.fonts.body),
         };
-        return makeFilmVideo(scenes, text, fonts, onProgress, signal);
+        return makeFilmVideo(scenes, text, fonts, onProgress, signal, withMusic ? plan : null);
     };
 
     return (
@@ -89,6 +92,7 @@ function FilmVideo({ base }: Props) {
             description={`Your film with your names and date, about ${String(seconds)} seconds long, to send on WhatsApp or post as a status. It’s made right here on your device, so keep this window open while it’s made.`}
             fileName={`${slug}-invitation.mp4`}
             shareText={`${window.location.protocol}//${link}`}
+            music={plan ? { on: musicStartsItself(data.invitation) } : undefined}
             make={make}
         />
     );

@@ -2,7 +2,7 @@ import { occasionOf } from '@shared/occasions';
 import { peopleOf } from '@shared/people';
 import type { EventInput, SaveInvitationInput } from '@shared/schemas/composer';
 
-import type { PublicInvitationData } from '../../invitation/types';
+import type { MusicCredit, PublicInvitationData } from '../../invitation/types';
 
 export type Draft = SaveInvitationInput;
 
@@ -53,6 +53,7 @@ export interface EditableInvitation {
         publishedAt: string | null;
         expiresAt: string | null;
     };
+    musicCredit?: MusicCredit | null;
     events: (Omit<EventInput, 'endsAt' | 'address' | 'mapsUrl' | 'description' | 'dressCode'> & {
         id: string;
         endsAt: string | null;
@@ -151,6 +152,7 @@ export function draftToPreview(draft: Draft, base: EditableInvitation): PublicIn
         themeSlug: draft.themeSlug ?? null,
         diyaCount: 108,
         wishes: [],
+        musicCredit: base.musicCredit,
     };
 }
 

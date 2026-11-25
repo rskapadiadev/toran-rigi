@@ -33,9 +33,10 @@ import { BlessingArch } from './luxury/night/BlessingArch';
 import { DressCode } from './luxury/night/DressCode';
 import { ScratchDate } from './luxury/night/ScratchDate';
 import { Venue } from './luxury/night/Venue';
+import { musicPlan, musicStartsItself } from './music/plan';
 import { createPlayer, type MusicPlan, type MusicPlayer } from './music/player';
 import { Opening } from './openings/Opening';
-import { PrintContext, usePrintFit } from './print';
+import { PrintContext, usePrint, usePrintFit } from './print';
 import { PrintClosing } from './PrintClosing';
 import { Scene } from './scenes';
 import { findScrollParent, ReplayOpeningContext, ScrollRootContext } from './scroll';
@@ -89,9 +90,35 @@ const sectionRegistry: Record<RenderedSection, ComponentType<BlockProps>> = {
 function Credits() {
     const { data } = useInvite();
     const credits = data.invitation.extras.credits ?? [];
-    if (credits.length === 0) return null;
+    const printed = usePrint();
+    // Paper plays nothing.
+    const music = printed ? null : data.musicCredit;
+    if (credits.length === 0 && !music) return null;
     return (
-        <footer className="px-6 pt-4 text-center text-[11px] leading-relaxed opacity-60">
+        <footer className="px-6 pt-4 pb-3 text-center text-[11px] leading-relaxed opacity-60">
+            {music && (
+                <p>
+                    Music:{' '}
+                    <a
+                        href={music.sourceUrl ?? music.licenseUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline-offset-2 hover:underline"
+                    >
+                        “{music.title}”{music.artist ? ` by ${music.artist}` : ''}
+                    </a>
+                    {' · '}
+                    <a
+                        href={music.licenseUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline-offset-2 hover:underline"
+                    >
+                        {music.license}
+                    </a>
+                    {' · edited'}
+                </p>
+            )}
             {credits.map((c) => (
                 <p key={c.blobKey}>
                     <a
@@ -216,24 +243,6 @@ function Chrome({ player, pdfHref }: ChromeProps) {
     );
 }
 
-// What to play: generated music from the seed, or the stored file the server resolved.
-function musicPlan(invitation: PublicInvitationData['invitation']): MusicPlan {
-    const music = invitation.extras.music;
-    if (music?.source === 'generated' && music.style)
-        return {
-            kind: 'generated',
-            style: music.style,
-            seed: invitation.seed,
-        };
-    if (music?.source === 'none') return null;
-    return invitation.musicBlobKey
-        ? {
-              kind: 'file',
-              src: `/media/${invitation.musicBlobKey}`,
-          }
-        : null;
-}
-
 interface ExperienceProps {
     embedded: boolean;
     skipOpening: boolean;
@@ -246,7 +255,7 @@ interface ExperienceProps {
 const liveOnly: readonly string[] = ['rsvp', 'wishes', 'countdown', 'live', 'shagun'];
 
 function Experience({ embedded, skipOpening, print }: ExperienceProps) {
-    const { data, dir, locale, culture, occasion, tier } = useInvite();
+    const { data, dir, locale, tier } = useInvite();
     const { invitation } = data;
     const [opened, setOpened] = useState(skipOpening);
     const plan = musicPlan(invitation);
@@ -282,8 +291,7 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
 
     const begin = () => {
         // The tap that opens the invitation is the user gesture browsers require for audio.
-        if (player && culture.sensitivity.musicDefault === 'on' && occasion.motion.music !== 'off')
-            void player.play().catch(() => undefined);
+        if (player && musicStartsItself(invitation)) void player.play().catch(() => undefined);
     };
 
     const blocks = useMemo(() => {

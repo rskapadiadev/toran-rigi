@@ -68,6 +68,15 @@ export interface PublicInvitationData {
     wishes: PublicWishData[];
     // Referring affiliate for the footer ("their logo × Toran"); absent when none.
     affiliate?: PublicAffiliateData | null;
+    musicCredit?: MusicCredit | null;
+}
+
+export interface MusicCredit {
+    title: string;
+    artist: string | null;
+    license: string;
+    licenseUrl: string;
+    sourceUrl: string | null;
 }
 
 export interface PublicAffiliateData {

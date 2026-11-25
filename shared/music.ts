@@ -102,6 +102,9 @@ export const musicExtension = (mime: string): string =>
         'audio/webm': 'webm',
     })[mime] ?? 'bin';
 
+/** A track's address: one shipped with the app ("/music/…") or a stored one, both served by /media. */
+export const musicUrl = (key: string) => `/media/${key.replace(/^\//, '')}`;
+
 /** Where each kind of music file lives; the /media route serves only `public/…`. */
 export const libraryMusicKey = (id: string, mime: string) =>
     `public/music/library/${id}.${musicExtension(mime)}`;

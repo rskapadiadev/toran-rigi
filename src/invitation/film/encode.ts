@@ -1,6 +1,8 @@
 // Frames drawn on a canvas, encoded to an MP4 on the guest's or couple's own device (WebCodecs);
 // nothing is uploaded.
+import type { MusicPlan } from '../music/player';
 import { mp4, type Mp4Sample } from './mp4';
+import { encodeSound, renderSound } from './sound';
 
 export const canMakeVideo = () =>
     typeof window !== 'undefined' && 'VideoEncoder' in window && 'VideoFrame' in window;
@@ -56,12 +58,15 @@ interface Job extends Shape {
     draw: (ctx: CanvasRenderingContext2D, t: number) => void | Promise<void>;
     onProgress: (share: number) => void;
     signal?: AbortSignal;
+    // What to play: none for a silent video.
+    music?: MusicPlan;
 }
 
 export async function encodeVideo(job: Job): Promise<Blob> {
-    const { width, height, fps, seconds, draw, onProgress, signal } = job;
+    const { width, height, fps, seconds, draw, onProgress, signal, music } = job;
     const config = await encoderConfig(job);
     if (!config) throw new Error(CANT);
+    const sound = music ? await encodeSound(await renderSound(music, seconds, signal)) : undefined;
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -120,6 +125,7 @@ export async function encodeVideo(job: Job): Promise<Blob> {
         fps,
         avcC: out.avcC,
         samples: out.samples,
+        sound,
     });
     return new Blob([file.buffer as ArrayBuffer], { type: 'video/mp4' });
 }

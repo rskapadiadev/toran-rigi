@@ -1,12 +1,16 @@
 // Makes a video on this device, shows how far along it is, then plays it, shares it or saves it.
+import { useQuery } from '@tanstack/react-query';
 import { Clapperboard, Download, Loader2, Share2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
 import { canMakeVideo } from '@/invitation/film/encode';
+import { canAddSound } from '@/invitation/film/sound';
 
 interface Ready {
     step: 'ready';
@@ -32,10 +36,30 @@ interface VideoMakerProps {
     fileName: string;
     // Sent along with the video when it is shared.
     shareText?: string;
-    make: (onProgress: (share: number) => void, signal: AbortSignal) => Promise<Blob>;
+    // The invitation has music; whether the video starts with it on.
+    music?: { on: boolean };
+    make: (
+        onProgress: (share: number) => void,
+        signal: AbortSignal,
+        withMusic: boolean,
+    ) => Promise<Blob>;
 }
 
-export function VideoMaker({ title, description, fileName, shareText, make }: VideoMakerProps) {
+export function VideoMaker({
+    title,
+    description,
+    fileName,
+    shareText,
+    music,
+    make,
+}: VideoMakerProps) {
+    const [withMusic, setWithMusic] = useState(music?.on ?? false);
+    const switchId = useId();
+    const { data: sound } = useQuery({
+        queryKey: ['can-add-sound'],
+        queryFn: canAddSound,
+        staleTime: Infinity,
+    });
     const [state, setState] = useState<State>({ step: 'ready' });
     const stop = useRef<AbortController | null>(null);
 
@@ -65,7 +89,7 @@ export function VideoMaker({ title, description, fileName, shareText, make }: Vi
         };
         progress(0);
         try {
-            const blob = await make(progress, controller.signal);
+            const blob = await make(progress, controller.signal, withMusic && sound === true);
             const file = new File([blob], fileName, { type: 'video/mp4' });
             setState({
                 step: 'done',
@@ -113,7 +137,23 @@ export function VideoMaker({ title, description, fileName, shareText, make }: Vi
                 </p>
             )}
             {supported && state.step === 'ready' && (
-                <div className="flex justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    {music &&
+                        (sound === false ? (
+                            <p className="text-center text-xs text-muted-foreground">
+                                This browser makes the video without sound. The latest Chrome or
+                                Safari adds your music.
+                            </p>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <Switch
+                                    id={switchId}
+                                    checked={withMusic}
+                                    onCheckedChange={setWithMusic}
+                                />
+                                <Label htmlFor={switchId}>With your invitation’s music</Label>
+                            </div>
+                        ))}
                     <Button
                         onClick={() => {
                             void start();
@@ -138,11 +178,14 @@ export function VideoMaker({ title, description, fileName, shareText, make }: Vi
                         src={state.url}
                         controls
                         playsInline
-                        muted
+                        muted={!withMusic}
                         loop
                         className="mx-auto aspect-[9/16] h-80 rounded-md bg-black"
                         data-video-result
-                    />
+                    >
+                        {/* Music only: there are no words to caption. */}
+                        <track kind="captions" />
+                    </video>
                     <div className="flex justify-center gap-2">
                         {typeof navigator.canShare === 'function' &&
                             navigator.canShare({ files: [state.file] }) && (

@@ -95,6 +95,8 @@ export interface Platform {
     config: AppConfig;
     db: Db;
     blob: BlobStore;
+    // A file shipped with the app (public/), by its path ("/music/joy.m4a").
+    asset(path: string): Promise<BlobObject | null>;
     cache: KvCache;
     rateLimit: RateLimiter;
     // Run work after the response is sent (waitUntil on Workers, detached promise on Node).

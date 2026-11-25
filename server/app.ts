@@ -37,8 +37,11 @@ export function createApp() {
 
     app.get('/media/*', async (c) => {
         const key = decodeURIComponent(c.req.path.slice('/media/'.length));
-        if (!key.startsWith('public/')) return c.notFound();
-        const object = await c.env.blob.get(key);
+        // Recordings shipped with the app come through here too, for the byte ranges below: Cloudflare's
+        // own static files don't answer them.
+        const shipped = /^music\/[a-z0-9-]+\.m4a$/.test(key);
+        if (!shipped && !key.startsWith('public/')) return c.notFound();
+        const object = await (shipped ? c.env.asset(`/${key}`) : c.env.blob.get(key));
         if (!object) return c.notFound();
         const headers = {
             'content-type': object.contentType,

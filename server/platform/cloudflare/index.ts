@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import * as schema from '../../db/schema';
 import { createMemoryCache } from '../shared/memory';
 import { createS3Blob } from '../shared/s3-blob';
-import type { BlobStore, KvCache, Platform, RateLimiter } from '../types';
+import type { BlobObject, BlobStore, KvCache, Platform, RateLimiter } from '../types';
 import { cloudflareCapturer } from './capture';
 
 export interface CloudflareEnv {
@@ -13,6 +13,8 @@ export interface CloudflareEnv {
     RATE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> };
     // Browser Rendering, for invitation PDFs.
     BROWSER?: Fetcher;
+    // The files shipped with the app.
+    ASSETS?: Fetcher;
     [key: string]: unknown;
 }
 
@@ -43,6 +45,17 @@ function r2Blob(bucket: R2Bucket): BlobStore {
             const listed = await bucket.list({ prefix });
             return listed.objects.map((o) => o.key);
         },
+    };
+}
+
+async function shippedFile(assets: Fetcher | undefined, path: string): Promise<BlobObject | null> {
+    // Only the path counts, but the dev server turns away host names it doesn't know.
+    const res = await assets?.fetch(new URL(path, 'http://localhost'));
+    if (!res?.ok || !res.body) return null;
+    return {
+        body: res.body,
+        contentType: res.headers.get('content-type') ?? 'application/octet-stream',
+        size: Number(res.headers.get('content-length') ?? 0),
     };
 }
 
@@ -93,6 +106,7 @@ export function createCloudflarePlatform(env: CloudflareEnv, ctx: ExecutionConte
         config,
         db: drizzle(env.DB, { schema }),
         blob,
+        asset: (path) => shippedFile(env.ASSETS, path),
         cache: config.CACHE_DRIVER === 'memory' ? createMemoryCache() : cfCache(),
         rateLimit: limiter ? { limit: (key) => limiter.limit({ key }) } : fallbackLimiter(),
         background: (task) => {

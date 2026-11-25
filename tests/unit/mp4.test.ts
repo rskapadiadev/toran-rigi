@@ -119,3 +119,53 @@ describe('mp4', () => {
         expect(view(file).getUint32(mvhd.start + 24)).toBe(100);
     });
 });
+
+describe('mp4 with sound', () => {
+    const sound = {
+        sampleRate: 48_000,
+        channels: 2,
+        config: new Uint8Array([0x11, 0x90]),
+        samples: [sample(30, 7), sample(20, 8)],
+    };
+    const file = mp4({
+        ...track,
+        sound,
+    });
+    const moov = find(file, ['moov']);
+    if (!moov) throw new Error('missing index');
+    const traks = boxes(file, moov.start + 8, moov.start + moov.size).filter(
+        (x) => x.type === 'trak',
+    );
+    const trak = traks[1];
+    if (!trak) throw new Error('missing sound');
+    const inner = file.subarray(trak.start, trak.start + trak.size);
+    const stbl = ['trak', 'mdia', 'minf', 'stbl'];
+
+    it('adds a second track, and only when there is sound', () => {
+        expect(traks).toHaveLength(2);
+        expect(find(inner, ['trak', 'mdia', 'minf', 'smhd'])).toBeDefined();
+        expect(Array.from(mp4(track)).join()).not.toContain(
+            Array.from(new TextEncoder().encode('mp4a')).join(),
+        );
+    });
+
+    it('points at the sound after the pictures', () => {
+        const stco = find(inner, [...stbl, 'stco']);
+        if (!stco) throw new Error('missing index');
+        const at = view(inner).getUint32(stco.start + 16);
+        expect(Array.from(file.subarray(at, at + 30))).toEqual(Array(30).fill(7));
+        expect(file.length).toBe(at + 50);
+    });
+
+    it('carries the decoder its configuration', () => {
+        // The specific-info descriptor: tag 5, two bytes, the configuration.
+        expect(Array.from(inner).join()).toContain([5, 2, 0x11, 0x90].join());
+    });
+
+    it('lasts as long as its frames', () => {
+        const mdhd = find(inner, ['trak', 'mdia', 'mdhd']);
+        if (!mdhd) throw new Error('missing header');
+        expect(view(inner).getUint32(mdhd.start + 20)).toBe(48_000);
+        expect(view(inner).getUint32(mdhd.start + 24)).toBe(2048);
+    });
+});

@@ -77,7 +77,7 @@ const recipes: Record<MusicStyle, StyleRecipe> = {
 const hz = (tonic: number, semitones: number) => tonic * 2 ** (semitones / 12);
 
 // A decaying-noise impulse: a warm hall without loading a sample.
-function reverbImpulse(ctx: AudioContext, seconds: number): AudioBuffer {
+function reverbImpulse(ctx: BaseAudioContext, seconds: number): AudioBuffer {
     const length = Math.floor(ctx.sampleRate * seconds);
     const buffer = ctx.createBuffer(2, length, ctx.sampleRate);
     for (let ch = 0; ch < 2; ch++) {
@@ -131,7 +131,8 @@ function compose(seed: number, recipe: StyleRecipe): (number | null)[] {
 }
 
 class Engine {
-    private ctx: AudioContext | null = null;
+    private ctx: BaseAudioContext | null = null;
+    private live: AudioContext | null = null;
     private master: GainNode | null = null;
     private wet: GainNode | null = null;
     private timer: ReturnType<typeof setInterval> | undefined;
@@ -153,8 +154,14 @@ class Engine {
     }
 
     private boot(): AudioContext {
-        if (this.ctx) return this.ctx;
+        if (this.live) return this.live;
         const ctx = new AudioContext();
+        this.wire(ctx, ctx.destination);
+        this.live = ctx;
+        return ctx;
+    }
+
+    private wire(ctx: BaseAudioContext, destination: AudioNode) {
         const master = ctx.createGain();
         master.gain.value = 0;
         const compressor = ctx.createDynamicsCompressor();
@@ -167,11 +174,10 @@ class Engine {
         master.connect(compressor);
         wet.connect(reverb);
         reverb.connect(compressor);
-        compressor.connect(ctx.destination);
+        compressor.connect(destination);
         this.ctx = ctx;
         this.master = master;
         this.wet = wet;
-        return ctx;
     }
 
     // Every voice goes to the dry master and, a little quieter, into the reverb.
@@ -310,10 +316,10 @@ class Engine {
     }
 
     // A short look-ahead scheduler: notes are placed a fraction of a second ahead of the clock.
-    private schedule = () => {
+    private schedule = (until?: number) => {
         const ctx = this.ctx;
         if (!ctx) return;
-        const horizon = ctx.currentTime + 0.35;
+        const horizon = until ?? ctx.currentTime + 0.35;
         while (this.next < horizon) {
             const note = this.melody[this.step % this.melody.length];
             if (note !== null && note !== undefined)
@@ -339,13 +345,22 @@ class Engine {
         this.next = Math.max(this.next, now + 0.1);
         this.nextDrone = Math.max(this.nextDrone, now + 0.05);
         clearInterval(this.timer);
-        this.timer = setInterval(this.schedule, 60);
+        this.timer = setInterval(() => {
+            this.schedule();
+        }, 60);
         this.schedule();
         this.set(true);
     }
 
+    // The whole stretch at once, for a video: from its first second at full voice.
+    render(ctx: OfflineAudioContext, destination: AudioNode, seconds: number) {
+        this.wire(ctx, destination);
+        if (this.master) this.master.gain.value = 0.55;
+        this.schedule(seconds);
+    }
+
     stop() {
-        const ctx = this.ctx;
+        const ctx = this.live;
         clearInterval(this.timer);
         if (ctx && this.master) {
             // Fade out rather than cut, then suspend so no notes keep ringing.
@@ -357,7 +372,8 @@ class Engine {
 
     dispose() {
         clearInterval(this.timer);
-        void this.ctx?.close();
+        void this.live?.close();
+        this.live = null;
         this.ctx = null;
         this.listeners.clear();
     }
@@ -373,6 +389,16 @@ class Engine {
             this.listeners.delete(fn);
         };
     }
+}
+
+export function scheduleGenerated(
+    ctx: OfflineAudioContext,
+    destination: AudioNode,
+    style: MusicStyle,
+    seed: number,
+    seconds: number,
+) {
+    new Engine(style, seed).render(ctx, destination, seconds);
 }
 
 export function generatedPlayer(style: MusicStyle, seed: number): MusicPlayer {
