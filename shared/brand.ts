@@ -5,8 +5,15 @@ export const brand = {
     parent: 'Rigi',
     tagline: 'Every celebration begins at the Toran.',
     taglineShort: 'The doorway to every celebration',
-    whatsapp: '+910000000000',
-    email: 'hello@therigi.co',
+    whatsapp: '+919054887442',
+    phone: '+91 90548 87442',
+    email: 'hello@therigi.shop',
+    // Who customers buy from, as on the KYC papers the payment service checks.
+    legalName: 'Toran Invitation',
+    address: 'Althan, Surat, Gujarat, India',
+    // Indian e-commerce rules ask every shop to name who takes complaints.
+    grievanceOfficer: 'Rishi Kapadia',
+    courts: 'Surat, Gujarat',
     socials: {
         instagram: 'https://instagram.com/toran.invites',
         pinterest: 'https://pinterest.com/toraninvites',

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { cultureIds } from '../cultures';
+import { contentLocales } from '../locales';
 import { occasionIds } from '../occasions';
 import {
     contentSchema,
@@ -8,6 +9,7 @@ import {
     extrasSchema,
     localizedText,
     sectionConfigSchema,
+    sectionTypes,
 } from './invitation';
 
 const localIso = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'Use YYYY-MM-DDTHH:mm');
@@ -61,6 +63,51 @@ export const saveInvitationInput = z.object({
     events: z.array(eventInput).max(40),
 });
 export type SaveInvitationInput = z.infer<typeof saveInvitationInput>;
+
+// What a customer may change on their own invitation: everything but its look. Sections arrive as
+// names, on or off, in order; how each one is drawn stays as stored. Anything left out is kept.
+const webLink = z
+    .url()
+    .max(600)
+    .regex(/^https?:\/\//i, 'Use a link that starts with https://');
+const customerExtras = extrasSchema
+    .pick({
+        shagun: true,
+        wishes: true,
+        pdf: true,
+        music: true,
+    })
+    .extend({
+        live: z.object({ youtubeUrl: webLink }).optional(),
+        travel: z
+            .array(
+                z.object({
+                    title: localizedText,
+                    body: localizedText,
+                    link: webLink.optional(),
+                }),
+            )
+            .max(20)
+            .optional(),
+    });
+export const customerInput = z.object({
+    content: contentSchema,
+    events: z.array(eventInput).max(30),
+    sections: z
+        .array(
+            z.object({
+                type: z.enum(sectionTypes),
+                enabled: z.boolean(),
+            }),
+        )
+        .min(1)
+        .max(40)
+        .optional(),
+    locales: z.array(z.enum(contentLocales)).min(1).max(5).optional(),
+    rsvpEnabled: z.boolean().optional(),
+    extras: customerExtras.optional(),
+});
+export type CustomerInput = z.infer<typeof customerInput>;
 
 export const slugInput = z.object({
     slug: z

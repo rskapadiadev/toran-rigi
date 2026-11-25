@@ -1,15 +1,16 @@
 import type { Platform } from '../platform/types';
+import { finishPayments, forgetCheckouts } from './checkouts';
 
 export const cronSchedules = {
     frequent: '*/15 * * * *',
     daily: '30 3 * * *',
 } as const;
 
-type JobRunner = (platform: Platform) => Promise<void>;
+export type JobRunner = (platform: Platform) => Promise<void>;
 
 const jobs: Record<string, JobRunner[]> = {
-    [cronSchedules.frequent]: [],
-    [cronSchedules.daily]: [],
+    [cronSchedules.frequent]: [finishPayments],
+    [cronSchedules.daily]: [forgetCheckouts],
 };
 
 export function registerJob(schedule: keyof typeof cronSchedules, run: JobRunner) {

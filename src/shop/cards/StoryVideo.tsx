@@ -1,6 +1,7 @@
 import { storyEffect } from '@shared/cards';
 import { isDark } from '@shared/materials';
 import { occasionOf } from '@shared/occasions';
+import { useQueryClient } from '@tanstack/react-query';
 import { Clapperboard } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ interface StoryVideoProps {
 
 // The story, moving: made here from the same picture and words as the still.
 export function StoryVideo({ base, set, query, disabled, buttonClass }: StoryVideoProps) {
+    const client = useQueryClient();
     const { invitation } = set.data;
     const { palette } = invitation.design;
     const plan = musicPlan(invitation);
@@ -35,6 +37,7 @@ export function StoryVideo({ base, set, query, disabled, buttonClass }: StoryVid
         // One after the other: the second then finds the first's browser free.
         const art = await layer('story.art');
         const words = await layer('story.words');
+        if (set.refundable) void client.invalidateQueries({ queryKey: ['cards', base] });
         const { makeStoryVideo } = await import('@/invitation/cards/storyVideo');
         return makeStoryVideo(
             {

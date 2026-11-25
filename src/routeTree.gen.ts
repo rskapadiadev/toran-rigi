@@ -13,7 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as CollectionsRouteImport } from './routes/collections'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as DevMailRouteImport } from './routes/dev-mail'
+import { Route as MyRouteImport } from './routes/my'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as RefundRouteImport } from './routes/refund'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAffiliatesRouteImport } from './routes/admin/affiliates'
 import { Route as AdminBillingRouteImport } from './routes/admin/billing'
@@ -21,10 +27,15 @@ import { Route as AdminLibraryRouteImport } from './routes/admin/library'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminMusicRouteImport } from './routes/admin/music'
 import { Route as AdminPricingRouteImport } from './routes/admin/pricing'
+import { Route as InvitationsIndexRouteImport } from './routes/invitations.index'
+import { Route as InvitationsPageRouteImport } from './routes/invitations.$page'
 import { Route as MyIndexRouteImport } from './routes/my.index'
 import { Route as MyIdRouteImport } from './routes/my.$id'
+import { Route as MyPaymentsRouteImport } from './routes/my.payments'
 import { Route as PTokenRouteImport } from './routes/p.$token'
 import { Route as TrySlugRouteImport } from './routes/try.$slug'
+import { Route as WordingIndexRouteImport } from './routes/wording.index'
+import { Route as WordingPageRouteImport } from './routes/wording.$page'
 import { Route as AdminCustomersIndexRouteImport } from './routes/admin/customers/index'
 import { Route as AdminCustomersIdRouteImport } from './routes/admin/customers/$id'
 import { Route as AdminInvitationsIndexRouteImport } from './routes/admin/invitations/index'
@@ -60,9 +71,39 @@ const CollectionsRoute = CollectionsRouteImport.update({
   path: '/collections',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeliveryRoute = DeliveryRouteImport.update({
+  id: '/delivery',
+  path: '/delivery',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevMailRoute = DevMailRouteImport.update({
   id: '/dev-mail',
   path: '/dev-mail',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyRoute = MyRouteImport.update({
+  id: '/my',
+  path: '/my',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RefundRoute = RefundRouteImport.update({
+  id: '/refund',
+  path: '/refund',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -100,15 +141,30 @@ const AdminPricingRoute = AdminPricingRouteImport.update({
   path: '/pricing',
   getParentRoute: () => AdminRouteRoute,
 } as any)
-const MyIndexRoute = MyIndexRouteImport.update({
-  id: '/my/',
-  path: '/my/',
+const InvitationsIndexRoute = InvitationsIndexRouteImport.update({
+  id: '/invitations/',
+  path: '/invitations/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MyIdRoute = MyIdRouteImport.update({
-  id: '/my/$id',
-  path: '/my/$id',
+const InvitationsPageRoute = InvitationsPageRouteImport.update({
+  id: '/invitations/$page',
+  path: '/invitations/$page',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MyIndexRoute = MyIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MyRoute,
+} as any)
+const MyIdRoute = MyIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => MyRoute,
+} as any)
+const MyPaymentsRoute = MyPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => MyRoute,
 } as any)
 const PTokenRoute = PTokenRouteImport.update({
   id: '/p/$token',
@@ -118,6 +174,16 @@ const PTokenRoute = PTokenRouteImport.update({
 const TrySlugRoute = TrySlugRouteImport.update({
   id: '/try/$slug',
   path: '/try/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WordingIndexRoute = WordingIndexRouteImport.update({
+  id: '/wording/',
+  path: '/wording/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WordingPageRoute = WordingPageRouteImport.update({
+  id: '/wording/$page',
+  path: '/wording/$page',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminCustomersIndexRoute = AdminCustomersIndexRouteImport.update({
@@ -161,14 +227,14 @@ const AdminTemplatesIdRoute = AdminTemplatesIdRouteImport.update({
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const MyIdCardsRoute = MyIdCardsRouteImport.update({
-  id: '/my/$id_/cards',
-  path: '/my/$id/cards',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id_/cards',
+  path: '/$id/cards',
+  getParentRoute: () => MyRoute,
 } as any)
 const MyIdGuestsRoute = MyIdGuestsRouteImport.update({
-  id: '/my/$id_/guests',
-  path: '/my/$id/guests',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id_/guests',
+  path: '/$id/guests',
+  getParentRoute: () => MyRoute,
 } as any)
 const PTokenCardRoute = PTokenCardRouteImport.update({
   id: '/p/$token_/card',
@@ -197,18 +263,29 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/collections': typeof CollectionsRoute
+  '/contact': typeof ContactRoute
+  '/delivery': typeof DeliveryRoute
   '/dev-mail': typeof DevMailRoute
+  '/my': typeof MyRouteWithChildren
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
+  '/terms': typeof TermsRoute
   '/admin/affiliates': typeof AdminAffiliatesRoute
   '/admin/billing': typeof AdminBillingRoute
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/pricing': typeof AdminPricingRoute
+  '/invitations/$page': typeof InvitationsPageRoute
   '/my/$id': typeof MyIdRoute
+  '/my/payments': typeof MyPaymentsRoute
   '/p/$token': typeof PTokenRoute
   '/try/$slug': typeof TrySlugRoute
+  '/wording/$page': typeof WordingPageRoute
   '/admin/': typeof AdminIndexRoute
+  '/invitations/': typeof InvitationsIndexRoute
   '/my/': typeof MyIndexRoute
+  '/wording/': typeof WordingIndexRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
@@ -228,18 +305,28 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
   '/collections': typeof CollectionsRoute
+  '/contact': typeof ContactRoute
+  '/delivery': typeof DeliveryRoute
   '/dev-mail': typeof DevMailRoute
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
+  '/terms': typeof TermsRoute
   '/admin/affiliates': typeof AdminAffiliatesRoute
   '/admin/billing': typeof AdminBillingRoute
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/pricing': typeof AdminPricingRoute
+  '/invitations/$page': typeof InvitationsPageRoute
   '/my/$id': typeof MyIdRoute
+  '/my/payments': typeof MyPaymentsRoute
   '/p/$token': typeof PTokenRoute
   '/try/$slug': typeof TrySlugRoute
+  '/wording/$page': typeof WordingPageRoute
   '/admin': typeof AdminIndexRoute
+  '/invitations': typeof InvitationsIndexRoute
   '/my': typeof MyIndexRoute
+  '/wording': typeof WordingIndexRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
@@ -261,18 +348,29 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/collections': typeof CollectionsRoute
+  '/contact': typeof ContactRoute
+  '/delivery': typeof DeliveryRoute
   '/dev-mail': typeof DevMailRoute
+  '/my': typeof MyRouteWithChildren
+  '/privacy': typeof PrivacyRoute
+  '/refund': typeof RefundRoute
+  '/terms': typeof TermsRoute
   '/admin/affiliates': typeof AdminAffiliatesRoute
   '/admin/billing': typeof AdminBillingRoute
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/pricing': typeof AdminPricingRoute
+  '/invitations/$page': typeof InvitationsPageRoute
   '/my/$id': typeof MyIdRoute
+  '/my/payments': typeof MyPaymentsRoute
   '/p/$token': typeof PTokenRoute
   '/try/$slug': typeof TrySlugRoute
+  '/wording/$page': typeof WordingPageRoute
   '/admin/': typeof AdminIndexRoute
+  '/invitations/': typeof InvitationsIndexRoute
   '/my/': typeof MyIndexRoute
+  '/wording/': typeof WordingIndexRoute
   '/admin/customers/$id': typeof AdminCustomersIdRoute
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
@@ -295,18 +393,29 @@ export interface FileRouteTypes {
     | '/admin'
     | '/$slug'
     | '/collections'
+    | '/contact'
+    | '/delivery'
     | '/dev-mail'
+    | '/my'
+    | '/privacy'
+    | '/refund'
+    | '/terms'
     | '/admin/affiliates'
     | '/admin/billing'
     | '/admin/library'
     | '/admin/login'
     | '/admin/music'
     | '/admin/pricing'
+    | '/invitations/$page'
     | '/my/$id'
+    | '/my/payments'
     | '/p/$token'
     | '/try/$slug'
+    | '/wording/$page'
     | '/admin/'
+    | '/invitations/'
     | '/my/'
+    | '/wording/'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
     | '/admin/orders/new'
@@ -326,18 +435,28 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/collections'
+    | '/contact'
+    | '/delivery'
     | '/dev-mail'
+    | '/privacy'
+    | '/refund'
+    | '/terms'
     | '/admin/affiliates'
     | '/admin/billing'
     | '/admin/library'
     | '/admin/login'
     | '/admin/music'
     | '/admin/pricing'
+    | '/invitations/$page'
     | '/my/$id'
+    | '/my/payments'
     | '/p/$token'
     | '/try/$slug'
+    | '/wording/$page'
     | '/admin'
+    | '/invitations'
     | '/my'
+    | '/wording'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
     | '/admin/orders/new'
@@ -358,18 +477,29 @@ export interface FileRouteTypes {
     | '/admin'
     | '/$slug'
     | '/collections'
+    | '/contact'
+    | '/delivery'
     | '/dev-mail'
+    | '/my'
+    | '/privacy'
+    | '/refund'
+    | '/terms'
     | '/admin/affiliates'
     | '/admin/billing'
     | '/admin/library'
     | '/admin/login'
     | '/admin/music'
     | '/admin/pricing'
+    | '/invitations/$page'
     | '/my/$id'
+    | '/my/payments'
     | '/p/$token'
     | '/try/$slug'
+    | '/wording/$page'
     | '/admin/'
+    | '/invitations/'
     | '/my/'
+    | '/wording/'
     | '/admin/customers/$id'
     | '/admin/orders/$id'
     | '/admin/orders/new'
@@ -391,13 +521,19 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   SlugRoute: typeof SlugRoute
   CollectionsRoute: typeof CollectionsRoute
+  ContactRoute: typeof ContactRoute
+  DeliveryRoute: typeof DeliveryRoute
   DevMailRoute: typeof DevMailRoute
-  MyIdRoute: typeof MyIdRoute
+  MyRoute: typeof MyRouteWithChildren
+  PrivacyRoute: typeof PrivacyRoute
+  RefundRoute: typeof RefundRoute
+  TermsRoute: typeof TermsRoute
+  InvitationsPageRoute: typeof InvitationsPageRoute
   PTokenRoute: typeof PTokenRoute
   TrySlugRoute: typeof TrySlugRoute
-  MyIndexRoute: typeof MyIndexRoute
-  MyIdCardsRoute: typeof MyIdCardsRoute
-  MyIdGuestsRoute: typeof MyIdGuestsRoute
+  WordingPageRoute: typeof WordingPageRoute
+  InvitationsIndexRoute: typeof InvitationsIndexRoute
+  WordingIndexRoute: typeof WordingIndexRoute
   PTokenCardRoute: typeof PTokenCardRoute
 }
 
@@ -431,11 +567,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/delivery': {
+      id: '/delivery'
+      path: '/delivery'
+      fullPath: '/delivery'
+      preLoaderRoute: typeof DeliveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dev-mail': {
       id: '/dev-mail'
       path: '/dev-mail'
       fullPath: '/dev-mail'
       preLoaderRoute: typeof DevMailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my': {
+      id: '/my'
+      path: '/my'
+      fullPath: '/my'
+      preLoaderRoute: typeof MyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/refund': {
+      id: '/refund'
+      path: '/refund'
+      fullPath: '/refund'
+      preLoaderRoute: typeof RefundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -487,19 +665,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPricingRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/invitations/': {
+      id: '/invitations/'
+      path: '/invitations'
+      fullPath: '/invitations/'
+      preLoaderRoute: typeof InvitationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invitations/$page': {
+      id: '/invitations/$page'
+      path: '/invitations/$page'
+      fullPath: '/invitations/$page'
+      preLoaderRoute: typeof InvitationsPageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/my/': {
       id: '/my/'
-      path: '/my'
+      path: '/'
       fullPath: '/my/'
       preLoaderRoute: typeof MyIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MyRoute
     }
     '/my/$id': {
       id: '/my/$id'
-      path: '/my/$id'
+      path: '/$id'
       fullPath: '/my/$id'
       preLoaderRoute: typeof MyIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MyRoute
+    }
+    '/my/payments': {
+      id: '/my/payments'
+      path: '/payments'
+      fullPath: '/my/payments'
+      preLoaderRoute: typeof MyPaymentsRouteImport
+      parentRoute: typeof MyRoute
     }
     '/p/$token': {
       id: '/p/$token'
@@ -513,6 +712,20 @@ declare module '@tanstack/react-router' {
       path: '/try/$slug'
       fullPath: '/try/$slug'
       preLoaderRoute: typeof TrySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wording/': {
+      id: '/wording/'
+      path: '/wording'
+      fullPath: '/wording/'
+      preLoaderRoute: typeof WordingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wording/$page': {
+      id: '/wording/$page'
+      path: '/wording/$page'
+      fullPath: '/wording/$page'
+      preLoaderRoute: typeof WordingPageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/customers/': {
@@ -573,17 +786,17 @@ declare module '@tanstack/react-router' {
     }
     '/my/$id_/cards': {
       id: '/my/$id_/cards'
-      path: '/my/$id/cards'
+      path: '/$id/cards'
       fullPath: '/my/$id/cards'
       preLoaderRoute: typeof MyIdCardsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MyRoute
     }
     '/my/$id_/guests': {
       id: '/my/$id_/guests'
-      path: '/my/$id/guests'
+      path: '/$id/guests'
       fullPath: '/my/$id/guests'
       preLoaderRoute: typeof MyIdGuestsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MyRoute
     }
     '/p/$token_/card': {
       id: '/p/$token_/card'
@@ -662,18 +875,42 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
   AdminRouteRouteChildren,
 )
 
+interface MyRouteChildren {
+  MyIdRoute: typeof MyIdRoute
+  MyPaymentsRoute: typeof MyPaymentsRoute
+  MyIndexRoute: typeof MyIndexRoute
+  MyIdCardsRoute: typeof MyIdCardsRoute
+  MyIdGuestsRoute: typeof MyIdGuestsRoute
+}
+
+const MyRouteChildren: MyRouteChildren = {
+  MyIdRoute: MyIdRoute,
+  MyPaymentsRoute: MyPaymentsRoute,
+  MyIndexRoute: MyIndexRoute,
+  MyIdCardsRoute: MyIdCardsRoute,
+  MyIdGuestsRoute: MyIdGuestsRoute,
+}
+
+const MyRouteWithChildren = MyRoute._addFileChildren(MyRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   SlugRoute: SlugRoute,
   CollectionsRoute: CollectionsRoute,
+  ContactRoute: ContactRoute,
+  DeliveryRoute: DeliveryRoute,
   DevMailRoute: DevMailRoute,
-  MyIdRoute: MyIdRoute,
+  MyRoute: MyRouteWithChildren,
+  PrivacyRoute: PrivacyRoute,
+  RefundRoute: RefundRoute,
+  TermsRoute: TermsRoute,
+  InvitationsPageRoute: InvitationsPageRoute,
   PTokenRoute: PTokenRoute,
   TrySlugRoute: TrySlugRoute,
-  MyIndexRoute: MyIndexRoute,
-  MyIdCardsRoute: MyIdCardsRoute,
-  MyIdGuestsRoute: MyIdGuestsRoute,
+  WordingPageRoute: WordingPageRoute,
+  InvitationsIndexRoute: InvitationsIndexRoute,
+  WordingIndexRoute: WordingIndexRoute,
   PTokenCardRoute: PTokenCardRoute,
 }
 export const routeTree = rootRouteImport

@@ -2,8 +2,9 @@ import { occasionOf } from '@shared/occasions';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { z } from 'zod';
 
+import { canonical, pageMeta } from '@/lib/share-meta';
 import { cn } from '@/lib/utils';
-import { Rise, SectionHeading, TemplateTile } from '@/shop/landing';
+import { Rise, SectionHeading, Settle, TemplateTile } from '@/shop/landing';
 import { ShopShell } from '@/shop/ShopShell';
 
 import { fetchCatalogue } from '../server-fns/store';
@@ -11,15 +12,22 @@ import { fetchCatalogue } from '../server-fns/store';
 export const Route = createFileRoute('/collections')({
     validateSearch: z.object({ occasion: z.string().max(40).optional() }),
     loader: () => fetchCatalogue(),
-    head: () => ({
-        meta: [
-            { title: 'The collection · Toran' },
-            {
-                name: 'description',
-                content: 'Living digital invitations for every tradition. Try any design free.',
-            },
-        ],
-    }),
+    head: ({ loaderData }) => {
+        const origin = loaderData?.origin ?? '';
+        return {
+            links: [canonical(origin, '/collections')],
+            meta: pageMeta({
+                title: 'The collection · Toran',
+                description:
+                    'Living digital invitations for every tradition. Try any design free with your own names, ceremonies and photos.',
+                path: '/collections',
+                origin,
+                image: '/share/toran.jpg?v=1',
+                imageType: 'image/jpeg',
+                imageAlt: 'Three Toran invitations on phones',
+            }),
+        };
+    },
     component: Collections,
 });
 
@@ -37,19 +45,20 @@ function Collections() {
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(circle_at_20%_0%,rgba(195,154,78,0.2),transparent_55%),radial-gradient(circle_at_90%_10%,rgba(110,26,46,0.6),transparent_55%)]" />
                 <div className="relative mx-auto max-w-6xl px-5 pt-32">
                     <SectionHeading
+                        first
                         eyebrow="The collection"
                         before="Find"
                         accent="your"
                         after="invitation"
                     />
-                    <Rise delay={100}>
+                    <Settle delay={100}>
                         <p className="mt-4 max-w-xl text-ivory/60">
                             Every design is live. Open one to try it with your own names, ceremonies
                             and photos. Nothing is shared until you buy and publish.
                         </p>
-                    </Rise>
+                    </Settle>
                     {kinds.length > 1 && (
-                        <Rise delay={160}>
+                        <Settle delay={160}>
                             <div className="mt-8 flex flex-wrap gap-2">
                                 <Link
                                     to="/collections"
@@ -69,7 +78,7 @@ function Collections() {
                                     </Link>
                                 ))}
                             </div>
-                        </Rise>
+                        </Settle>
                     )}
                     {shown.length > 0 ? (
                         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

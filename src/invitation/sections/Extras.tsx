@@ -113,10 +113,12 @@ interface WishFormProps {
 export function WishForm({ className = 'inv-card rounded-3xl p-6', style }: WishFormProps) {
     const { data, guest, copy } = useInvite();
     const [sent, setSent] = useState(false);
+    const [failed, setFailed] = useState(false);
 
     const submit = async (e: SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
         const form = new FormData(e.currentTarget);
+        setFailed(false);
         const body: WishInput = {
             name: formString(form, 'name'),
             message: formString(form, 'message'),
@@ -128,6 +130,7 @@ export function WishForm({ className = 'inv-card rounded-3xl p-6', style }: Wish
             body: JSON.stringify(body),
         }).catch(() => null);
         if (res?.ok) setSent(true);
+        else setFailed(true);
     };
 
     if (sent) return <p className="text-center">{copy('wishPending')}</p>;
@@ -158,6 +161,11 @@ export function WishForm({ className = 'inv-card rounded-3xl p-6', style }: Wish
             >
                 {copy('leaveWish')}
             </button>
+            {failed && (
+                <p role="alert" className="text-center text-sm text-(--inv-primary)">
+                    Something went wrong — please try again.
+                </p>
+            )}
         </form>
     );
 }

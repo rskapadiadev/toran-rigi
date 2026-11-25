@@ -2,11 +2,11 @@
 // and edit / publish their own invitations. Customers sign in with an emailed code.
 import { PHOTO_MAX_BYTES, type PhotoMime, photoMimes, photoUrl } from '@shared/photos';
 import { emailInput, verifyInput } from '@shared/schemas/admin';
-import { eventInput, saveInvitationInput, slugInput } from '@shared/schemas/composer';
+import { type CheckoutStart, razorpayProof } from '@shared/schemas/checkout';
+import { customerInput, slugInput, wishModerationInput } from '@shared/schemas/composer';
 import type { Context, MiddlewareHandler } from 'hono';
 import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
-import { z } from 'zod';
 
 import type { AppEnv } from '../app';
 import { randomCode, randomToken, sha256, timingSafeEqual } from '../lib/crypto';
@@ -18,19 +18,29 @@ import {
     latestValidCode,
     storeCode,
 } from '../repos/auth';
-import { setSlug } from '../repos/composer';
+import {
+    checkoutPaid,
+    checkoutState,
+    ownedCheckout,
+    setProviderOrder,
+    startDesignCheckout,
+    startOrderCheckout,
+} from '../repos/checkouts';
+import { refreshIfLive, setSlug } from '../repos/composer';
+import { listWishes, moderateWish } from '../repos/guests';
+import { listTracks } from '../repos/music';
 import { OrderError } from '../repos/orders';
 import { storePhoto } from '../repos/photos';
+import { noteDownload, refundIsOpen } from '../repos/refunds';
 import {
-    buyTemplate,
     createCustomerSession,
     customerByEmail,
     customerForSession,
     listStoreTemplates,
     myInvitation,
     myInvitations,
+    myOrders,
     ownsInvitation,
-    payOrderFake,
     publishMine,
     saveMyContent,
     shopCurrency,
@@ -38,8 +48,22 @@ import {
     storeTemplate,
 } from '../repos/store';
 import { sendMail } from '../services/mailer';
+import { paymentMode, takePayment } from '../services/payments';
+import {
+    checkoutIsGenuine,
+    createRazorpayOrder,
+    PaymentError,
+    razorpayKeyId,
+} from '../services/razorpay';
 import { cardsApi } from './cards';
 import { guestListApi } from './guest-list';
+import { uploadInvitationMusic } from './music';
+
+interface Open {
+    id: string;
+    amount: number;
+    currency: string;
+}
 
 interface StoreEnv extends AppEnv {
     Variables: { customer: StoreCustomer };
@@ -80,9 +104,11 @@ async function shopWhere(c: Context<StoreEnv>) {
     };
 }
 
-const contentInput = saveInvitationInput
-    .pick({ content: true })
-    .extend({ events: z.array(eventInput).max(30) });
+// While trying, only words, photos and ceremonies; the rest comes once the invitation is theirs.
+const contentInput = customerInput.pick({
+    content: true,
+    events: true,
+});
 
 const isPhotoMime = (type: string): type is PhotoMime =>
     (photoMimes as readonly string[]).includes(type);
@@ -93,7 +119,8 @@ const json = async (c: Context<StoreEnv>): Promise<unknown> =>
 export const storeApi = new Hono<StoreEnv>();
 
 storeApi.onError((error, c) => {
-    if (error instanceof OrderError) return fail(c, 409, error.message);
+    if (error instanceof OrderError || error instanceof PaymentError)
+        return fail(c, 409, error.message);
     console.error('[store]', error);
     return c.json(
         {
@@ -202,32 +229,87 @@ storeApi.get('/me', async (c) => {
     return c.json({
         customer,
         invitations: await myInvitations(customer.id),
-        // 'off' on production until Razorpay exists: the buy flow then saves the order unpaid.
-        payments:
-            c.env.config.ENVIRONMENT === 'production' && c.env.config.PAYMENTS_DRIVER === 'fake'
-                ? 'off'
-                : c.env.config.PAYMENTS_DRIVER,
+        payments: paymentMode(c.env.config),
     });
 });
 
-storeApi.post('/me/buy/:slug', async (c) => {
+// ── Paying ──────────────────────────────────────────────────────────────────
+
+// Starts a payment. Nothing is added to the account yet: that happens once the money has arrived.
+async function start(c: Context<StoreEnv>, make: (provider: 'razorpay' | 'fake') => Promise<Open>) {
+    const mode = paymentMode(c.env.config);
+    if (mode === 'off')
+        return fail(c, 409, 'Online payment opens soon. Your words stay on this device for a day');
+    if (!(await c.env.rateLimit.limit(`checkout:${c.get('customer').id}`)).success)
+        return fail(c, 429, 'Too many attempts. Try again in a minute');
+    const checkout = await make(mode);
+    const { id, amount, currency } = checkout;
+    const answer: CheckoutStart = {
+        id,
+        provider: mode,
+        amount,
+        currency,
+    };
+    if (mode === 'razorpay') {
+        const order = await createRazorpayOrder({
+            amount,
+            currency,
+            reference: id,
+        });
+        await setProviderOrder(id, order.id);
+        answer.keyId = razorpayKeyId();
+        answer.providerOrderId = order.id;
+    }
+    return c.json(answer, 201);
+}
+
+storeApi.post('/me/checkout/:slug', async (c) => {
     const parsed = contentInput.safeParse(await json(c));
     if (!parsed.success)
         return fail(c, 422, parsed.error.issues[0]?.message ?? 'Check your details');
-    return c.json(
-        await buyTemplate(c.get('customer'), c.req.param('slug'), parsed.data, await shopWhere(c)),
+    const where = await shopWhere(c);
+    return start(c, (provider) =>
+        startDesignCheckout(
+            c.get('customer').id,
+            c.req.param('slug'),
+            parsed.data,
+            where,
+            provider,
+        ),
     );
 });
 
-storeApi.post('/me/orders/:id/pay', async (c) => {
-    // Razorpay checkout replaces this once the account exists; until then payments are simulated.
-    // Never on production: a simulated payment there would hand out invitations for free.
-    const { PAYMENTS_DRIVER, ENVIRONMENT } = c.env.config;
-    if (PAYMENTS_DRIVER !== 'fake' || ENVIRONMENT === 'production')
-        return fail(c, 409, 'Online payment is coming soon. Message us on WhatsApp to order');
-    await payOrderFake(c.get('customer').id, c.req.param('id'));
-    return c.json({ ok: true });
+// Paying what is left on an order that already exists.
+storeApi.post('/me/orders/:id/checkout', async (c) =>
+    start(c, (provider) => startOrderCheckout(c.get('customer').id, c.req.param('id'), provider)),
+);
+
+storeApi.get('/me/checkouts/:id', async (c) =>
+    c.json(checkoutState(await ownedCheckout(c.get('customer').id, c.req.param('id')))),
+);
+
+storeApi.post('/me/checkouts/:id/confirm', async (c) => {
+    const checkout = await ownedCheckout(c.get('customer').id, c.req.param('id'));
+    if (checkout.provider === 'fake') {
+        // Test checkout: development only. Anywhere else it would hand out invitations for free.
+        if (paymentMode(c.env.config) !== 'fake') return fail(c, 409, 'Payment not found');
+        return c.json(await checkoutPaid(checkout.id, `test_${checkout.id}`));
+    }
+    const parsed = razorpayProof.safeParse(await json(c));
+    if (!parsed.success) return fail(c, 422, 'The payment could not be confirmed');
+    const proof = parsed.data;
+    const genuine =
+        proof.razorpay_order_id === checkout.providerOrderId &&
+        (await checkoutIsGenuine({
+            orderId: proof.razorpay_order_id,
+            paymentId: proof.razorpay_payment_id,
+            signature: proof.razorpay_signature,
+        }));
+    if (!genuine) return fail(c, 422, 'The payment could not be confirmed');
+    return c.json(await takePayment(proof.razorpay_payment_id));
 });
+
+storeApi.get('/me/orders', async (c) => c.json(await myOrders(c.get('customer').id)));
 
 // The couple's guest list: families, links, groups, who sees what, and the replies.
 storeApi.route(
@@ -244,6 +326,8 @@ storeApi.route(
             const { balance } = await myInvitation(c.get('customer').id, id);
             if (balance > 0) throw new OrderError('Complete payment to download your cards');
         },
+        downloaded: noteDownload,
+        refundable: refundIsOpen,
     }),
 );
 
@@ -252,7 +336,7 @@ storeApi.get('/me/invitations/:id', async (c) =>
 );
 
 storeApi.put('/me/invitations/:id', async (c) => {
-    const parsed = contentInput.safeParse(await json(c));
+    const parsed = customerInput.safeParse(await json(c));
     if (!parsed.success)
         return fail(c, 422, parsed.error.issues[0]?.message ?? 'Check your details');
     await saveMyContent(c.get('customer').id, c.req.param('id'), parsed.data);
@@ -269,6 +353,34 @@ storeApi.post('/me/invitations/:id/slug', async (c) => {
     if (!parsed.success) return fail(c, 422, parsed.error.issues[0]?.message ?? 'Check the link');
     await ownsInvitation(c.get('customer').id, c.req.param('id'));
     await setSlug(c.req.param('id'), parsed.data.slug);
+    return c.json({ ok: true });
+});
+
+// The studio's licensed tracks, to choose from.
+storeApi.get('/me/music', async (c) => c.json(await listTracks(true)));
+
+// Their own song, once they confirm they may use it.
+storeApi.post('/me/invitations/:id/music', async (c) => {
+    const id = c.req.param('id');
+    await ownsInvitation(c.get('customer').id, id);
+    if (!(await c.env.rateLimit.limit(`song:${id}`)).success)
+        return fail(c, 429, 'Too many uploads. Try again in a minute');
+    return uploadInvitationMusic(c, id);
+});
+
+// Wishes guests left: nothing appears on the invitation until the family approves it.
+storeApi.get('/me/invitations/:id/wishes', async (c) => {
+    await ownsInvitation(c.get('customer').id, c.req.param('id'));
+    return c.json(await listWishes(c.req.param('id')));
+});
+
+storeApi.patch('/me/invitations/:id/wishes/:wishId', async (c) => {
+    const { id, wishId } = c.req.param();
+    await ownsInvitation(c.get('customer').id, id);
+    const parsed = wishModerationInput.safeParse(await json(c));
+    if (!parsed.success) return fail(c, 422, 'Invalid status');
+    await moderateWish(id, wishId, parsed.data.status);
+    await refreshIfLive(id);
     return c.json({ ok: true });
 });
 

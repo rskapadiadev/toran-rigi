@@ -1,38 +1,35 @@
 import { formatMoney } from '@shared/money';
-import { SHOW_SHOP_PRICES } from '@shared/pricing';
+import type { CustomerInput } from '@shared/schemas/composer';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowLeft, Check, Copy, ExternalLink, Images, Loader2, Lock, Users } from 'lucide-react';
+import {
+    ArrowLeft,
+    Check,
+    Copy,
+    ExternalLink,
+    Images,
+    Loader2,
+    Lock,
+    PenLine,
+    Users,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
 import { type Draft, toDraft } from '@/admin/composer/draft';
 import { upload } from '@/admin/editor/PhotosPanel';
 import type { Uploader } from '@/admin/editor/uploader';
+import { EmptyState } from '@/admin/kit/page';
 import { Button } from '@/components/ui/button';
-import { api, ApiError, post } from '@/lib/api';
+import { api, post } from '@/lib/api';
 import { FormEditor } from '@/shop/FormEditor';
+import { usePayOrder } from '@/shop/portal/data';
 import { hasVideo, ShareVideo } from '@/shop/ShareVideo';
-import { ShopShell } from '@/shop/ShopShell';
-import { SignIn } from '@/shop/SignIn';
 import type { MyInvitation } from '@/shop/types';
 
 export const Route = createFileRoute('/my/$id')({
-    ssr: false,
-    head: () => ({
-        meta: [
-            { title: 'Edit your invitation · Toran' },
-            {
-                name: 'robots',
-                content: 'noindex',
-            },
-        ],
-    }),
-    component: () => (
-        <ShopShell bare>
-            <MyEditor />
-        </ShopShell>
-    ),
+    head: () => ({ meta: [{ title: 'Edit your invitation · Toran' }] }),
+    component: MyEditor,
 });
 
 function MyEditor() {
@@ -45,34 +42,49 @@ function MyEditor() {
 
     if (mine.isPending)
         return <Loader2 className="mx-auto mt-24 size-6 animate-spin text-muted-foreground" />;
-    if (mine.error instanceof ApiError && mine.error.status === 401)
-        return (
-            <section className="mx-auto max-w-sm px-4 py-20">
-                <h1 className="mb-6 font-display text-4xl text-ink">Sign in to edit</h1>
-                <SignIn
-                    onDone={() => {
-                        void client.invalidateQueries({ queryKey: ['mine', id] });
-                    }}
-                />
-            </section>
-        );
     if (!mine.data)
         return (
-            <div className="mx-auto max-w-md px-4 py-24 text-center">
-                <p className="text-muted-foreground">{mine.error.message}</p>
-                <Link to="/my" className="mt-4 inline-block text-burgundy underline">
-                    My invitations
-                </Link>
+            <div className="flex min-h-dvh items-center justify-center bg-background p-6">
+                <EmptyState
+                    icon={PenLine}
+                    title="Couldn’t open this invitation"
+                    description={mine.error.message}
+                >
+                    <Button asChild>
+                        <Link to="/my">My invitations</Link>
+                    </Button>
+                </EmptyState>
             </div>
         );
     return (
         <Editor
             key={mine.dataUpdatedAt}
             data={mine.data}
-            onChanged={() => client.invalidateQueries({ queryKey: ['mine', id] })}
+            // Cards and the list are drawn from the same invitation.
+            onChanged={() => client.invalidateQueries()}
         />
     );
 }
+
+// What a customer may change: everything but the look, which the server keeps as it is.
+const theirs = (draft: Draft): CustomerInput => ({
+    content: draft.content,
+    events: draft.events,
+    sections: draft.sections.map(({ type, enabled }) => ({
+        type,
+        enabled,
+    })),
+    locales: draft.locales as CustomerInput['locales'],
+    rsvpEnabled: draft.rsvpEnabled,
+    extras: {
+        shagun: draft.extras.shagun,
+        live: draft.extras.live,
+        travel: draft.extras.travel,
+        wishes: draft.extras.wishes,
+        pdf: draft.extras.pdf,
+        music: draft.extras.music,
+    },
+});
 
 interface EditorProps {
     data: MyInvitation;
@@ -84,7 +96,8 @@ function Editor({ data, onChanged }: EditorProps) {
     const id = base.invitation.id;
     const initial = useMemo(() => toDraft(base), [base]);
     const [draft, setDraft] = useState<Draft>(initial);
-    const [busy, setBusy] = useState<'save' | 'pay' | 'publish' | null>(null);
+    const [busy, setBusy] = useState<'save' | 'publish' | null>(null);
+    const pay = usePayOrder();
     const dirty = draft !== initial;
     // Read once: the lock only matters at the moment the editor opens.
     const [locked] = useState(
@@ -113,11 +126,7 @@ function Editor({ data, onChanged }: EditorProps) {
         [id],
     );
 
-    const run = async (
-        kind: 'save' | 'pay' | 'publish',
-        work: () => Promise<unknown>,
-        done: string,
-    ) => {
+    const run = async (kind: 'save' | 'publish', work: () => Promise<unknown>, done: string) => {
         setBusy(kind);
         try {
             await work();
@@ -133,10 +142,7 @@ function Editor({ data, onChanged }: EditorProps) {
     const save = () =>
         api(`/store/me/invitations/${id}`, {
             method: 'PUT',
-            body: JSON.stringify({
-                content: draft.content,
-                events: draft.events,
-            }),
+            body: JSON.stringify(theirs(draft)),
         });
 
     const bar = (
@@ -144,12 +150,12 @@ function Editor({ data, onChanged }: EditorProps) {
             <Link
                 to="/my"
                 aria-label="My invitations"
-                className="flex size-9 items-center justify-center rounded-full hover:bg-black/5"
+                className="flex size-8 items-center justify-center rounded-control hover:bg-muted"
             >
                 <ArrowLeft className="size-4" />
             </Link>
             <div className="min-w-0 flex-1">
-                <p className="truncate font-display text-xl text-ink">
+                <p className="truncate text-base font-medium">
                     {live ? 'Your invitation is live' : 'Your invitation'}
                 </p>
                 {live && (
@@ -160,7 +166,7 @@ function Editor({ data, onChanged }: EditorProps) {
                                 .writeText(link)
                                 .then(() => toast.success('Link copied'));
                         }}
-                        className="flex max-w-full items-center gap-1 truncate text-xs text-burgundy"
+                        className="flex max-w-full items-center gap-1 truncate text-xs text-primary"
                     >
                         <Copy className="size-3" /> {link.replace(/^https?:\/\//, '')}
                     </button>
@@ -185,7 +191,7 @@ function Editor({ data, onChanged }: EditorProps) {
                 </span>
             ) : (
                 <Button
-                    variant={dirty ? 'default' : 'outline'}
+                    variant={dirty && live ? 'default' : 'outline'}
                     disabled={!dirty || busy !== null}
                     onClick={() => {
                         void run('save', save, live ? 'Saved. Guests see it now' : 'Saved');
@@ -197,20 +203,16 @@ function Editor({ data, onChanged }: EditorProps) {
             )}
             {data.balance > 0 ? (
                 <Button
-                    className="bg-gold text-ink hover:bg-gold-bright"
-                    disabled={busy !== null}
+                    disabled={busy !== null || pay.isPending}
                     onClick={() => {
-                        void run(
-                            'pay',
-                            () => post(`/store/me/orders/${data.orderId}/pay`, {}),
-                            'Paid, thank you',
-                        );
+                        pay.mutate({
+                            orderId: data.orderId,
+                            item: 'Your invitation',
+                        });
                     }}
                 >
-                    {busy === 'pay' && <Loader2 className="animate-spin" />}
-                    {SHOW_SHOP_PRICES
-                        ? `Pay ${formatMoney(data.balance, data.currency)}`
-                        : 'Complete payment'}
+                    {pay.isPending && <Loader2 className="animate-spin" />}
+                    Pay {formatMoney(data.balance, data.currency)}
                 </Button>
             ) : live ? (
                 <>
@@ -224,7 +226,6 @@ function Editor({ data, onChanged }: EditorProps) {
                 </>
             ) : (
                 <Button
-                    className="bg-gold text-ink hover:bg-gold-bright"
                     disabled={busy !== null}
                     onClick={() => {
                         void run(
@@ -255,7 +256,7 @@ function Editor({ data, onChanged }: EditorProps) {
             limits={base.order?.limits}
             bar={bar}
             locked={locked}
-            versions
+            owned
             notice={
                 data.balance > 0
                     ? 'Complete payment to publish your invitation.'

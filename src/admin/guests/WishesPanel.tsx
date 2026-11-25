@@ -27,14 +27,20 @@ const wishTone = {
 
 interface WishesPanelProps {
     invitationId: string;
+    // The invitation's API root: the studio's or the customer's.
+    root?: string;
     wishes: Wish[];
 }
 
-export function WishesPanel({ invitationId, wishes }: WishesPanelProps) {
+export function WishesPanel({
+    invitationId,
+    root = `/admin/invitations/${invitationId}`,
+    wishes,
+}: WishesPanelProps) {
     const client = useQueryClient();
     const moderate = useMutation({
         mutationFn: (v: WishUpdate) =>
-            api(`/admin/invitations/${invitationId}/wishes/${v.wishId}`, {
+            api(`${root}/wishes/${v.wishId}`, {
                 method: 'PATCH',
                 body: JSON.stringify({ status: v.status }),
             }),

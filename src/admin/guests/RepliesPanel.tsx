@@ -15,6 +15,8 @@ import { foodLabel, type GuestList, sideLabel, whenLabel } from '@/shop/guests/m
 interface RepliesPanelProps {
     list: GuestList;
     base: string;
+    // The couple looking at their own settings.
+    own?: boolean;
 }
 
 export function ReplyList({ list }: Pick<RepliesPanelProps, 'list'>) {
@@ -67,13 +69,17 @@ export function ReplyList({ list }: Pick<RepliesPanelProps, 'list'>) {
     );
 }
 
-export function ReplySettingsPanel({ list, base }: RepliesPanelProps) {
+export function ReplySettingsPanel({ list, base, own = false }: RepliesPanelProps) {
     const { form, set, setSide, save, busy, dirty, example } = useReplyDraft(list, base);
     const onId = useId();
     return (
         <Panel
             title="Reply settings"
-            description="The couple can change these on their own Guests page too."
+            description={
+                own
+                    ? 'How guests reply, and the words you send.'
+                    : 'The couple can change these on their own Guests page too.'
+            }
             action={
                 <Button
                     disabled={!dirty || busy}

@@ -1,10 +1,12 @@
 import { formatMoney } from '@shared/money';
-import { SHOW_SHOP_PRICES } from '@shared/pricing';
+import type { CheckoutStart } from '@shared/schemas/checkout';
+import { applyWording, type Wording } from '@shared/wording/types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { ArrowLeft, Check, Loader2, Sparkles } from 'lucide-react';
 import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { z } from 'zod';
 
 import { type Draft, toDraft } from '@/admin/composer/draft';
 import { upload } from '@/admin/editor/PhotosPanel';
@@ -18,16 +20,33 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { api, ApiError, post } from '@/lib/api';
+import { pay } from '@/shop/checkout';
 import { FormEditor } from '@/shop/FormEditor';
 import { PriceTag } from '@/shop/landing';
 import { localPhotos, mapLocalPhotos, withoutLocalPhotos } from '@/shop/local-photos';
+import { PayTerms } from '@/shop/policies/kit';
 import { ShopShell } from '@/shop/ShopShell';
 import { SignIn } from '@/shop/SignIn';
-import type { BuyResult, Me, TryTemplate } from '@/shop/types';
+import type { Me, TryTemplate } from '@/shop/types';
 
 export const Route = createFileRoute('/try/$slug')({
+    validateSearch: z.object({ words: z.string().max(80).optional() }),
+    // ?words=…: a set from the wording pages, put on this design.
     ssr: false,
-    loader: ({ params }) => api<TryTemplate>(`/store/templates/${params.slug}`),
+    loader: async ({ params, location }) => {
+        const { words } = location.search as { words?: string };
+        const [template, wording] = await Promise.all([
+            api<TryTemplate>(`/store/templates/${params.slug}`),
+            // Words that are no longer in the library just aren't used.
+            words
+                ? api<Wording>(`/wording/${encodeURIComponent(words)}`).catch(() => null)
+                : Promise.resolve(null),
+        ]);
+        return {
+            ...template,
+            wording,
+        };
+    },
     head: ({ loaderData }) => ({
         meta: [
             { title: `Try ${loaderData?.template.name ?? 'a design'} · Toran` },
@@ -115,7 +134,17 @@ function TryPage() {
     const { slug } = Route.useParams();
     const base = data.edit;
     const [saved] = useState(() => readSaved(slug));
-    const [draft, setDraft] = useState<Draft>(() => saved ?? toDraft(base));
+    const { wording } = data;
+    const navigate = useNavigate();
+    const [draft, setDraft] = useState<Draft>(() => {
+        const start = saved ?? toDraft(base);
+        return wording?.occasion === base.invitation.eventKind
+            ? {
+                  ...start,
+                  content: applyWording(start.content, wording, start.locales),
+              }
+            : start;
+    });
     const [intro, setIntro] = useState(saved === null);
     const [buying, setBuying] = useState(false);
     const files = useRef(new Map<string, File>());
@@ -132,6 +161,17 @@ function TryPage() {
             clearTimeout(t);
         };
     }, [slug, draft]);
+
+    // They are in the draft now: a reload must not put them back over what is typed next.
+    useEffect(() => {
+        if (wording)
+            void navigate({
+                to: '/try/$slug',
+                params: { slug },
+                search: {},
+                replace: true,
+            });
+    }, [wording, navigate, slug]);
 
     const uploader = useMemo<Uploader>(
         () => ({
@@ -260,7 +300,7 @@ interface BuyDialogProps {
 
 type BuyStep = 'loading' | 'signin' | 'review' | 'working';
 
-// Sign in (if needed) → review → buy: the order is made, photos uploaded, payment taken.
+// Sign in (if needed) → review → pay. Only then is the invitation made and the photos stored.
 function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
     const navigate = useNavigate();
     const client = useQueryClient();
@@ -270,6 +310,9 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
     });
     const [working, setWorking] = useState(false);
     const [progress, setProgress] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    // Razorpay's own window is on screen: ours steps aside so it can take the keyboard.
+    const [paying, setPaying] = useState(false);
     const me = meQuery.data;
     // Spinner only before the first answer; later re-checks keep the sign-in form on screen.
     const step: BuyStep = working
@@ -287,50 +330,65 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
 
     const buy = async () => {
         setWorking(true);
+        setError(null);
         const photos = localPhotos(draft.content).filter((url) => files.current.has(url));
         try {
-            setProgress('Saving your invitation…');
-            const bought = await post<BuyResult>(`/store/me/buy/${data.template.slug}`, {
+            setProgress('Opening the payment window…');
+            const start = await post<CheckoutStart>(`/store/me/checkout/${data.template.slug}`, {
                 content: withoutLocalPhotos(draft.content),
                 events: draft.events,
             });
+            const { invitationId } = await pay({
+                start,
+                description: `${data.template.name} invitation`,
+                onConfirming: () => {
+                    setPaying(false);
+                    setProgress('Confirming your payment…');
+                },
+                onWindow: () => {
+                    setPaying(true);
+                },
+            });
+            if (!invitationId) throw new Error('Your invitation is on its way to My invitations.');
             onBought();
-            if (photos.length > 0) {
-                const keys = new Map<string, string>();
-                for (const [i, url] of photos.entries()) {
-                    setProgress(`Uploading photo ${String(i + 1)} of ${String(photos.length)}…`);
-                    const file = files.current.get(url);
-                    if (!file) continue;
-                    keys.set(
-                        url,
-                        await upload(
-                            bought.invitationId,
-                            file,
-                            `/api/store/me/invitations/${bought.invitationId}/photos`,
-                        ),
-                    );
-                }
-                await api(`/store/me/invitations/${bought.invitationId}`, {
-                    method: 'PUT',
-                    body: JSON.stringify({
-                        content: mapLocalPhotos(draft.content, (url) => keys.get(url)),
-                        events: draft.events,
-                    }),
-                });
-            }
-            if (me?.payments === 'fake') {
-                setProgress('Taking payment…');
-                await post(`/store/me/orders/${bought.orderId}/pay`, {});
-                toast.success('Paid. Your invitation is yours to keep');
-            } else toast.success('Saved. Complete payment to publish');
+            await keepPhotos(invitationId, photos);
+            toast.success('Paid. Your invitation is yours to keep');
             void navigate({
                 to: '/my/$id',
-                params: { id: bought.invitationId },
+                params: { id: invitationId },
             });
         } catch (e) {
-            toast.error(e instanceof Error ? e.message : 'Something went wrong');
+            setPaying(false);
+            setError(e instanceof Error ? e.message : 'Something went wrong');
             setWorking(false);
         }
+    };
+
+    // Photos picked while trying live in this tab; they can be stored now that the invitation exists.
+    const keepPhotos = async (invitationId: string, photos: string[]) => {
+        if (photos.length === 0) return;
+        const keys = new Map<string, string>();
+        for (const [i, url] of photos.entries()) {
+            setProgress(`Uploading photo ${String(i + 1)} of ${String(photos.length)}…`);
+            const file = files.current.get(url);
+            if (!file) continue;
+            // One photo that won't upload mustn't hide an invitation that is paid for.
+            const key = await upload(
+                invitationId,
+                file,
+                `/api/store/me/invitations/${invitationId}/photos`,
+            ).catch(() => undefined);
+            if (key) keys.set(url, key);
+        }
+        if (keys.size < photos.length)
+            toast.error('Some photos didn’t upload. You can add them again in your invitation.');
+        await api(`/store/me/invitations/${invitationId}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                content: mapLocalPhotos(draft.content, (url) => keys.get(url)),
+                events: draft.events,
+            }),
+        }).catch(() => undefined);
     };
 
     const included = offer
@@ -347,7 +405,7 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
 
     return (
         <Dialog
-            open
+            open={!paying}
             onOpenChange={(open) => {
                 if (!open && step !== 'working') onClose();
             }}
@@ -393,36 +451,44 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
                                 uploaded with it.
                             </p>
                         )}
-                        {SHOW_SHOP_PRICES && (
-                            <div className="flex items-baseline justify-between border-t pt-4">
-                                <span className="text-sm text-muted-foreground">Total</span>
-                                {offer ? (
-                                    <PriceTag
-                                        price={offer.price}
-                                        compare={offer.comparePrice}
-                                        off={offer.off}
-                                        currency={offer.currency}
-                                        tone="light"
-                                        className="font-display text-3xl"
-                                    />
-                                ) : null}
-                            </div>
+                        <div className="flex items-baseline justify-between border-t pt-4">
+                            <span className="text-sm text-muted-foreground">Total</span>
+                            {offer && (
+                                <span className="inline-flex items-baseline gap-2 font-display text-3xl text-ink">
+                                    {offer.comparePrice !== null && (
+                                        <s className="text-[0.6em] text-muted-foreground">
+                                            <span className="sr-only">Was </span>
+                                            {formatMoney(offer.comparePrice, offer.currency)}
+                                        </s>
+                                    )}
+                                    {price}
+                                </span>
+                            )}
+                        </div>
+                        {error && (
+                            <p role="alert" className="text-sm text-destructive">
+                                {error}
+                            </p>
                         )}
                         <Button
                             size="lg"
                             className="w-full"
+                            disabled={!offer || me?.payments === 'off'}
                             onClick={() => {
                                 void buy();
                             }}
                         >
-                            {SHOW_SHOP_PRICES ? `Pay ${price}` : 'Buy & keep'}
+                            Pay {price}
                         </Button>
                         <p className="text-center text-xs text-muted-foreground">
                             {me?.payments === 'fake'
                                 ? 'Test checkout: no money is taken.'
-                                : 'Secure payment by Razorpay.'}{' '}
+                                : me?.payments === 'off'
+                                  ? 'Online payment opens soon. Your words stay on this device for a day.'
+                                  : 'Secure payment by Razorpay: UPI, cards and net banking.'}{' '}
                             Signed in as {me?.customer.email}
                         </p>
+                        <PayTerms className="text-center text-xs text-muted-foreground" />
                     </div>
                 )}
                 {step === 'working' && (

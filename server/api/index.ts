@@ -15,6 +15,8 @@ import { stockApi } from './stock';
 import { storeApi } from './store';
 import { templatesApi } from './templates';
 import { translateApi } from './translate';
+import { webhooksApi } from './webhooks';
+import { wordingApi } from './wording';
 
 export const api = new Hono<AppEnv>();
 
@@ -29,6 +31,8 @@ api.get('/health', (c) =>
 api.route('/i', invitationsApi);
 api.route('/inquiries', inquiriesApi);
 api.route('/store', storeApi);
+api.route('/wording', wordingApi);
+api.route('/webhooks', webhooksApi);
 api.route('/auth', authApi);
 api.route('/admin/invitations', composerApi);
 api.route('/admin/affiliates', affiliatesApi);

@@ -65,21 +65,35 @@ const sources: SourceOption[] = [
     },
 ];
 
+// Where tracks come from and songs go: the studio's, or the customer's own invitation.
+export interface MusicHome {
+    tracks: string;
+    upload: string;
+    // The studio can search free music and add it to its library.
+    studio: boolean;
+}
+
 interface MusicPanelProps {
     invitationId: string;
     draft: Draft;
     setMusic: (music: Music) => void;
+    home?: MusicHome;
 }
 
-export function MusicPanel({ invitationId, draft, setMusic }: MusicPanelProps) {
+export function MusicPanel({ invitationId, draft, setMusic, home }: MusicPanelProps) {
+    const at = home ?? {
+        tracks: '/admin/music',
+        upload: `/admin/invitations/${invitationId}/music`,
+        studio: true,
+    };
     const music = draft.extras.music ?? {};
     const source: MusicSource = music.source ?? (music.blobKey ? 'upload' : 'none');
     const culture = cultureOf(draft.culture).id;
     const preview = usePreview();
     const [finding, setFinding] = useState(false);
     const tracks = useQuery({
-        queryKey: ['music-tracks'],
-        queryFn: () => api<MusicTrack[]>('/admin/music'),
+        queryKey: ['music-tracks', at.tracks],
+        queryFn: () => api<MusicTrack[]>(at.tracks),
     });
 
     // The invitation's own tradition first, then everything else.
@@ -111,7 +125,7 @@ export function MusicPanel({ invitationId, draft, setMusic }: MusicPanelProps) {
                 {/* Labels only: four segments with icons do not fit the Composer's narrow column. */}
                 {sources.map(({ id, label }) => (
                     <ToggleGroupItem key={id} value={id} className="flex-1 px-1">
-                        {label}
+                        {id === 'upload' && !at.studio ? 'My song' : label}
                     </ToggleGroupItem>
                 ))}
             </ToggleGroup>
@@ -122,7 +136,7 @@ export function MusicPanel({ invitationId, draft, setMusic }: MusicPanelProps) {
                 </p>
             )}
 
-            {source === 'library' && (
+            {source === 'library' && at.studio && (
                 <Button
                     type="button"
                     variant="outline"
@@ -150,14 +164,19 @@ export function MusicPanel({ invitationId, draft, setMusic }: MusicPanelProps) {
             {source === 'library' &&
                 (sortedTracks.length === 0 ? (
                     <p className="rounded-control border border-dashed p-4 text-sm text-muted-foreground">
-                        No tracks in the studio library yet.{' '}
-                        <Link
-                            to="/admin/music"
-                            className="text-primary underline underline-offset-4"
-                        >
-                            Add licensed music
-                        </Link>
-                        .
+                        No tracks in the library yet.
+                        {at.studio && (
+                            <>
+                                {' '}
+                                <Link
+                                    to="/admin/music"
+                                    className="text-primary underline underline-offset-4"
+                                >
+                                    Add licensed music
+                                </Link>
+                                .
+                            </>
+                        )}
                     </p>
                 ) : (
                     <ul className="grid gap-2">
@@ -216,7 +235,8 @@ export function MusicPanel({ invitationId, draft, setMusic }: MusicPanelProps) {
 
             {source === 'upload' && (
                 <OwnSong
-                    invitationId={invitationId}
+                    uploadTo={at.upload}
+                    studio={at.studio}
                     music={music}
                     playing={preview.playing === 'upload'}
                     onPreview={(src) =>
@@ -302,7 +322,8 @@ export function MusicPanel({ invitationId, draft, setMusic }: MusicPanelProps) {
 }
 
 interface OwnSongProps {
-    invitationId: string;
+    uploadTo: string;
+    studio: boolean;
     music: Music;
     playing: boolean;
     onPreview: (src: string) => void;
@@ -316,7 +337,7 @@ interface StoredSong {
 }
 
 // B: the couple's own song. Shared invitations are public, so the rights are confirmed first.
-function OwnSong({ invitationId, music, playing, onPreview, onUploaded }: OwnSongProps) {
+function OwnSong({ uploadTo, studio, music, playing, onPreview, onUploaded }: OwnSongProps) {
     const [file, setFile] = useState<File | null>(null);
     const [rights, setRights] = useState(false);
     const send = useMutation({
@@ -324,7 +345,7 @@ function OwnSong({ invitationId, music, playing, onPreview, onUploaded }: OwnSon
             const form = new FormData();
             if (file) form.set('file', file);
             form.set('rights', rights ? 'yes' : 'no');
-            return upload<StoredSong>(`/admin/invitations/${invitationId}/music`, form);
+            return upload<StoredSong>(uploadTo, form);
         },
         onSuccess: (res) => {
             toast.success('Song uploaded — save to keep it');
@@ -348,14 +369,14 @@ function OwnSong({ invitationId, music, playing, onPreview, onUploaded }: OwnSon
                 <div className="flex items-center gap-3 rounded-control border p-2">
                     <PreviewButton
                         on={playing}
-                        label={music.title ?? 'their song'}
+                        label={music.title ?? 'this song'}
                         onClick={() => {
                             onPreview(musicUrl(current));
                         }}
                     />
                     <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">
-                            {music.title ?? 'Their song'}
+                            {music.title ?? (studio ? 'Their song' : 'Your song')}
                         </span>
                         {music.rightsConfirmedAt && (
                             <span className="block text-xs text-muted-foreground">
@@ -383,8 +404,9 @@ function OwnSong({ invitationId, music, playing, onPreview, onUploaded }: OwnSon
                     }}
                     className="mt-0.5"
                 />
-                The couple or the studio holds the right to use this song in a shared, public
-                invitation.
+                {studio
+                    ? 'The couple or the studio holds the right to use this song in a shared, public invitation.'
+                    : 'I have the right to use this song in an invitation I share.'}
             </Label>
             <Button
                 type="button"

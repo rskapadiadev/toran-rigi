@@ -15,6 +15,8 @@ export interface CardsSet {
     version: CardsVersion;
     // Files can be downloaded (the invitation is paid for).
     ready: boolean;
+    // Taking the first file ends their refund, so they are told before they do.
+    refundable: boolean;
     names: {
         one: string;
         two: string;

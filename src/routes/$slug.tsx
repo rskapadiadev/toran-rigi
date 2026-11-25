@@ -55,14 +55,25 @@ export const Route = createFileRoute('/$slug')({
                 });
         return {
             links,
-            meta: shareMeta({
-                source: invitation,
-                origin,
-                path: `/${params.slug}`,
-                image: `/og/${params.slug}.png?v=${String(invitation.invitation.version)}${g}`,
-                guestName: guest?.name,
-                lang: match.search.lang,
-            }),
+            meta: [
+                ...shareMeta({
+                    source: invitation,
+                    origin,
+                    path: `/${params.slug}`,
+                    image: `/og/${params.slug}.png?v=${String(invitation.invitation.version)}${g}`,
+                    guestName: guest?.name,
+                    lang: match.search.lang,
+                }),
+                // A family's names, dates and address are for the people they invite, not for search.
+                ...(invitation.invitation.isDemo
+                    ? []
+                    : [
+                          {
+                              name: 'robots',
+                              content: 'noindex',
+                          },
+                      ]),
+            ],
         };
     },
     component: InvitationPage,

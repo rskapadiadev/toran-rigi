@@ -7,6 +7,7 @@ import {
     type CardInfo,
     cardsFor,
     faceSize,
+    mainEvent,
     UNITS_PER_INCH,
 } from '@shared/cards';
 import { eventLabel, pickText } from '@shared/cultures';
@@ -14,6 +15,7 @@ import { forViewer } from '@shared/families';
 import { inviteLink, type Side, visibleEvents } from '@shared/guests';
 import { newToken } from '@shared/ids';
 import { isSolemn, occasionOf } from '@shared/occasions';
+import { showsSection } from '@shared/sections';
 import { zipStore } from '@shared/zip';
 import { PDFDocument, rgb } from 'pdf-lib';
 
@@ -38,7 +40,15 @@ export interface CardVersion {
 // this version's guests may see.
 export function cardData(full: PublicInvitation, who: Side | null, eventId?: string) {
     const version = forViewer(full, who ? { side: who } : undefined);
-    if (!eventId) return version;
+    if (!eventId) {
+        if (showsSection(full.invitation.sections, 'events')) return version;
+        // Ceremonies are switched off: the cards keep the day itself and list no functions.
+        const main = mainEvent(version.events);
+        return {
+            ...version,
+            events: main ? [main] : [],
+        };
+    }
     const open = full.events.map((e) => ({
         ...e,
         audience: null,
@@ -75,6 +85,7 @@ export function cardList(full: PublicInvitation, who: Side | null, lang: string)
         shown: visibleEvents(named, who ? { side: who } : undefined),
         all: named,
         solemn: isSolemn(occasionOf(full.invitation.eventKind)),
+        functions: showsSection(full.invitation.sections, 'events'),
     });
 }
 

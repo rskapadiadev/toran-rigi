@@ -324,7 +324,7 @@ export function FamiliesTable({ list, base, origin }: FamiliesTableProps) {
                         </Button>
                     </>
                 }
-                empty="No families yet. Add one, or paste the couple’s list."
+                empty="No families yet. Add one, or paste your list."
                 rowLabel={(r) => r.guest.displayName}
                 onRowClick={(r) => {
                     setOpen({

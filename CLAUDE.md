@@ -2,11 +2,12 @@
 
 Toran is a digital invitation studio: living, animated invitations for every tradition (Hindu, Muslim, Sikh, Jain, Christian, Jewish, secular) and every occasion (weddings, naming, griha pravesh, puja, birthdays, corporate…). Rigi is the parent company.
 
-The app has three faces:
+The app has four faces:
 
 | Face | Who | Where |
 |---|---|---|
-| **Shop** | Customers: browse, try a design free, buy, edit their own invitation | `/`, `/collections`, `/try/$slug`, `/my`, `/my/$id` (`src/shop/*`) |
+| **Shop** | Customers: browse, read wording, try a design free, pay | `/`, `/collections`, `/invitations/*`, `/wording/*`, `/try/$slug` (`src/shop/*`) |
+| **Customer portal** | Customers after buying: their invitations, guests, cards, payments | `/my`, `/my/payments`, `/my/$id`, `/my/$id/guests`, `/my/$id/cards` (`src/shop/portal/*`) |
 | **Invitation** | Guests: the invitation itself | `/$slug`, `/p/$token` preview (`src/invitation/*`) |
 | **Studio admin** | Owners and designers: templates, orders, billing, pricing | `/admin/*` (`src/admin/*`) |
 
@@ -41,16 +42,18 @@ source ~/.nvm/nvm.sh && nvm use 22
 
 ```
 shared/        Pure TS, used by both sides: zod schemas (shared/schemas/*), types, money, pricing, fx, occasions, cultures, themes
+  wording/     The wording library. Server-only: pages get it through server functions or /api/wording
+  guides.ts    The search pages' own copy (/invitations/$page, /wording/$page)
 server/
   api/         Hono routes: validate with shared zod schemas, call repos, return JSON
   repos/       The ONLY place that builds Drizzle queries
-  services/    External calls (mailer, fx rates, stock photos, translation)
+  services/    External calls (mailer, payments, fx rates, stock photos, translation)
   platform/    Cloudflare and Node adapters (db, blob, cache, rate limit). Nothing else touches the platform.
   db/schema.ts Drizzle schema (portable SQLite types; JSON as text, money as integers)
 src/
   routes/      TanStack file routes. routeTree.gen.ts is generated; never edit it.
   server-fns/  createServerFn wrappers for SSR loaders (the only src/ code that may import server/)
-  shop/        Customer shop UI (dark editorial pages, form editor, sign-in)
+  shop/        Customer shop UI (dark editorial pages, form editor, sign-in); portal/ is the /my shell
   admin/       Studio UI: kit/ (DataTable, PanelCard, PageHeader, FormField…), shell/, editor/, composer/
   invitation/  The invitation engine (sections, openings, scenes). Renders inside .inv-root from --inv-* tokens only.
     luxury/    The premium component library, built stage by stage (see docs/luxury/README.md: docs + progress tracker).
@@ -72,14 +75,24 @@ scripts/dev/   Playwright scripts that drive the real app (journey, responsive, 
 - **Pricing** (`shared/pricing.ts`, `shared/fx.ts`):
   - Every template has its own price: ₹ for India, $ for everyone else. Customers never see packages.
   - Outside India the $ price is converted at a stored exchange-rate snapshot (`server/services/fx.ts`, open.er-api.com) and rounded clean (`niceAmount`). The API is never called per visitor.
+  - Prices show everywhere in the shop (`SHOW_SHOP_PRICES`); solemn designs never show a sale price.
   - Shop orders are created with the exact price shown (`createOrder(…, { packagePrice })`).
-- **Customers edit content only** (words, photos, ceremonies). The server rebuilds the design from the database (`server/repos/store.ts → applyContent`). Never trust a design sent by a customer.
+- **Nothing exists until it is paid for** (`server/repos/checkouts.ts`, `server/services/payments.ts`).
+  - "Buy" makes a `checkouts` row only. The order, invoice and invitation are made together, once, after the server has re-read the payment from Razorpay and checked its amount and currency.
+  - The page, the webhook and the cron job can each finish a checkout. `checkoutPaid` must stay safe to call twice. Never trust the browser's word that something was paid.
+  - `paymentMode` is `razorpay`, `fake` (development only) or `off` (nobody can buy). Razorpay gets the amount, currency and our reference, never customer data.
+  - An order the studio makes by hand can be unpaid; until something is paid the customer’s invitation stays hidden and locked (`isUnpaid`).
+- **Customers edit everything but the look**: words, photos, ceremonies, languages, music, replies, gifts, wishes, and which sections show and in what order (`customerInput`, `shared/sections.ts`).
+  - The server takes the design and each section's styling from the database (`server/repos/store.ts → applyContent`). Never trust a design sent by a customer.
+  - Cards follow the invitation: a ceremony removed, or Ceremonies switched off, removes its cards too (`shared/cards.ts`).
+- **Search engines** (`server/seo.ts`, `src/lib/share-meta.ts`): customers' invitations are always noindex; samples and guide pages may be listed, in production only. A new public page needs a canonical link and a sitemap entry.
 - **Cultural respect.**
   - Sacred text (mantras, Quranic verses, Gurbani, Hebrew blessings) comes from the vetted library or the customer, never from AI.
   - No destructive effects on sacred text or names of God.
 - **Performance.**
   - Lists and catalogue pages show posters (`templates.poster_key`), never live iframes of invitations.
-  - The landing page must reach its largest paint in under 500 ms on the production build. Measure before and after anything heavy.
+  - The landing page must reach its largest paint in under 500 ms on the production build, phone included. Measure before and after anything heavy.
+  - First-screen words never start hidden or wait for script: use `Settle` (CSS, moves only) there and `Rise` further down the page.
 
 ## Code style
 
@@ -114,9 +127,11 @@ scripts/dev/   Playwright scripts that drive the real app (journey, responsive, 
     - Editing a row opens a **`Sheet`** (right-hand panel), not a new page or an inline form.
     - Empty and loading states use `PanelCard` with `EmptyState` / `PageSkeleton`. Statuses use `ToneBadge`.
   - New admin pages need a nav entry (`src/admin/shell/nav.ts`), a breadcrumb (`breadcrumbs.tsx`) and the right `can()` permission (`shared/permissions.ts`). The API must check the same permission.
+- **Customer portal (`/my`) = the admin design**, inside `PortalShell`: `DataTable`, `PanelCard` and `PageHeader` as above.
+  - Guests share one board with the studio (`src/admin/guests/GuestsBoard.tsx`). Change it once; on phones it shows the tap-to-send list.
 - **Shop = night-and-gold editorial.**
   - **Tokens:** night, wine, gold, ivory; Cormorant display serif; one italic gold accent word in headings.
-  - **Pieces:** reuse `src/shop/landing.tsx` (`Rise`, `SectionHeading`, `PosterPhone`, `TemplateTile`, `PriceTag`) and `ShopShell`.
+  - **Pieces:** reuse `src/shop/landing.tsx` (`Settle`, `Rise`, `SectionHeading`, `PosterPhone`, `TemplateTile`, `PriceTag`) and `ShopShell`.
   - **Must work at phone width:** 16px gutters, no sideways scroll, the main call-to-action visible on the first screen.
 - **Invitation engine is isolated.** It paints only from `--inv-*` variables inside `.inv-root`; admin and shop styles must never leak in.
 

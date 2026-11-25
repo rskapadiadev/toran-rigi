@@ -1,4 +1,6 @@
+import { brand } from '@shared/brand';
 import { featuredCurrencies } from '@shared/fx';
+import { policyPages } from '@shared/policies';
 import { SHOW_SHOP_PRICES } from '@shared/pricing';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -139,7 +141,7 @@ function ShopFooter({ dark, currency }: FooterProps) {
         <footer className={cn('mt-24 border-t', dark ? 'border-white/10' : 'border-black/5')}>
             <div
                 className={cn(
-                    'mx-auto flex max-w-6xl flex-col gap-2 px-5 py-10 text-sm sm:flex-row sm:justify-between',
+                    'mx-auto flex max-w-6xl flex-col gap-4 px-5 pt-10 text-sm sm:flex-row sm:justify-between',
                     dark ? 'text-ivory/45' : 'text-smoke',
                 )}
             >
@@ -154,13 +156,36 @@ function ShopFooter({ dark, currency }: FooterProps) {
                     </span>{' '}
                     · Every celebration begins at the Toran.
                 </p>
-                <div className="flex items-center gap-5">
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                     {/* Currency only matters while prices are shown. */}
                     {SHOW_SHOP_PRICES && currency && (
                         <CurrencySwitcher currency={currency} dark={dark} />
                     )}
+                    <Link to="/invitations" className="hover:underline">
+                        Designs by occasion
+                    </Link>
+                    <Link to="/wording" className="hover:underline">
+                        Wording
+                    </Link>
                     <p>Toran by Rigi</p>
                 </div>
+            </div>
+            <div
+                className={cn(
+                    'mx-auto flex max-w-6xl flex-col gap-3 px-5 pt-5 pb-10 text-xs sm:flex-row sm:justify-between',
+                    dark ? 'text-ivory/60' : 'text-smoke',
+                )}
+            >
+                <p>
+                    {brand.legalName} · {brand.address}
+                </p>
+                <nav aria-label="Policies" className="flex flex-wrap gap-x-5 gap-y-2">
+                    {policyPages.map((p) => (
+                        <Link key={p.path} to={p.path} className="hover:underline">
+                            {p.name}
+                        </Link>
+                    ))}
+                </nav>
             </div>
         </footer>
     );

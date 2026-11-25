@@ -3,6 +3,7 @@
 import { type CardInfo, faceSize } from '@shared/cards';
 import type { Side } from '@shared/guests';
 import { localeNames } from '@shared/locales';
+import { useQueryClient } from '@tanstack/react-query';
 import { Download, FileDown, Loader2, Lock } from 'lucide-react';
 import { lazy, type ReactNode, Suspense, useCallback, useState } from 'react';
 import { toast } from 'sonner';
@@ -42,6 +43,7 @@ const hints: Record<CardInfo['kind'], string> = {
 };
 
 export function CardsGrid({ base, set, choice, onChoice, buttonClass = '' }: CardsGridProps) {
+    const client = useQueryClient();
     const [busy, setBusy] = useState<string | null>(null);
     const query = cardsQuery({
         who: choice.who,
@@ -51,6 +53,7 @@ export function CardsGrid({ base, set, choice, onChoice, buttonClass = '' }: Car
         setBusy(key);
         try {
             await saveFile(`${base}${path}${query}`);
+            if (set.refundable) await client.invalidateQueries({ queryKey: ['cards', base] });
         } catch (e) {
             toast.error(e instanceof Error ? e.message : 'Something went wrong');
         } finally {

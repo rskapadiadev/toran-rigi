@@ -160,6 +160,9 @@ export async function recordPayment(
         amount: number;
         method: 'upi' | 'cash' | 'bank' | 'card' | 'online';
         reference?: string;
+        // An online payment's service and its id there; the pair is only ever recorded once.
+        provider?: string;
+        providerRef?: string;
         paidAt?: string;
         // Null for an online payment no one on the team recorded.
         userId: string | null;
@@ -168,6 +171,19 @@ export async function recordPayment(
     const { db } = getPlatform();
     const invoice = await db.select().from(invoices).where(eq(invoices.id, invoiceId)).get();
     if (!invoice) throw new Error('Invoice not found');
+    if (payment.provider && payment.providerRef) {
+        const recorded = await db
+            .select({ id: payments.id })
+            .from(payments)
+            .where(
+                and(
+                    eq(payments.provider, payment.provider),
+                    eq(payments.providerRef, payment.providerRef),
+                ),
+            )
+            .get();
+        if (recorded) return invoice;
+    }
     await db.insert(payments).values({
         invoiceId,
         orderId: invoice.orderId,
@@ -175,6 +191,8 @@ export async function recordPayment(
         amount: payment.amount,
         method: payment.method,
         reference: payment.reference,
+        provider: payment.provider,
+        providerRef: payment.providerRef,
         status: 'captured',
         paidAt: payment.paidAt ? new Date(payment.paidAt).toISOString() : new Date().toISOString(),
         recordedBy: payment.userId,
@@ -214,6 +232,18 @@ export async function invoicesForOrder(orderId: string) {
         .from(invoices)
         .where(eq(invoices.orderId, orderId))
         .orderBy(asc(invoices.createdAt));
+}
+
+// What an order is for, from the first line of its first invoice.
+export async function firstLine(orderId: string): Promise<string | undefined> {
+    const row = await getPlatform()
+        .db.select({ description: invoiceItems.description })
+        .from(invoiceItems)
+        .innerJoin(invoices, eq(invoices.id, invoiceItems.invoiceId))
+        .where(eq(invoices.orderId, orderId))
+        .orderBy(asc(invoices.createdAt), asc(invoiceItems.sort))
+        .get();
+    return row?.description;
 }
 
 export interface BillingFilter {

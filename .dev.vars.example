@@ -26,7 +26,8 @@ DB_DRIVER=
 BLOB_DRIVER=
 # cf | memory (default: cf)
 CACHE_DRIVER=
-# fake | razorpay (default: fake)
+# fake | razorpay (default: fake). "fake" is a test checkout and works in development only;
+# anywhere else it means nobody can buy.
 PAYMENTS_DRIVER=
 # console | resend (default: console)
 MAILER_DRIVER=
@@ -55,9 +56,14 @@ TURNSTILE_SITE_KEY=
 TURNSTILE_SECRET_KEY=
 
 # ── Payments (Razorpay) ──────────────────────────────────────────────
+# Dashboard → Account & Settings → API keys. Test keys (rzp_test_…) take no real money.
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
+# Dashboard → Webhooks: add https://<your site>/api/webhooks/razorpay with the events
+# payment.authorized, payment.captured and order.paid, and put the secret you choose here.
 RAZORPAY_WEBHOOK_SECRET=
+# default: https://api.razorpay.com/v1
+RAZORPAY_API_URL=
 
 # ── Email (Resend) ───────────────────────────────────────────────────
 RESEND_API_KEY=

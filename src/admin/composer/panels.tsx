@@ -102,7 +102,8 @@ import { cultureLabel } from '../labels';
 import { useAutoTranslateStatus } from './autoTranslate';
 import type { Draft } from './draft';
 import { timezones } from './draft';
-import { MusicPanel } from './MusicPanel';
+import { type MusicHome, MusicPanel } from './MusicPanel';
+import { WordingPicker } from './WordingPicker';
 
 export interface PanelProps {
     draft: Draft;
@@ -1134,6 +1135,7 @@ function TranslateNote({ locale }: { locale: string }) {
 
 export type ContentPart =
     | 'setup'
+    | 'languages'
     | 'greeting'
     | 'people'
     | 'headline'
@@ -1228,7 +1230,7 @@ export function ContentPanel({ draft, set, only }: ContentPanelProps) {
                     )}
                 </div>
             )}
-            {show('setup') && (
+            {(show('setup') || show('languages')) && (
                 <div className="space-y-2">
                     <p className="text-[13px] font-medium text-foreground/80">
                         Languages on the invitation
@@ -1317,6 +1319,7 @@ export function ContentPanel({ draft, set, only }: ContentPanelProps) {
                     <AccordionItem value="messages">
                         <AccordionTrigger className={sectionTrigger}>Messages</AccordionTrigger>
                         <AccordionContent className="space-y-4">
+                            {show('headline') && <WordingPicker draft={draft} set={set} />}
                             {show('headline') && (
                                 <TextField
                                     label="Headline"
@@ -1719,11 +1722,13 @@ export type ExtraPart = 'music' | 'rsvp' | 'wishes' | 'gifts' | 'live' | 'travel
 
 interface ExtrasPanelProps extends PanelProps {
     invitationId: string;
+    // The customer's own editor: their music, and words that speak to them.
+    music?: MusicHome;
     // Only these groups (the editor's "this section" view); everything when omitted.
     only?: readonly ExtraPart[];
 }
 
-export function ExtrasPanel({ draft, set, invitationId, only }: ExtrasPanelProps) {
+export function ExtrasPanel({ draft, set, invitationId, only, music }: ExtrasPanelProps) {
     const show = (part: ExtraPart) => !only || only.includes(part);
     const x = draft.extras;
     const locale = draft.locales[0] ?? 'en';
@@ -1750,8 +1755,9 @@ export function ExtrasPanel({ draft, set, invitationId, only }: ExtrasPanelProps
                         <MusicPanel
                             invitationId={invitationId}
                             draft={draft}
-                            setMusic={(music) => {
-                                setExtras({ music });
+                            home={music}
+                            setMusic={(next) => {
+                                setExtras({ music: next });
                             }}
                         />
                     </AccordionContent>
@@ -1803,7 +1809,11 @@ export function ExtrasPanel({ draft, set, invitationId, only }: ExtrasPanelProps
                             id="pdf-enabled"
                             icon={<FileDown />}
                             label="Let guests download the PDF"
-                            description="Shows a PDF button on the invitation. The couple always have the PDF on their Cards page, at no extra charge."
+                            description={
+                                music
+                                    ? 'Shows a PDF button on the invitation. Your own copy is always on your Cards page.'
+                                    : 'Shows a PDF button on the invitation. The couple always have the PDF on their Cards page, at no extra charge.'
+                            }
                             checked={x.pdf?.enabled ?? false}
                             onChange={(enabled) => {
                                 setExtras({ pdf: { enabled } });

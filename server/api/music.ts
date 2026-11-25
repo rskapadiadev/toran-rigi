@@ -17,12 +17,19 @@ import {
 } from '../repos/music';
 import { importStock, StockError } from '../services/stock';
 
-type Audio =
-    { ok: true;
-mime: string;
-body: ArrayBuffer;
-name: string } | { ok: false;
-error: string };
+interface GoodAudio {
+    ok: true;
+    mime: string;
+    body: ArrayBuffer;
+    name: string;
+}
+
+interface BadAudio {
+    ok: false;
+    error: string;
+}
+
+type Audio = GoodAudio | BadAudio;
 
 // The uploaded file, checked for type and size before anything is stored.
 async function readAudio(form: Record<string, unknown>): Promise<Audio> {
@@ -50,7 +57,7 @@ async function readAudio(form: Record<string, unknown>): Promise<Audio> {
     };
 }
 
-const form = async (c: Context<AdminEnv>) => (await c.req.parseBody()) as Record<string, unknown>;
+const form = async (c: Context) => (await c.req.parseBody()) as Record<string, unknown>;
 const text = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
 
 const trackFields = z.object({
@@ -122,9 +129,9 @@ musicApi.post('/from-stock', requirePermission('orders.update'), async (c) => {
     try {
         const asset = await importStock('openverse', 'audio', parsed.data.id);
         return c.json({
- ok: true,
-track: await trackFromStock(asset) 
-});
+            ok: true,
+            track: await trackFromStock(asset),
+        });
     } catch (error) {
         if (error instanceof StockError) return fail(c, 422, error.message);
         throw error;
@@ -132,13 +139,13 @@ track: await trackFromStock(asset)
 });
 
 /** B: the customer's own song, stored in the invitation's folder once the rights are confirmed. */
-export async function uploadInvitationMusic(c: Context<AdminEnv>) {
+export async function uploadInvitationMusic(c: Context, invitationId: string) {
     const body = await form(c);
     if (text(body.rights) !== 'yes')
         return fail(c, 422, 'Confirm you have the right to use this song in a shared invitation');
     const audio = await readAudio(body);
     if (!audio.ok) return fail(c, 422, audio.error);
-    const blobKey = await storeUpload(c.req.param('id') ?? '', audio.mime, audio.body);
+    const blobKey = await storeUpload(invitationId, audio.mime, audio.body);
     return c.json({
         ok: true,
         blobKey,

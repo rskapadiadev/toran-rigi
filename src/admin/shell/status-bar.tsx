@@ -1,6 +1,6 @@
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
 import { Lock, Moon, RefreshCw, Sun } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -20,8 +20,17 @@ const stamp = (d: Date) =>
         timeZoneName: 'short',
     });
 
+interface StatusBarProps {
+    // The customers' portal brings its own trail and note.
+    crumbs?: ReactNode;
+    note?: string;
+}
+
 // Thin bar under the page: sidebar toggle, where you are, data freshness, and the theme switch.
-export function StatusBar() {
+export function StatusBar({
+    crumbs = <AdminBreadcrumbs />,
+    note = 'Authorised users only',
+}: StatusBarProps) {
     const client = useQueryClient();
     const fetching = useIsFetching();
     const [refreshed, setRefreshed] = useState(() => new Date());
@@ -41,9 +50,7 @@ export function StatusBar() {
         <footer className="flex h-9 shrink-0 items-center gap-2 border-t border-sidebar-border bg-sidebar px-3 text-xs text-muted-foreground">
             <SidebarTrigger className="size-7 text-muted-foreground" />
             <Separator orientation="vertical" className="data-[orientation=vertical]:h-4" />
-            <div className="min-w-0 flex-1 [&_ol]:gap-1 [&_ol]:text-xs">
-                <AdminBreadcrumbs />
-            </div>
+            <div className="min-w-0 flex-1 [&_ol]:gap-1 [&_ol]:text-xs">{crumbs}</div>
             <span className="hidden whitespace-nowrap md:inline">
                 Last refreshed: {stamp(refreshed)}
             </span>
@@ -62,7 +69,7 @@ export function StatusBar() {
             </Tooltip>
             <Separator orientation="vertical" className="data-[orientation=vertical]:h-4" />
             <span className="hidden items-center gap-1.5 whitespace-nowrap sm:flex">
-                <Lock className="size-3.5" /> Authorised users only
+                <Lock className="size-3.5" /> {note}
             </span>
             <Tooltip>
                 <TooltipTrigger asChild>

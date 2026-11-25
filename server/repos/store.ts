@@ -4,9 +4,10 @@ import { cultureOf } from '@shared/cultures';
 import { type RateSnapshot, shopCurrencyFor } from '@shared/fx';
 import { occasionOf } from '@shared/occasions';
 import { shopPrice } from '@shared/pricing';
-import type { EventInput, SaveInvitationInput } from '@shared/schemas/composer';
+import type { CustomerInput, SaveInvitationInput } from '@shared/schemas/composer';
+import { chooseSections } from '@shared/sections';
 import type { InvitationContent } from '@shared/types';
-import { and, asc, desc, eq, gt } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, ne } from 'drizzle-orm';
 
 import {
     customers,
@@ -20,7 +21,7 @@ import {
 } from '../db/schema';
 import { getPlatform } from '../platform/context';
 import { usdRates } from '../services/fx';
-import { invoicesForOrder, recordPayment } from './billing';
+import { firstLine, invoicesForOrder, recordPayment } from './billing';
 import {
     createInvitationForOrder,
     invitationForEdit,
@@ -212,10 +213,8 @@ export interface ShopWhere {
     country?: string | null;
 }
 
-export interface CustomerContent {
-    content: InvitationContent;
-    events: EventInput[];
-}
+// Their words, photos and ceremonies; and, once the invitation is theirs, what it includes.
+export type CustomerContent = Pick<CustomerInput, 'content' | 'events'> & Partial<CustomerInput>;
 
 // Edits close the day after the last ceremony, like a printed card that has already gone out.
 export function lockedAfter(events: readonly { startsAt: string }[]): string | null {
@@ -244,21 +243,37 @@ async function applyContent(invitationId: string, input: CustomerContent) {
               }
             : event,
     );
-    // Only words, photos and ceremonies come from the customer; the design is kept as stored.
+    const occasion = occasionOf(invitation.eventKind);
+    // Everything but the look comes from the customer; the design, and how each section is drawn,
+    // are kept as stored.
     const save: SaveInvitationInput = {
-        occasion: occasionOf(invitation.eventKind).id,
+        occasion: occasion.id,
         culture: invitation.culture,
         themeSlug: current.themeSlug ?? undefined,
-        locales: invitation.locales,
+        locales: input.locales ?? invitation.locales,
         calendars: invitation.calendars.filter(
             (c): c is 'islamic-umalqura' | 'hebrew' => c === 'islamic-umalqura' || c === 'hebrew',
         ),
         seed: invitation.seed,
         design: invitation.design,
         content: input.content,
-        sections: invitation.sections,
-        extras: invitation.extras,
-        rsvpEnabled: invitation.rsvpEnabled,
+        sections: input.sections
+            ? chooseSections(invitation.sections, input.sections, occasion)
+            : invitation.sections,
+        // Credits, branding and reply settings aren't theirs to send. What is theirs is taken as sent,
+        // so something they cleared is gone.
+        extras: input.extras
+            ? {
+                  ...invitation.extras,
+                  shagun: input.extras.shagun,
+                  live: input.extras.live,
+                  travel: input.extras.travel,
+                  wishes: input.extras.wishes,
+                  pdf: input.extras.pdf,
+                  music: input.extras.music,
+              }
+            : invitation.extras,
+        rsvpEnabled: input.rsvpEnabled ?? invitation.rsvpEnabled,
         events,
     };
     await saveInvitation(invitationId, save);
@@ -270,55 +285,79 @@ const coupleName = (content: InvitationContent) =>
         .filter(Boolean)
         .join(' & ');
 
-// "Buy & keep": an order and invoice for the template's package, and the customer's own copy of the
-// template carrying the words they wrote while trying it. Payment follows.
-export async function buyTemplate(
-    customer: StoreCustomer,
-    slug: string,
-    input: CustomerContent,
-    where: ShopWhere,
-) {
-    const { db } = getPlatform();
-    const { currency, rates, country } = where;
+// The price a design sells for where the buyer is: exactly what the shop showed them.
+export async function templateOffer(slug: string, where: ShopWhere) {
     const template = await publishedTemplate(slug);
+    const price = shopPrice(
+        template.prices,
+        template.comparePrices,
+        where.currency,
+        where.rates,
+    )?.price;
+    if (price === undefined)
+        throw new OrderError('This design can’t be bought in your currency yet');
+    return {
+        templateId: template.id,
+        price,
+    };
+}
+
+interface PaidDesign {
+    customerId: string;
+    templateId: string;
+    currency: string;
+    price: number;
+    country: string | null;
+}
+
+// A paid design's order and invoice, at the price that was paid.
+export async function orderForDesign(paid: PaidDesign, input: CustomerContent) {
+    const { db } = getPlatform();
+    const [customer, template] = await Promise.all([
+        db.select().from(customers).where(eq(customers.id, paid.customerId)).get(),
+        db.select().from(templates).where(eq(templates.id, paid.templateId)).get(),
+    ]);
+    if (!customer || !template) throw new OrderError('This design is no longer available');
     const name = coupleName(input.content) || customer.name;
-    // Charged exactly what the shop showed, in the currency it showed.
-    const own = shopPrice(template.prices, template.comparePrices, currency, rates)?.price;
-    if (own === undefined) throw new OrderError('This design can’t be bought in your currency yet');
-    const firstDate = input.events.map((e) => e.startsAt.slice(0, 10)).sort()[0];
     const order = await createOrder(
         {
             customer: {
                 name,
                 email: customer.email ?? undefined,
-                country: country?.toUpperCase() ?? (currency === 'INR' ? 'IN' : 'US'),
+                country: paid.country?.toUpperCase() ?? (paid.currency === 'INR' ? 'IN' : 'US'),
             },
             packageCode: template.fromPackage,
             addons: [],
-            currency,
+            currency: paid.currency,
             occasion: occasionOf(template.eventKind).id,
             culture: cultureOf(template.culture).id,
-            weddingDate: firstDate,
+            weddingDate: input.events.map((e) => e.startsAt.slice(0, 10)).sort()[0],
             notes: `Ordered online from the “${template.name}” template.`,
         },
         null,
         {
-            packagePrice: own,
+            packagePrice: paid.price,
             packageLine: `${template.name} invitation`,
         },
     );
     // The account was made from an email; the invitation's names are a better label for the studio.
     if (customer.name === customer.email?.split('@')[0] && name !== customer.name)
         await db.update(customers).set({ name }).where(eq(customers.id, customer.id));
-    const invitationId = await createInvitationForOrder(order.id, { templateId: template.id });
-    await applyContent(invitationId, input);
-    return {
-        orderId: order.id,
-        invitationId,
-    };
+    return order.id;
 }
 
-async function ownedOrder(customerId: string, orderId: string) {
+// The customer's own copy of the design they paid for, carrying the words they wrote while trying it.
+export async function invitationForDesign(
+    orderId: string,
+    templateId: string,
+    input: CustomerContent,
+) {
+    const invitationId = await createInvitationForOrder(orderId, { templateId });
+    await applyContent(invitationId, input);
+    return invitationId;
+}
+
+export async function ownedOrder(customerId: string, orderId: string) {
     const { db } = getPlatform();
     const order = await db
         .select()
@@ -329,7 +368,7 @@ async function ownedOrder(customerId: string, orderId: string) {
     return order;
 }
 
-const balanceOf = async (orderId: string) =>
+export const balanceOf = async (orderId: string) =>
     (await invoicesForOrder(orderId))
         .filter((i) => i.status !== 'void')
         .reduce((sum, i) => sum + i.balanceDue, 0);
@@ -358,19 +397,87 @@ async function setOrderStatus(
     ]);
 }
 
-// Test checkout (PAYMENTS_DRIVER=fake): settles every open invoice as if the card went through.
-export async function payOrderFake(customerId: string, orderId: string) {
-    const order = await ownedOrder(customerId, orderId);
-    for (const invoice of await invoicesForOrder(orderId)) {
-        if (invoice.status === 'void' || invoice.balanceDue <= 0) continue;
+// Money that arrived online, settled against the order's open invoices. Safe to repeat: a payment
+// is recorded once.
+export async function settleOrder(
+    orderId: string,
+    payment: {
+        amount: number;
+        provider: string;
+        ref: string;
+    },
+) {
+    const { db } = getPlatform();
+    const order = await db.select().from(orders).where(eq(orders.id, orderId)).get();
+    if (!order) throw new OrderError('Order not found');
+    let left = payment.amount;
+    const open = (await invoicesForOrder(orderId)).filter(
+        (i) => i.status !== 'void' && i.balanceDue > 0,
+    );
+    for (const [n, invoice] of open.entries()) {
+        const amount = Math.min(left, invoice.balanceDue);
+        if (amount <= 0) break;
         await recordPayment(invoice.id, {
-            amount: invoice.balanceDue,
+            amount,
             method: 'online',
-            reference: 'Test checkout',
+            reference: payment.provider === 'fake' ? 'Test checkout' : payment.ref,
+            provider: payment.provider,
+            providerRef: n === 0 ? payment.ref : `${payment.ref}:${String(n + 1)}`,
             userId: null,
         });
+        left -= amount;
     }
-    await setOrderStatus(order, 'payment_received', 'Paid online (test checkout)');
+    // Work the studio has already moved on (a live invitation, say) keeps its place.
+    if (order.status === 'new_inquiry' || order.status === 'awaiting_advance')
+        await setOrderStatus(
+            order,
+            'payment_received',
+            payment.provider === 'fake' ? 'Paid online (test checkout)' : 'Paid online',
+        );
+}
+
+// Nothing has been paid on it yet: not the customer's to open until something is.
+const isUnpaid = async (orderId: string) => {
+    const bills = (await invoicesForOrder(orderId)).filter((i) => i.status !== 'void');
+    return bills.some((i) => i.balanceDue > 0) && bills.every((i) => i.amountPaid === 0);
+};
+
+interface MyOrder {
+    id: string;
+    number: string;
+    currency: string;
+    total: number;
+    balance: number;
+    createdAt: string;
+    // What was bought, from its invoice ("Rajwada invitation").
+    item: string;
+    invitationId: string | null;
+}
+
+// Every order with what is left to pay, newest first.
+export async function myOrders(customerId: string): Promise<MyOrder[]> {
+    const { db } = getPlatform();
+    const rows = await db
+        .select({
+            id: orders.id,
+            number: orders.number,
+            currency: orders.currency,
+            total: orders.totalMinor,
+            status: orders.status,
+            createdAt: orders.createdAt,
+            invitationId: invitations.id,
+        })
+        .from(orders)
+        .leftJoin(invitations, eq(invitations.orderId, orders.id))
+        .where(and(eq(orders.customerId, customerId), ne(orders.status, 'cancelled')))
+        .orderBy(desc(orders.createdAt));
+    return Promise.all(
+        rows.map(async ({ status: _status, ...row }) => ({
+            ...row,
+            balance: await balanceOf(row.id),
+            item: (await firstLine(row.id)) ?? 'Invitation',
+        })),
+    );
 }
 
 export async function myInvitations(customerId: string) {
@@ -390,19 +497,23 @@ export async function myInvitations(customerId: string) {
         .innerJoin(orders, eq(orders.id, invitations.orderId))
         .where(eq(orders.customerId, customerId))
         .orderBy(desc(invitations.createdAt));
-    return Promise.all(
+    const listed = await Promise.all(
         rows.map(async ({ content, ...row }) => ({
             ...row,
             title: coupleName(content) || 'Your invitation',
             balance: await balanceOf(row.orderId),
+            unpaid: await isUnpaid(row.orderId),
         })),
     );
+    return listed.filter((row) => !row.unpaid).map(({ unpaid: _unpaid, ...row }) => row);
 }
 
 async function owned(customerId: string, invitationId: string) {
     const edit = await invitationForEdit(invitationId);
     if (!edit?.order) throw new OrderError('Invitation not found');
     await ownedOrder(customerId, edit.order.id);
+    if (await isUnpaid(edit.order.id))
+        throw new OrderError('Complete payment to open your invitation');
     return edit;
 }
 

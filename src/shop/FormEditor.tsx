@@ -14,7 +14,13 @@ import {
     type EditableInvitation,
     type OrderLimits,
 } from '@/admin/composer/draft';
-import { ContentPanel, type ContentPart, EventsPanel } from '@/admin/composer/panels';
+import {
+    ContentPanel,
+    type ContentPart,
+    EventsPanel,
+    type ExtraPart,
+    ExtrasPanel,
+} from '@/admin/composer/panels';
 import { AllPhotos } from '@/admin/editor/SectionPanel';
 import { type Uploader, UploaderContext } from '@/admin/editor/uploader';
 import {
@@ -27,6 +33,7 @@ import { InvitationView } from '@/invitation/InvitationView';
 import { cn } from '@/lib/utils';
 
 import { FamilyVersions } from './FamilyVersions';
+import { SectionsList } from './SectionsList';
 
 interface FormSection {
     id: string;
@@ -46,8 +53,9 @@ interface FormEditorProps {
     // A line under the bar ("You're trying this template…").
     notice?: ReactNode;
     locked?: boolean;
-    // A version for each family; offered once the invitation is bought and has family links to send.
-    versions?: boolean;
+    // Their own invitation, paid for: every part of it but the look is theirs to change, in the
+    // portal's dress. While trying, only words, photos and ceremonies.
+    owned?: boolean;
 }
 
 const parts = (present: Set<SectionType>, wanted: [SectionType, ContentPart[]][]): ContentPart[] =>
@@ -62,7 +70,7 @@ export function FormEditor({
     bar,
     notice,
     locked = false,
-    versions = false,
+    owned = false,
 }: FormEditorProps) {
     const [view, setView] = useState<'phone' | 'full'>('phone');
     // Phones show one pane at a time.
@@ -89,6 +97,17 @@ export function FormEditor({
         'greeting',
         'headline',
         ...parts(present, [['welcome', ['welcome']]]),
+        ...(owned ? (['languages'] as const) : []),
+    ];
+    // Off and on again, each of these has settings of its own.
+    const extras: ExtraPart[] = [
+        'music',
+        'rsvp',
+        'wishes',
+        ...(present.has('shagun') ? (['gifts'] as const) : []),
+        ...(present.has('live') ? (['live'] as const) : []),
+        ...(present.has('travel') ? (['travel'] as const) : []),
+        'pdf',
     ];
     const story = parts(present, [
         ['story', ['story']],
@@ -135,7 +154,35 @@ export function FormEditor({
                   },
               ]
             : []),
-        ...(versions && isCouple(occasionOf(draft.occasion)) && draft.content.people.two
+        ...(owned
+            ? [
+                  {
+                      id: 'sections',
+                      title: 'Sections',
+                      hint: 'Show, hide or reorder the parts of your invitation',
+                      body: <SectionsList draft={draft} set={set} />,
+                  },
+                  {
+                      id: 'extras',
+                      title: 'Music & guests',
+                      hint: 'Your song, replies, wishes and gifts',
+                      body: (
+                          <ExtrasPanel
+                              draft={draft}
+                              set={set}
+                              invitationId={base.invitation.id}
+                              only={extras}
+                              music={{
+                                  tracks: '/store/me/music',
+                                  upload: `/store/me/invitations/${base.invitation.id}/music`,
+                                  studio: false,
+                              }}
+                          />
+                      ),
+                  },
+              ]
+            : []),
+        ...(owned && isCouple(occasionOf(draft.occasion)) && draft.content.people.two
             ? [
                   {
                       id: 'families',
@@ -155,22 +202,42 @@ export function FormEditor({
             : []),
     ];
 
+    // The portal's icons follow its own colours, which would vanish on ink.
+    const onPill = owned ? 'bg-primary text-primary-foreground' : 'bg-ink text-ivory';
+    const paneTab = (on: boolean) => {
+        if (owned) return on ? 'bg-primary text-primary-foreground' : 'text-foreground';
+        return on ? 'bg-ivory text-ink' : 'text-ivory';
+    };
+
     return (
         <UploaderContext value={uploader}>
-            <div className="flex h-dvh flex-col">
-                <div className="shrink-0 border-b border-black/5 bg-ivory/90 backdrop-blur">
+            <div className={cn('flex h-dvh flex-col', owned && 'bg-background')}>
+                <div
+                    className={cn(
+                        'shrink-0 border-b',
+                        owned ? 'bg-card' : 'border-black/5 bg-ivory/90 backdrop-blur',
+                    )}
+                >
                     {bar}
                 </div>
                 <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(380px,520px)_1fr]">
                     {/* Form */}
                     <div
                         className={cn(
-                            '@container min-h-0 overflow-y-auto border-e border-black/5 pb-24 lg:pb-8',
+                            '@container min-h-0 overflow-y-auto border-e pb-24 lg:pb-8',
+                            !owned && 'border-black/5',
                             pane === 'preview' && 'hidden lg:block',
                         )}
                     >
                         {notice && (
-                            <div className="border-b border-gold/30 bg-champagne/40 px-4 py-2.5 text-xs text-ink/80">
+                            <div
+                                className={cn(
+                                    'border-b px-4 py-2.5 text-xs',
+                                    owned
+                                        ? 'bg-muted/50 text-muted-foreground'
+                                        : 'border-gold/30 bg-champagne/40 text-ink/80',
+                                )}
+                            >
                                 {notice}
                             </div>
                         )}
@@ -184,11 +251,23 @@ export function FormEditor({
                                     <AccordionItem
                                         key={s.id}
                                         value={s.id}
-                                        className="rounded-2xl border bg-card px-4 last:border-b"
+                                        className={cn(
+                                            'bg-card px-4',
+                                            owned
+                                                ? 'rounded-xl border-0 ring-1 ring-foreground/10'
+                                                : 'rounded-2xl border last:border-b',
+                                        )}
                                     >
                                         <AccordionTrigger className="py-4 hover:no-underline">
                                             <span className="text-start">
-                                                <span className="block font-display text-xl text-ink">
+                                                <span
+                                                    className={cn(
+                                                        'block',
+                                                        owned
+                                                            ? 'text-base font-medium'
+                                                            : 'font-display text-xl text-ink',
+                                                    )}
+                                                >
                                                     {s.title}
                                                 </span>
                                                 <span className="block text-xs font-normal text-muted-foreground">
@@ -208,12 +287,22 @@ export function FormEditor({
                     {/* Live preview */}
                     <div
                         className={cn(
-                            'relative min-h-0 flex-col bg-[radial-gradient(circle_at_50%_0%,#f3ebdd,#e9dcc6)] lg:flex',
+                            'relative min-h-0 flex-col lg:flex',
+                            owned
+                                ? 'bg-muted/60'
+                                : 'bg-[radial-gradient(circle_at_50%_0%,#f3ebdd,#e9dcc6)]',
                             pane === 'edit' ? 'hidden' : 'flex',
                         )}
                     >
                         <div className="flex shrink-0 items-center justify-between px-4 py-3">
-                            <p className="text-xs tracking-[0.2em] text-gold-deep uppercase">
+                            <p
+                                className={cn(
+                                    'uppercase',
+                                    owned
+                                        ? 'text-[11px] font-medium tracking-wider text-muted-foreground'
+                                        : 'text-xs tracking-[0.2em] text-gold-deep',
+                                )}
+                            >
                                 Live preview
                             </p>
                             <div className="flex items-center gap-1 rounded-full bg-white/70 p-1 shadow-sm">
@@ -234,9 +323,7 @@ export function FormEditor({
                                     }}
                                     className={cn(
                                         'flex items-center gap-1 rounded-full px-3 py-1 text-xs',
-                                        view === 'phone'
-                                            ? 'bg-ink text-ivory'
-                                            : 'text-ink/80 hover:bg-black/5',
+                                        view === 'phone' ? onPill : 'text-ink/80 hover:bg-black/5',
                                     )}
                                 >
                                     <Smartphone className="size-3.5" /> Phone
@@ -249,9 +336,7 @@ export function FormEditor({
                                     }}
                                     className={cn(
                                         'hidden items-center gap-1 rounded-full px-3 py-1 text-xs sm:flex',
-                                        view === 'full'
-                                            ? 'bg-ink text-ivory'
-                                            : 'text-ink/80 hover:bg-black/5',
+                                        view === 'full' ? onPill : 'text-ink/80 hover:bg-black/5',
                                     )}
                                 >
                                     <Monitor className="size-3.5" /> Full width
@@ -284,7 +369,12 @@ export function FormEditor({
 
                 {/* Phone: switch between the form and the preview */}
                 <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center lg:hidden">
-                    <div className="flex gap-1 rounded-full bg-ink p-1 shadow-xl">
+                    <div
+                        className={cn(
+                            'flex gap-1 rounded-full p-1 shadow-xl',
+                            owned ? 'bg-card ring-1 ring-foreground/10' : 'bg-ink',
+                        )}
+                    >
                         <button
                             type="button"
                             aria-pressed={pane === 'edit'}
@@ -293,7 +383,7 @@ export function FormEditor({
                             }}
                             className={cn(
                                 'flex items-center gap-1.5 rounded-full px-5 py-2 text-sm',
-                                pane === 'edit' ? 'bg-ivory text-ink' : 'text-ivory',
+                                paneTab(pane === 'edit'),
                             )}
                         >
                             <PenLine className="size-4" /> Edit
@@ -306,7 +396,7 @@ export function FormEditor({
                             }}
                             className={cn(
                                 'flex items-center gap-1.5 rounded-full px-5 py-2 text-sm',
-                                pane === 'preview' ? 'bg-ivory text-ink' : 'text-ivory',
+                                paneTab(pane === 'preview'),
                             )}
                         >
                             <Eye className="size-4" /> Preview

@@ -1,3 +1,4 @@
+import type { PaymentMode } from '@shared/schemas/checkout';
 import type { InvitationDesign } from '@shared/types';
 
 import type { EditableInvitation, OrderLimits } from '@/admin/composer/draft';
@@ -52,7 +53,6 @@ export interface MyInvitationRow {
     balance: number;
     design: InvitationDesign;
     createdAt: string;
-    // The studio has switched on the PDF add-on.
 }
 
 export interface Me {
@@ -62,7 +62,7 @@ export interface Me {
         email: string | null;
     };
     invitations: MyInvitationRow[];
-    payments: 'fake' | 'razorpay' | 'off';
+    payments: PaymentMode;
 }
 
 export interface MyInvitation {
@@ -74,7 +74,13 @@ export interface MyInvitation {
     lockedAfter: string | null;
 }
 
-export interface BuyResult {
-    orderId: string;
-    invitationId: string;
+export interface MyOrder {
+    id: string;
+    number: string;
+    currency: string;
+    total: number;
+    balance: number;
+    createdAt: string;
+    item: string;
+    invitationId: string | null;
 }

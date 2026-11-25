@@ -25,6 +25,9 @@ interface Checks<E extends Env> {
     see: (c: CallerOf<E>, invitationId: string) => Promise<unknown>;
     // Files are part of what was bought, so the couple's are ready once it's paid for.
     download: (c: CallerOf<E>, invitationId: string) => Promise<unknown>;
+    // A file has been handed over, and whether taking the first one ends a refund. The couple's only.
+    downloaded?: (invitationId: string) => Promise<unknown>;
+    refundable?: (invitationId: string) => Promise<boolean>;
 }
 
 const versionOf = (c: Context, source: CardSource): CardVersion => {
@@ -54,8 +57,14 @@ const suffix = (v: CardVersion, source: CardSource) =>
         .filter(Boolean)
         .join('-');
 
-export function cardsApi<E extends AppEnv>({ see, download }: Checks<E>) {
+export function cardsApi<E extends AppEnv>({ see, download, downloaded, refundable }: Checks<E>) {
     const app = new Hono<E>();
+    // Never worth failing a download for.
+    const taken = async (id: string) => {
+        await downloaded?.(id).catch((error: unknown) => {
+            console.error('[cards] note download', error);
+        });
+    };
     const failed = (c: Context, error: unknown) => {
         console.error('[cards]', error);
         return fail(
@@ -79,6 +88,7 @@ export function cardsApi<E extends AppEnv>({ see, download }: Checks<E>) {
         return c.json({
             version: v,
             ready,
+            refundable: ready && ((await refundable?.(c.req.param('id'))) ?? false),
             names: namesOf(source.full.invitation.content, v.lang),
             locales: source.full.invitation.locales,
             cards: cardList(source.full, v.who, v.lang),
@@ -106,6 +116,7 @@ export function cardsApi<E extends AppEnv>({ see, download }: Checks<E>) {
             const name = [source.full.invitation.slug, 'cards', suffix(v, source)]
                 .filter(Boolean)
                 .join('-');
+            await taken(id);
             return file(zip, `${name}.zip`, 'application/zip');
         } catch (error) {
             return failed(c, error);
@@ -128,6 +139,7 @@ export function cardsApi<E extends AppEnv>({ see, download }: Checks<E>) {
         try {
             const [bytes] = await renderCards(source, [card], v, new URL(c.req.url).origin);
             if (!bytes) throw new CardUnavailable('That card couldn’t be made');
+            await taken(id);
             return file(
                 bytes,
                 cardFileName(source.full.invitation.slug, card, suffix(v, source)),
@@ -152,6 +164,7 @@ export function cardsApi<E extends AppEnv>({ see, download }: Checks<E>) {
             const name = [source.full.invitation.slug, 'invitation', suffix(v, source)]
                 .filter(Boolean)
                 .join('-');
+            await taken(id);
             return file(bytes, `${name}.pdf`, 'application/pdf');
         } catch (error) {
             return failed(c, error);

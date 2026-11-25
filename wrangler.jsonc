@@ -80,7 +80,7 @@
                 // therigi.shop is verified in Resend (DKIM and the send. subdomain are in Cloudflare DNS).
                 // An unverified domain here makes Resend reject every email, sign-in codes included.
                 "MAIL_FROM": "Toran <hello@therigi.shop>",
-                // Online payment is not live yet: orders are saved unpaid (see server/api/store.ts).
+                // Nobody can buy until this is "razorpay" and its keys are set (see server/services/payments.ts).
                 "PAYMENTS_DRIVER": "fake",
             },
         },

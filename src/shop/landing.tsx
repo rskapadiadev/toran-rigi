@@ -1,7 +1,7 @@
 // Pieces of the shop's dark, editorial pages (landing and collections): floating header, rising
 // reveals, live phone and laptop frames, template tiles.
 import { formatMoney } from '@shared/money';
-import { occasionOf } from '@shared/occasions';
+import { isSolemn, occasionOf } from '@shared/occasions';
 import { photoUrl } from '@shared/photos';
 import { SHOW_SHOP_PRICES } from '@shared/pricing';
 import { Link } from '@tanstack/react-router';
@@ -33,6 +33,9 @@ export function FloatingHeader() {
                 <nav className="flex items-center gap-0.5">
                     <Link to="/collections" className={cn(link, 'hidden sm:block')}>
                         Collections
+                    </Link>
+                    <Link to="/wording" className={cn(link, 'hidden md:block')}>
+                        Wording
                     </Link>
                     <a href="/#how" className={cn(link, 'hidden md:block')}>
                         How it works
@@ -89,6 +92,18 @@ export function Rise({ children, className, delay = 0 }: RiseProps) {
     );
 }
 
+// For the first screen: plain CSS that only moves, so the words never wait for the page's script.
+export function Settle({ children, className, delay = 0 }: RiseProps) {
+    return (
+        <div
+            className={cn('animate-settle motion-reduce:animate-none', className)}
+            style={{ animationDelay: `${String(delay)}ms` }}
+        >
+            {children}
+        </div>
+    );
+}
+
 // Eyebrow + display heading with one italic gold word, the shop's section opener.
 interface HeadingProps {
     eyebrow: string;
@@ -96,20 +111,33 @@ interface HeadingProps {
     accent: string;
     after?: string;
     className?: string;
+    // Opens the page: lit from the first paint instead of brightening on scroll.
+    first?: boolean;
 }
 
-export function SectionHeading({ eyebrow, before, accent, after = '', className }: HeadingProps) {
+export function SectionHeading({
+    eyebrow,
+    before,
+    accent,
+    after = '',
+    className,
+    first = false,
+}: HeadingProps) {
+    const label = <p className="text-[11px] tracking-[0.35em] text-gold uppercase">{eyebrow}</p>;
+    const heading = 'mt-3 font-display text-5xl leading-[1.05] text-ivory md:text-6xl';
+    if (first)
+        return (
+            <Settle className={className}>
+                {label}
+                <h2 className={heading}>
+                    {before} <em className="text-gold-bright">{accent}</em> {after}
+                </h2>
+            </Settle>
+        );
     return (
         <div className={className}>
-            <Rise>
-                <p className="text-[11px] tracking-[0.35em] text-gold uppercase">{eyebrow}</p>
-            </Rise>
-            <ScrollWords
-                className="mt-3 font-display text-5xl leading-[1.05] text-ivory md:text-6xl"
-                before={before}
-                accent={accent}
-                after={after}
-            />
+            <Rise>{label}</Rise>
+            <ScrollWords className={heading} before={before} accent={accent} after={after} />
         </div>
     );
 }
@@ -361,6 +389,8 @@ interface TileProps {
 // A collection card: the live invitation in a phone on a wash of the design's own colours.
 export function TemplateTile({ template, currency }: TileProps) {
     const { palette } = template.design;
+    // No sale and no "free" beside a loss.
+    const solemn = isSolemn(occasionOf(template.eventKind));
     const gradient = `radial-gradient(circle at 50% 30%, ${palette.primary}cc, ${palette.ink} 75%)`;
     const wash = { background: gradient };
     return (
@@ -389,8 +419,8 @@ export function TemplateTile({ template, currency }: TileProps) {
                 {template.price !== null && (
                     <PriceTag
                         price={template.price}
-                        compare={template.comparePrice}
-                        off={template.off}
+                        compare={solemn ? null : template.comparePrice}
+                        off={solemn ? null : template.off}
                         currency={currency}
                         className="shrink-0 flex-wrap justify-end font-display text-xl"
                     />
@@ -410,7 +440,7 @@ export function TemplateTile({ template, currency }: TileProps) {
                     params={{ slug: template.slug }}
                     className="ms-auto rounded-full bg-gold/90 px-4 py-1.5 text-sm font-medium text-night transition hover:bg-gold-bright"
                 >
-                    Try it free
+                    {solemn ? 'Open it' : 'Try it free'}
                 </Link>
             </div>
         </article>

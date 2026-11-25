@@ -39,6 +39,17 @@
 
     --animate-shimmer: shimmer 3.2s var(--ease-thread) infinite;
     --animate-float: float 7s ease-in-out infinite;
+    --animate-settle: settle 0.9s var(--ease-silk) backwards;
+}
+
+/* Moves only, never hides: first-screen words must be readable in the very first paint. */
+@keyframes settle {
+    from {
+        transform: translateY(20px);
+    }
+    to {
+        transform: none;
+    }
 }
 
 @keyframes shimmer {

@@ -23,3 +23,16 @@ export function timingSafeEqual(a: string, b: string): boolean {
     for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
     return diff === 0;
 }
+
+export async function hmacSha256(secret: string, text: string): Promise<string> {
+    const algorithm = {
+        name: 'HMAC',
+        hash: 'SHA-256',
+    };
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', encoder.encode(secret), algorithm, false, [
+        'sign',
+    ]);
+    const digest = await crypto.subtle.sign('HMAC', key, encoder.encode(text));
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}

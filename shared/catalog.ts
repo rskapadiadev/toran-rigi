@@ -289,6 +289,8 @@ export const capacityDefaults: Record<string, CapacityRule> = {
 export const reservedSlugList = [
     'admin',
     'collections',
+    'invitations',
+    'wording',
     'try',
     'my',
     'account',
@@ -313,6 +315,7 @@ export const reservedSlugList = [
     'terms',
     'privacy',
     'refund',
+    'delivery',
     'login',
     'logout',
     'couple',

@@ -10,6 +10,7 @@ import {
     createInvitationForOrder,
     invitationForEdit,
     listInvitations,
+    refreshIfLive,
     saveInvitation,
     setInvitationStatus,
     setSlug,
@@ -96,7 +97,7 @@ composerApi.put('/:id', async (c) => {
 });
 
 // B: the customer's own song for this invitation (rights confirmed in the same request).
-composerApi.post('/:id/music', uploadInvitationMusic);
+composerApi.post('/:id/music', (c) => uploadInvitationMusic(c, c.req.param('id')));
 
 composerApi.patch('/:id/slug', async (c) => {
     const parsed = slugInput.safeParse(await json(c));
@@ -165,9 +166,6 @@ composerApi.patch('/:id/wishes/:wishId', async (c) => {
     const parsed = wishModerationInput.safeParse(await json(c));
     if (!parsed.success) return fail(c, 422, 'Invalid status');
     await moderateWish(c.req.param('id'), c.req.param('wishId'), parsed.data.status);
-    const detail = await invitationForEdit(c.req.param('id'));
-    // Approved wishes show on the live page, so refresh its cache.
-    if (detail?.invitation.status === 'published')
-        await setInvitationStatus(c.req.param('id'), 'published', true);
+    await refreshIfLive(c.req.param('id'));
     return c.json({ ok: true });
 });

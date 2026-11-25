@@ -33,6 +33,8 @@ export const configSchema = z.object({
     RAZORPAY_KEY_ID: z.string().optional(),
     RAZORPAY_KEY_SECRET: z.string().optional(),
     RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
+    // Only tests point this elsewhere.
+    RAZORPAY_API_URL: z.url().default('https://api.razorpay.com/v1'),
     RESEND_API_KEY: z.string().optional(),
     MAIL_FROM: z.string().default('Toran <hello@therigi.co>'),
     ANTHROPIC_API_KEY: z.string().optional(),

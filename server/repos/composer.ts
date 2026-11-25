@@ -258,6 +258,12 @@ export async function saveInvitation(id: string, input: SaveInvitationInput) {
     return invitationForEdit(id);
 }
 
+// Something outside the editor (an approved wish) changed what a live invitation shows.
+export async function refreshIfLive(id: string) {
+    const detail = await invitationForEdit(id);
+    if (detail?.invitation.status === 'published') await setInvitationStatus(id, 'published', true);
+}
+
 export async function setSlug(id: string, slug: string) {
     const { db } = getPlatform();
     if (!(await isSlugFree(slug, id))) throw new OrderError('That link is taken — try another');

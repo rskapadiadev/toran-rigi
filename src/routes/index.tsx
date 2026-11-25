@@ -4,7 +4,7 @@ import { Eye, PenLine, Send } from 'lucide-react';
 
 import { LoginCrown } from '@/admin/shell/login-crown';
 import { ToranSeal } from '@/components/brand/toran-seal';
-import { pageMeta } from '@/lib/share-meta';
+import { canonical, pageMeta } from '@/lib/share-meta';
 import { cn } from '@/lib/utils';
 import {
     HeroFan,
@@ -13,6 +13,7 @@ import {
     Rise,
     ScreenShowcase,
     SectionHeading,
+    Settle,
     TemplateTile,
 } from '@/shop/landing';
 import { ShopShell } from '@/shop/ShopShell';
@@ -22,6 +23,7 @@ import { fetchCatalogue } from '../server-fns/store';
 export const Route = createFileRoute('/')({
     loader: () => fetchCatalogue(),
     head: ({ loaderData }) => ({
+        links: [canonical(loaderData?.origin ?? '', '/')],
         meta: pageMeta({
             title: 'Toran · Digital invitations that open like a doorway',
             description:
@@ -145,25 +147,25 @@ function Home() {
                                 <LoginCrown compact />
                             </div>
                             <div className="relative z-10 pt-16 lg:pt-6 [@media(max-height:760px)]:lg:pt-0">
-                                <Rise>
+                                <Settle>
                                     <p className="text-[11px] tracking-[0.35em] text-gold uppercase">
                                         Every tradition · Every celebration
                                     </p>
-                                </Rise>
-                                <Rise delay={80}>
+                                </Settle>
+                                <Settle delay={80}>
                                     <h1 className="mt-4 font-display text-5xl leading-[1.02] text-balance md:text-6xl [@media(max-height:760px)]:lg:text-5xl">
                                         Made for <em className="text-gold-bright">your</em>{' '}
                                         ceremonies.
                                     </h1>
-                                </Rise>
-                                <Rise delay={160}>
+                                </Settle>
+                                <Settle delay={160}>
                                     <p className="mt-4 max-w-md text-[15px] leading-relaxed text-ivory/65">
                                         Every celebration begins at the Toran. Living invitations
                                         with your names, every ceremony and your story, shared as
                                         one link.
                                     </p>
-                                </Rise>
-                                <Rise delay={240}>
+                                </Settle>
+                                <Settle delay={240}>
                                     <div className="mt-7 inline-flex rounded-full border border-white/10 bg-white/5 p-1.5">
                                         <Link
                                             to="/collections"
@@ -181,7 +183,7 @@ function Home() {
                                     <p className="mt-3 ps-2 text-xs tracking-wide text-ivory/50">
                                         Try free · Pay only when you love it · Share on WhatsApp
                                     </p>
-                                </Rise>
+                                </Settle>
                             </div>
                         </div>
 

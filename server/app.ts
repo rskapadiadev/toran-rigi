@@ -5,6 +5,7 @@ import { api } from './api';
 import { og } from './og/route';
 import { runWithPlatform } from './platform/context';
 import type { Platform } from './platform/types';
+import { seo } from './seo';
 
 export interface AppEnv {
     Bindings: Platform;
@@ -34,6 +35,7 @@ export function createApp() {
     });
     app.route('/api', api);
     app.route('/og', og);
+    app.route('/', seo);
 
     app.get('/media/*', async (c) => {
         const key = decodeURIComponent(c.req.path.slice('/media/'.length));

@@ -1,6 +1,7 @@
 // Portable schema: text/integer/real only, JSON stored as text, ISO-8601 timestamps,
 // booleans as 0/1 and money as integer minor units. Keep server/db/schema.pg.ts in sync.
 import { newId } from '@shared/ids';
+import type { EventInput } from '@shared/schemas/composer';
 import type {
     EventKind,
     InvitationContent,
@@ -408,6 +409,41 @@ export const payments = sqliteTable(
     (t) => [
         index('payments_invoice_idx').on(t.invoiceId),
         uniqueIndex('payments_provider_ref_uq').on(t.provider, t.providerRef),
+    ],
+);
+
+// A purchase being paid for. The order, invoice and invitation are made only once the money has
+// arrived, so nothing unpaid ever reaches a customer's account. Holds their words until then.
+export const checkouts = sqliteTable(
+    'checkouts',
+    {
+        id: id(),
+        customerId: text('customer_id')
+            .notNull()
+            .references(() => customers.id),
+        // A design being bought, or an older order being settled (then orderId is set from the start).
+        templateId: text('template_id').references(() => templates.id),
+        orderId: text('order_id').references(() => orders.id),
+        invitationId: text('invitation_id').references(() => invitations.id),
+        content: json<InvitationContent>('content'),
+        events: json<EventInput[]>('events'),
+        country: text('country'),
+        currency: text('currency').notNull(),
+        amount: integer('amount').notNull(),
+        provider: text('provider', { enum: ['razorpay', 'fake'] }).notNull(),
+        providerOrderId: text('provider_order_id').unique(),
+        providerPaymentId: text('provider_payment_id'),
+        status: text('status', { enum: ['open', 'paid', 'done'] })
+            .notNull()
+            .default('open'),
+        // While one request turns the payment into an invitation, others leave it alone.
+        lockedAt: text('locked_at'),
+        paidAt: text('paid_at'),
+        createdAt: createdAt(),
+    },
+    (t) => [
+        index('checkouts_status_idx').on(t.status, t.createdAt),
+        index('checkouts_customer_idx').on(t.customerId),
     ],
 );
 

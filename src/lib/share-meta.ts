@@ -116,6 +116,54 @@ export function pageMeta({
     ];
 }
 
+// The one address search engines should list for a page.
+export const canonical = (origin: string, path: string) => ({
+    rel: 'canonical',
+    href: `${origin.replace(/\/$/, '')}${path}`,
+});
+
+interface Crumb {
+    name: string;
+    path: string;
+}
+
+interface Question {
+    q: string;
+    a: string;
+}
+
+// "<" is escaped so no text can ever close the script it sits in.
+const dataScript = (data: unknown) => ({
+    type: 'application/ld+json',
+    children: JSON.stringify(data).replaceAll('<', String.raw`\u003c`),
+});
+
+// What a guide is and where it sits, in the form search engines read.
+export const guideData = (origin: string, crumbs: readonly Crumb[], faqs: readonly Question[]) => [
+    dataScript({
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: crumbs.map((c, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: c.name,
+            item: canonical(origin, c.path).href,
+        })),
+    }),
+    dataScript({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: faqs.map((f) => ({
+            '@type': 'Question',
+            name: f.q,
+            acceptedAnswer: {
+                '@type': 'Answer',
+                text: f.a,
+            },
+        })),
+    }),
+];
+
 export function shareMeta({ source, origin, path, image, guestName, lang }: ShareMetaInput) {
     const facts = shareFacts(source, guestName, lang);
     return [

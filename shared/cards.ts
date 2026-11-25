@@ -102,9 +102,11 @@ interface CardsInput {
     all: readonly CardEvent[];
     // Nobody is asked to save the date of a prayer meet.
     solemn: boolean;
+    // Off when the invitation's ceremonies are switched off: then no function has a card of its own.
+    functions?: boolean;
 }
 
-export function cardsFor({ shown, all, solemn }: CardsInput): CardInfo[] {
+export function cardsFor({ shown, all, solemn, functions = true }: CardsInput): CardInfo[] {
     const dated = shown.length > 0;
     const announce: CardInfo[] =
         dated && !solemn
@@ -155,7 +157,7 @@ export function cardsFor({ shown, all, solemn }: CardsInput): CardInfo[] {
     return [
         ...announce,
         ...invitation,
-        ...all.map((e) => ({
+        ...(functions ? all : []).map((e) => ({
             id: `event:${e.id}`,
             kind: 'event' as const,
             title: e.title,
