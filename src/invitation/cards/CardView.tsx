@@ -1,5 +1,6 @@
 // The matching cards: save-the-date, the invitation's front and back, one per function, and a story.
 // Still pictures at a fixed size, shown on the Cards page and photographed by the server.
+import { brand } from '@shared/brand';
 import { BLEED, type CardFace, type CardLayer, faceSize, mainEvent } from '@shared/cards';
 import { type CultureId, eventLabel, pickText } from '@shared/cultures';
 import { mixHex } from '@shared/materials';
@@ -63,7 +64,26 @@ function Card({ face, eventId, link, layer }: CardProps) {
             {face === 'back' && <BackCard link={link} />}
             {face === 'event' && event && <EventCard event={event} />}
             {darbar && face !== 'story' && <DarbarDress face={face} />}
+            {layer !== 'art' && <StudioMark />}
         </div>
+    );
+}
+
+// Every card carries the studio's name and number at its foot, inside the trim.
+function StudioMark() {
+    const tones = useTones();
+    const mark: CSSProperties = {
+        bottom: BLEED + 6,
+        color: tones.goldInk,
+    };
+    return (
+        <p
+            className="pointer-events-none absolute inset-x-0 mx-auto w-fit rounded-full bg-black/60 px-3.5 py-1 text-center text-[12px] tracking-[0.08em]"
+            style={mark}
+            dir="ltr"
+        >
+            Digital invitations by <b>{brand.name}</b> · {brand.phone}
+        </p>
     );
 }
 
@@ -567,6 +587,8 @@ function BackCard({ link }: { link?: string }) {
                         <BackLine key={e.id} event={e} title={title(e)} />
                     ))}
                 </div>
+                <ArtistLine />
+                <ContactLine />
                 {qr && (
                     <div className="mt-6 flex items-center gap-4 text-start">
                         <div
@@ -582,6 +604,65 @@ function BackCard({ link }: { link?: string }) {
                 )}
             </Fit>
         </>
+    );
+}
+
+// Tonight's singer, when the invitation introduces one (the story's "Singer spotlight").
+function ArtistLine() {
+    const { data, t, copy } = useInvite();
+    const tones = useTones();
+    const { content, sections } = data.invitation;
+    const shown = sections.some((x) => x.type === 'story' && x.enabled && x.variant === 'artist');
+    const [name = '', ...about] = t(content.story)
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+    if (!shown || !name) return null;
+    const photo = content.photoSlots?.['story.artist'];
+    return (
+        <div className="mt-6 flex items-center gap-4 text-start">
+            {photo && (
+                <div className="relative size-[84px] shrink-0">
+                    <div className="absolute inset-[11%] overflow-hidden rounded-full ring-2 ring-(--inv-gold)">
+                        <img src={photoUrl(photo)} alt="" className="size-full object-cover" />
+                    </div>
+                    <MarigoldRing className="absolute inset-0 size-full" />
+                </div>
+            )}
+            <div>
+                <p className="text-[13px] italic" style={{ color: tones.muted }}>
+                    {copy('ourStory')}
+                </p>
+                <p
+                    className="inv-display text-[22px] leading-tight"
+                    style={{ color: tones.goldInk }}
+                >
+                    {name}
+                </p>
+                {about.length > 0 && <p className="text-[15px]">{about.join(' ')}</p>}
+            </div>
+        </div>
+    );
+}
+
+// The numbers guests can call, under the programme.
+function ContactLine() {
+    const { data, copy } = useInvite();
+    const tones = useTones();
+    const contacts = (data.invitation.extras.contacts ?? []).filter((c) => c.phone.trim());
+    if (contacts.length === 0) return null;
+    return (
+        <div className="mt-5">
+            <p className="text-[14px] italic" style={{ color: tones.muted }}>
+                {copy('contactUs')}
+            </p>
+            {contacts.map((c, i) => (
+                <p key={i} className="inv-display text-[19px]" dir="ltr">
+                    {c.name ? `${c.name}: ` : ''}
+                    {c.phone}
+                </p>
+            ))}
+        </div>
     );
 }
 

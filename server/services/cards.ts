@@ -25,7 +25,7 @@ import { ensureSideLinks, listGroups } from '../repos/guests';
 import type { CardSource, PublicInvitation } from '../repos/invitations';
 
 // Bump when the cards are redrawn, so stored pictures are made again.
-const DESIGN = 'c4';
+const DESIGN = 'c5';
 
 export class CardUnavailable extends Error {}
 
