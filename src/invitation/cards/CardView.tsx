@@ -56,34 +56,63 @@ function Card({ face, eventId, link, layer }: CardProps) {
     };
     const event = data.events.find((e) => e.id === eventId);
     const darbar = useDarbar() && layer !== 'words';
+    const area: CSSProperties = { height: cardBox(face).height };
     return (
         <div className="inv-root overflow-hidden" dir={dir} lang={locale} style={style} data-card>
-            {face === 'save' && <SaveCard />}
-            {face === 'story' && <StoryCard layer={layer} />}
-            {face === 'front' && <FrontCard />}
-            {face === 'back' && <BackCard link={link} />}
-            {face === 'event' && event && <EventCard event={event} />}
-            {darbar && face !== 'story' && <DarbarDress face={face} />}
-            {layer !== 'art' && <StudioMark />}
+            <div className="absolute inset-x-0 top-0 overflow-hidden" style={area}>
+                {face === 'save' && <SaveCard />}
+                {face === 'story' && <StoryCard layer={layer} />}
+                {face === 'front' && <FrontCard />}
+                {face === 'back' && <BackCard link={link} />}
+                {face === 'event' && event && <EventCard event={event} />}
+                {darbar && face !== 'story' && <DarbarDress face={face} />}
+            </div>
+            <StudioMark face={face} layer={layer} />
         </div>
     );
 }
 
-// Every card carries the studio's name and number at its foot, inside the trim.
-function StudioMark() {
+// The studio's strip at the foot of every card; on the printed card it also holds the bleed.
+const STRIP = 30;
+const stripOf = (face: CardFace) => STRIP + (face === 'front' || face === 'back' ? BLEED : 0);
+
+// Where a face draws its design: the card above the strip.
+function cardBox(face: CardFace) {
+    const box = faceSize[face];
+    return {
+        width: box.width,
+        height: box.height - stripOf(face),
+    };
+}
+
+interface MarkProps {
+    face: CardFace;
+    layer?: CardLayer;
+}
+
+// Every card carries the studio's name and number on its own strip, never over the design.
+function StudioMark({ face, layer }: MarkProps) {
     const tones = useTones();
-    const mark: CSSProperties = {
-        bottom: BLEED + 6,
+    const strip: CSSProperties = {
+        height: stripOf(face),
+        borderTop: `1px solid ${tones.goldInk}`,
+        // The story's words are photographed on nothing; its picture carries the strip itself.
+        background:
+            layer === 'words' ? 'transparent' : 'color-mix(in oklab, var(--inv-bg) 55%, black)',
         color: tones.goldInk,
     };
     return (
-        <p
-            className="pointer-events-none absolute inset-x-0 mx-auto w-fit rounded-full bg-black/60 px-3.5 py-1 text-center text-[12px] tracking-[0.08em]"
-            style={mark}
+        <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center pt-[7px] text-[12.5px] tracking-[0.08em]"
+            style={strip}
             dir="ltr"
         >
-            Digital invitations by <b>{brand.name}</b> · {brand.phone}
-        </p>
+            {layer !== 'art' && (
+                <p>
+                    Digital invitations · <b>{brand.name}</b> by The {brand.parent} · {brand.phone}
+                </p>
+            )}
+        </div>
     );
 }
 
@@ -102,7 +131,7 @@ interface DressProps {
 // The marigold toran across the top of every card and lit diyas along the foot of the plain ones,
 // inside the trim so the printer never cuts them.
 function DarbarDress({ face }: DressProps) {
-    const box = faceSize[face];
+    const box = cardBox(face);
     const toran: CSSProperties = {
         top: BLEED,
         height: 74,
@@ -111,8 +140,8 @@ function DarbarDress({ face }: DressProps) {
         bottom: BLEED + 26,
         width: box.width * 0.62,
     };
-    // The front's foot already carries its motif band.
-    const footed = face === 'save' || face === 'back';
+    // Only the save-the-date has room: the front carries its motif band, the back its QR code.
+    const footed = face === 'save';
     return (
         <>
             <div className="pointer-events-none absolute inset-x-0" style={toran}>
@@ -339,7 +368,7 @@ function Announcement({ width, largest }: Pick<NamesProps, 'width' | 'largest'>)
 }
 
 function SaveCard() {
-    const box = faceSize.save;
+    const box = cardBox('save');
     return (
         <>
             <Ground {...box} />
@@ -362,7 +391,7 @@ function StoryCard({ layer }: Pick<CardProps, 'layer'>) {
     const art = layer === 'words' ? 'invisible' : '';
     const words = layer === 'art' ? 'invisible' : '';
     const tones = useTones();
-    const box = faceSize.story;
+    const box = cardBox('story');
     const { content, design } = data.invitation;
     const picture =
         content.coverPhotoKey ?? design.film?.last ?? design.film?.first ?? design.art?.venue;
@@ -420,7 +449,7 @@ function EventCard({ event }: { event: PublicInvitationEvent }) {
     const foil = useFoil();
     const title = useTitle()(event);
     const { date, time } = useWhen(event);
-    const box = faceSize.event;
+    const box = cardBox('event');
     // The name in the family's other language, the way elders say it.
     const other = data.invitation.locales.find((l) => l !== locale);
     const second = other
@@ -509,7 +538,7 @@ function FrontCard() {
     const { data, t, culture, occasion } = useInvite();
     const darbar = useDarbar();
     const tones = useTones();
-    const box = faceSize.front;
+    const box = cardBox('front');
     const headline = t(data.invitation.content.headline);
     // "…invite you to celebrate their wedding" follows the names; a notice comes before its name.
     const leads = isSolemn(occasion);
@@ -559,7 +588,7 @@ function BackCard({ link }: { link?: string }) {
     const { data, copy, names } = useInvite();
     const tones = useTones();
     const title = useTitle();
-    const box = faceSize.back;
+    const box = cardBox('back');
     // One or two functions have the whole card to themselves.
     const roomy = data.events.length < 3;
     const qr = useMemo(
