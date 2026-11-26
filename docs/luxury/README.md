@@ -19,6 +19,12 @@ plugs into the existing engine: the `OpeningProps` contract, the `useInvite()` c
 | 08 | Advanced effects & transitions | **Done: Falling petals and Light rays backdrops. Waiting for review** |
 | 09 | Integration, optimisation & final polish | **Done: placed on templates, Library, docs; hand-off measured. Waiting for review** |
 
+**Jagran (template, 2026-11-26).** A night devotional design for the new Jagran / Bhajan sandhya occasion, built from three new pieces:
+- `luxury/opening/JyotOpening.tsx` (opening `jyot`): chunri curtains under a marigold toran; a tap lights the akhand jyot, a row of diyas catches from the middle out and the curtains part.
+- `luxury/hero/DarbarCover.tsx` (cover `darbar`): the hosts' own darbar photo in a gold jharokha strung with lights, swaying bells, stage beams, petals and diyas that light when the opening lifts. Without a photo the arch holds a lit jyot: nothing sacred is drawn.
+- `luxury/hero/ArtistSpotlight.tsx` (story `artist`): the singer under a spotlight in a marigold ring; the story's first line is their name.
+- Shared art in `luxury/darbar/art.tsx` (toran, bell, diya row, marigold ring, chunri).
+
 Next session: read this file and `CLAUDE.md`, then continue at the first stage that isn't done.
 
 ---

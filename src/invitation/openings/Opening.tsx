@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 
 import { FilmOpening } from '../luxury/opening/FilmOpening';
 import { JewelleryBoxOpening } from '../luxury/opening/JewelleryBoxOpening';
+import { JyotOpening } from '../luxury/opening/JyotOpening';
 import { PortraitsOpening } from '../luxury/opening/PortraitsOpening';
 import { SealedLetterOpening } from '../luxury/opening/SealedLetterOpening';
 import { BellOpening } from './BellOpening';
@@ -63,6 +64,7 @@ const registry: Record<InvitationDesign['opening'], ComponentType<OpeningProps>>
     'sealed-letter': SealedLetterOpening,
     portraits: PortraitsOpening,
     film: FilmOpening,
+    jyot: JyotOpening,
 };
 
 type Props = OpeningProps & { kind: InvitationDesign['opening'] };

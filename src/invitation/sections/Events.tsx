@@ -515,7 +515,8 @@ function Pavilions() {
 }
 
 function Pavilion({ event, index }: EventCardProps) {
-    const { data, culture, locale } = useInvite();
+    const { data, culture, locale, t } = useInvite();
+    const note = event.description ? t(event.description) : '';
     const facts = useEventFacts(event);
     const flip = index % 2 === 1;
     const day = new Intl.DateTimeFormat(locale, {
@@ -570,6 +571,12 @@ function Pavilion({ event, index }: EventCardProps) {
                 {native && native !== facts.title && (
                     <p className="text-[clamp(0.95rem,4.4cqw,1.2rem)] text-(--inv-gold)">
                         {native}
+                    </p>
+                )}
+                {/* The hosts' own line about it: "from 9 pm, as long as Sai wills". */}
+                {note && (
+                    <p className="mt-1 text-[clamp(0.9rem,4cqw,1.1rem)] leading-snug text-(--inv-gold)">
+                        {note}
                     </p>
                 )}
                 <p className="mt-1 text-[clamp(0.85rem,3.8cqw,1.05rem)] italic opacity-75">

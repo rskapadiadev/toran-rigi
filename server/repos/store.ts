@@ -2,6 +2,7 @@
 // copy (words, photos, ceremonies only; the design stays as the studio made it).
 import { cultureOf } from '@shared/cultures';
 import { type RateSnapshot, shopCurrencyFor } from '@shared/fx';
+import { canPublishMade, isMade, madePrice, madeStage, studioHasIt } from '@shared/made';
 import { occasionOf } from '@shared/occasions';
 import { shopPrice } from '@shared/pricing';
 import type { CustomerInput, SaveInvitationInput } from '@shared/schemas/composer';
@@ -28,7 +29,7 @@ import {
     saveInvitation,
     setInvitationStatus,
 } from './composer';
-import { createOrder, OrderError } from './orders';
+import { type AddonLine, createOrder, OrderError } from './orders';
 
 export interface StoreCustomer {
     id: string;
@@ -176,6 +177,7 @@ export async function storeTemplate(slug: string, currency: string, rates: RateS
                   price: shop.price,
                   comparePrice: shop.compare,
                   off: shop.off,
+                  madePrice: madePrice(currency, rates),
               }
             : null;
     return {
@@ -307,6 +309,8 @@ interface PaidDesign {
     templateId: string;
     currency: string;
     price: number;
+    // Bought along with it.
+    extras: AddonLine[];
     country: string | null;
 }
 
@@ -338,6 +342,7 @@ export async function orderForDesign(paid: PaidDesign, input: CustomerContent) {
         {
             packagePrice: paid.price,
             packageLine: `${template.name} invitation`,
+            extras: paid.extras,
         },
     );
     // The account was made from an email; the invitation's names are a better label for the studio.
@@ -431,7 +436,7 @@ export async function settleOrder(
     if (order.status === 'new_inquiry' || order.status === 'awaiting_advance')
         await setOrderStatus(
             order,
-            'payment_received',
+            isMade(order.addons) ? 'details_pending' : 'payment_received',
             payment.provider === 'fake' ? 'Paid online (test checkout)' : 'Paid online',
         );
 }
@@ -491,6 +496,8 @@ export async function myInvitations(customerId: string) {
             design: invitations.design,
             orderId: orders.id,
             orderNumber: orders.number,
+            orderStatus: orders.status,
+            addons: orders.addons,
             createdAt: invitations.createdAt,
         })
         .from(invitations)
@@ -498,8 +505,10 @@ export async function myInvitations(customerId: string) {
         .where(eq(orders.customerId, customerId))
         .orderBy(desc(invitations.createdAt));
     const listed = await Promise.all(
-        rows.map(async ({ content, ...row }) => ({
+        rows.map(async ({ content, orderStatus, addons, ...row }) => ({
             ...row,
+            // Whose turn it is on a done-for-you invitation; null when they make it themselves.
+            made: isMade(addons) ? madeStage(orderStatus) : null,
             title: coupleName(content) || 'Your invitation',
             balance: await balanceOf(row.orderId),
             unpaid: await isUnpaid(row.orderId),
@@ -527,6 +536,7 @@ export async function myInvitation(customerId: string, invitationId: string) {
         currency: order.currency,
         price: order.totalMinor,
         lockedAfter: lockedAfter(edit.events),
+        made: isMade(order.addons) ? madeStage(order.status) : null,
     };
 }
 
@@ -541,19 +551,21 @@ export async function saveMyContent(
         throw new OrderError(
             'The celebration has passed, so this invitation can no longer be edited',
         );
+    const order = await ownedOrder(customerId, edit.order?.id ?? '');
+    if (isMade(order.addons) && studioHasIt(madeStage(order.status)))
+        throw new OrderError('Our studio is working on this invitation. You can edit it after');
     await applyContent(invitationId, input);
 }
 
 export async function publishMine(customerId: string, invitationId: string) {
     const edit = await owned(customerId, invitationId);
     if (!edit.order) throw new OrderError('Invitation not found');
+    const order = await ownedOrder(customerId, edit.order.id);
+    if (isMade(order.addons) && !canPublishMade(madeStage(order.status)))
+        throw new OrderError('We’re making this one. You can publish it after your first look');
     // Refuses while anything is unpaid.
     await setInvitationStatus(invitationId, 'published');
-    await setOrderStatus(
-        await ownedOrder(customerId, edit.order.id),
-        'published',
-        'Published by the customer',
-    );
+    await setOrderStatus(order, 'published', 'Published by the customer');
 }
 
 export const ownsInvitation = async (customerId: string, invitationId: string) => {

@@ -640,6 +640,66 @@ const puja = pack({ occasion: 'puja' }, [
     ],
 ]);
 
+// Jagran: the evening's name leads the cover, so the headline is the hosts' own invitation.
+const jagran = pack({ occasion: 'jagran' }, [
+    [
+        'jagran-bhajan-sandhya',
+        'traditional',
+        'Bhajan sandhya',
+        t(
+            'Our mandal invites you and your family to a bhajan sandhya',
+            'हमारे मंडल की ओर से भजन संध्या में आप सपरिवार सादर आमंत्रित हैं',
+            'અમારા મંડળ તરફથી ભજન સંધ્યામાં આપ સહકુટુંબ સાદર આમંત્રિત છો',
+        ),
+        t(
+            'Come for the jyot, sing along with the mandali and take prasad at the bhandara.',
+            'ज्योति प्रज्वलन, भजन और भंडारा प्रसाद में पधारकर इस संध्या की शोभा बढ़ाएँ।',
+            'જ્યોત પ્રાગટ્ય, ભજન અને ભંડારા પ્રસાદમાં પધારી આ સંધ્યાની શોભા વધારશો.',
+        ),
+        t(
+            'Do bring your family and friends.',
+            'अपने परिवार और मित्रों सहित अवश्य पधारें।',
+            'આપના પરિવાર અને મિત્રો સાથે અવશ્ય પધારશો.',
+        ),
+    ],
+    [
+        'jagran-all-night',
+        'warm',
+        'All-night jagran',
+        t(
+            'You are invited to an all-night jagran',
+            'रात्रि जागरण में आप सादर आमंत्रित हैं',
+            'રાત્રિ જાગરણમાં આપને સાદર આમંત્રણ',
+        ),
+        t(
+            'A night of bhajans, dholak and kirtan that runs till dawn, with aarti and bhandara for everyone.',
+            'भजन, ढोलक और कीर्तन की एक रात, भोर तक। आरती और भंडारा सबके लिए।',
+            'ભજન, ઢોલક અને કીર્તનની એક રાત, સવાર સુધી. આરતી અને ભંડારો સૌ માટે.',
+        ),
+        t(
+            'Come for an hour or stay the whole night.',
+            'एक घंटे के लिए आएँ या पूरी रात रुकें।',
+            'એક કલાક માટે આવો કે આખી રાત રોકાઓ.',
+        ),
+    ],
+    [
+        'jagran-colony',
+        'modern',
+        'Colony bhajan evening',
+        t(
+            'The whole colony is invited to our yearly bhajan evening',
+            'हमारी वार्षिक भजन संध्या में पूरी कॉलोनी आमंत्रित है',
+            'અમારી વાર્ષિક ભજન સંધ્યામાં આખી સોસાયટી આમંત્રિત છે',
+        ),
+        t(
+            'Bring your family, find a spot on the durrie and sing along. Prasad and dinner after the aarti.',
+            'परिवार के साथ आएँ, दरी पर बैठें और साथ में गाएँ। आरती के बाद प्रसाद और भोजन।',
+            'પરિવાર સાથે આવો, દરી પર બેસો અને સાથે ગાઓ. આરતી પછી પ્રસાદ અને ભોજન.',
+        ),
+        t('We look forward to seeing you.', 'आपकी प्रतीक्षा रहेगी।', 'આપની રાહ જોઈશું.'),
+    ],
+]);
+
 const upanayan = pack({ occasion: 'upanayan' }, [
     [
         'thread-learning',
@@ -792,6 +852,7 @@ export const occasionWordings = [
     ...birthday,
     ...retirement,
     ...puja,
+    ...jagran,
     ...upanayan,
     ...mundan,
     ...corporate,

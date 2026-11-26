@@ -1,4 +1,5 @@
 import { newToken } from '@shared/ids';
+import { isMade, MADE_HOURS } from '@shared/made';
 import type { CreateOrderInput } from '@shared/schemas/admin';
 import type { OrderStatus } from '@shared/types';
 import { and, asc, desc, eq, gte, inArray, isNotNull, lte, or, sql } from 'drizzle-orm';
@@ -19,7 +20,7 @@ import { priceLines } from './catalog';
 
 export class OrderError extends Error {}
 
-interface AddonLine {
+export interface AddonLine {
     code: string;
     name: string;
     amount: number;
@@ -69,6 +70,8 @@ export interface OrderOptions {
     packagePrice?: number;
     // Invoice line for the package, e.g. "Mehfil invitation (Premium package)".
     packageLine?: string;
+    // Extras sold with it, at the price that was shown.
+    extras?: AddonLine[];
 }
 
 // userId is null when the customer orders online themselves.
@@ -90,7 +93,7 @@ export async function createOrder(
                       name: (await packageName(input.packageCode)) ?? input.packageCode,
                       amount: options.packagePrice,
                   },
-                  addons: [] as AddonLine[],
+                  addons: options.extras ?? [],
               };
     if (!pricing)
         throw new OrderError(`No ${input.currency} price for package ${input.packageCode}`);
@@ -180,6 +183,7 @@ export async function listOrders(filter: OrderFilter) {
             culture: orders.culture,
             weddingDate: orders.weddingDate,
             deliveryDueAt: orders.deliveryDueAt,
+            addons: orders.addons,
             createdAt: orders.createdAt,
             customerName: customers.name,
             customerPhone: customers.phone,
@@ -281,7 +285,9 @@ export async function updateOrderStatus(
     if (status === 'ready_to_start' && !order.contentCompletedAt) {
         patch.contentCompletedAt = now.toISOString();
         patch.deliveryDueAt = new Date(
-            now.getTime() + (deliveryHours[order.packageCode] ?? 72) * 3_600_000,
+            now.getTime() +
+                (isMade(order.addons) ? MADE_HOURS : (deliveryHours[order.packageCode] ?? 72)) *
+                    3_600_000,
         ).toISOString();
     }
     if (status === 'revision_requested') patch.revisionCount = order.revisionCount + 1;

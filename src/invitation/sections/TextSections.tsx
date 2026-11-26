@@ -4,11 +4,13 @@ import { Reveal } from '../../motion/Reveal';
 import { useInvite } from '../context';
 import { Editable, useEditing } from '../editing';
 import { Chapters } from '../luxury/gallery/Chapters';
+import { ArtistSpotlight } from '../luxury/hero/ArtistSpotlight';
 import { Portraits } from '../luxury/hero/Portraits';
 import { SectionDivider } from '../luxury/typography/dividers';
 import { Illuminated } from '../luxury/typography/Illuminated';
 import { SectionTitle, useScriptTitles } from '../luxury/typography/SectionTitle';
 import type { StringKey } from '../strings';
+import { Contacts } from './Contacts';
 import { BlessingsCard, LetterChapter, RangoliClosing } from './story';
 
 // The section's chosen divider; the couple's medallion when none is picked.
@@ -135,6 +137,7 @@ export const Story = ({ variant }: VariantProps) => {
     // The couple introduced as a magazine feature: two portraits that part onto the two of them.
     if (variant === 'portraits') return <Portraits />;
     if (variant === 'chapters') return <Chapters />;
+    if (variant === 'artist') return <ArtistSpotlight />;
     return (
         <Chapter
             field="story"
@@ -157,7 +160,17 @@ export const Family = ({ variant }: VariantProps) => {
     );
 };
 
+// Every closing ends with the hosts' numbers, whichever design it uses.
 export function Closing({ variant }: VariantProps) {
+    return (
+        <>
+            <ClosingBody variant={variant} />
+            <Contacts />
+        </>
+    );
+}
+
+function ClosingBody({ variant }: VariantProps) {
     const { data, t, copy, names } = useInvite();
     const { content } = data.invitation;
     if (variant === 'rangoli') return <RangoliClosing closing={t(content.closing)} />;

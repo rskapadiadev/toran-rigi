@@ -25,6 +25,7 @@ export const occasionIds = [
     'birthday',
     'retirement',
     'puja',
+    'jagran',
     'upanayan',
     'mundan',
     'demise_notice',
@@ -64,6 +65,7 @@ export const occasionCopyKeys = [
     'withLove',
     'family',
     'ourStory',
+    'contactUs',
 ] as const;
 export type OccasionCopyKey = (typeof occasionCopyKeys)[number];
 
@@ -867,6 +869,106 @@ export const occasions: Record<OccasionId, OccasionPack> = {
             headline: { en: 'invite you to a Satyanarayan katha at our home' },
             welcome: { en: 'Please join us for the katha, aarti and prasad.' },
             closing: { en: 'With prayers for everyone’s well-being.' },
+        },
+    },
+    // A night of devotion: a jagran, bhajan sandhya or kirtan, often for the whole neighbourhood.
+    // Lively, not hushed: the dholak and the crowd sing along, so it moves like a celebration.
+    jagran: {
+        id: 'jagran',
+        category: 'faith',
+        name: {
+            en: 'Jagran / Bhajan sandhya',
+            hi: 'जागरण / भजन संध्या',
+            gu: 'જાગરણ / ભજન સંધ્યા',
+        },
+        summary:
+            'Mata ka jagran, bhajan sandhya, kirtan or a Sai sandhya, with jyot, aarti and bhandara.',
+        tone: 'festive',
+        people: {
+            // The evening's own name leads the cover and the link preview; the hosts speak in the headline.
+            one: {
+                label: 'Name of the evening',
+                placeholder: 'Ek Shaam Bhakti Ke Naam',
+            },
+        },
+        fields: noExtraFields,
+        events: [
+            {
+                kind: 'jyot',
+                label: {
+                    en: 'Jyot',
+                    hi: 'ज्योति प्रज्वलन',
+                    gu: 'જ્યોત પ્રાગટ્ય',
+                },
+            },
+            {
+                kind: 'bhajan',
+                label: {
+                    en: 'Bhajan sandhya',
+                    hi: 'भजन संध्या',
+                    gu: 'ભજન સંધ્યા',
+                },
+            },
+            {
+                kind: 'aarti',
+                label: {
+                    en: 'Aarti',
+                    hi: 'आरती',
+                    gu: 'આરતી',
+                },
+            },
+            {
+                kind: 'bhandara',
+                label: {
+                    en: 'Bhandara',
+                    hi: 'भंडारा प्रसाद',
+                    gu: 'ભંડારો પ્રસાદ',
+                },
+            },
+        ],
+        sections: {
+            default: ['cover', 'countdown', 'welcome', 'story', 'events', 'venue', 'closing'],
+            forbidden: [],
+        },
+        motion: festiveMotion,
+        greetingTone: 'auspicious',
+        copy: {
+            ...joinUs,
+            countdown: {
+                en: 'The jyot is lit in',
+                hi: 'ज्योति प्रज्वलन में',
+                gu: 'જ્યોત પ્રાગટ્યમાં',
+            },
+            contactUs: {
+                en: 'For seva, please call',
+                hi: 'सेवा के लिए संपर्क करें',
+                gu: 'સેવા માટે સંપર્ક કરો',
+            },
+            ourStory: {
+                en: 'Singing tonight',
+                hi: 'आज के भजन गायक',
+                gu: 'આજના ભજન ગાયક',
+            },
+            rsvpTitle: {
+                en: 'Will you join us?',
+                hi: 'क्या आप पधारेंगे?',
+                gu: 'શું આપ પધારશો?',
+            },
+            attending: {
+                en: 'I will come',
+                hi: 'मैं आऊँगा/आऊँगी',
+                gu: 'હું આવીશ',
+            },
+            declining: {
+                en: 'Unable to come',
+                hi: 'नहीं आ पाऊँगा/पाऊँगी',
+                gu: 'આવી શકીશ નહીં',
+            },
+        },
+        starter: {
+            headline: { en: 'Our mandal invites your whole family to a night of bhajans.' },
+            welcome: { en: 'Come for the jyot, sing through the night and take prasad at the bhandara.' },
+            closing: { en: 'Do bring your family and friends.' },
         },
     },
     upanayan: {

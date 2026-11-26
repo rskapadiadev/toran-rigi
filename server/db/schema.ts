@@ -2,6 +2,7 @@
 // booleans as 0/1 and money as integer minor units. Keep server/db/schema.pg.ts in sync.
 import { newId } from '@shared/ids';
 import type { EventInput } from '@shared/schemas/composer';
+import type { Brief } from '@shared/schemas/made';
 import type {
     EventKind,
     InvitationContent,
@@ -24,6 +25,12 @@ import {
 } from 'drizzle-orm/sqlite-core';
 
 const invoiceStatuses = ['draft', 'issued', 'partially_paid', 'paid', 'overdue', 'void'] as const;
+
+interface CheckoutAddon {
+    code: string;
+    name: string;
+    amount: number;
+}
 
 interface DressCode {
     note?: LocalizedText;
@@ -251,6 +258,8 @@ export const orders = sqliteTable(
         deliveryDueAt: text('delivery_due_at'),
         assignedUserId: text('assigned_user_id').references(() => users.id),
         revisionCount: integer('revision_count').notNull().default(0),
+        // What the customer sent for a done-for-you invitation.
+        brief: json<Brief>('brief'),
         partnerId: text('partner_id').references(() => partners.id),
         couponCode: text('coupon_code'),
         portalToken: text('portal_token').notNull().unique(),
@@ -290,6 +299,8 @@ export const orderAssets = sqliteTable(
             .references(() => orders.id),
         blobKey: text('blob_key').notNull(),
         kind: text('kind', { enum: ['photo', 'artwork', 'music', 'document', 'other'] }).notNull(),
+        // The file's own name, as the customer knows it.
+        name: text('name'),
         mime: text('mime').notNull(),
         size: integer('size').notNull(),
         createdAt: createdAt(),
@@ -427,6 +438,8 @@ export const checkouts = sqliteTable(
         invitationId: text('invitation_id').references(() => invitations.id),
         content: json<InvitationContent>('content'),
         events: json<EventInput[]>('events'),
+        // Extras bought with it, at the price that was shown.
+        addons: json<CheckoutAddon[]>('addons'),
         country: text('country'),
         currency: text('currency').notNull(),
         amount: integer('amount').notNull(),

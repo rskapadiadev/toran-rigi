@@ -79,6 +79,13 @@ export const photoSlots: Record<string, Record<string, readonly PhotoSlot[]>> = 
                 hint: 'Revealed when the portraits part',
             },
         ],
+        darbar: [
+            {
+                id: COVER_SLOT,
+                label: 'Darbar photo',
+                hint: 'Your own photo of the deity or the darbar, framed in the gold arch (only one you have the right to use)',
+            },
+        ],
         premiere: [
             {
                 id: COVER_SLOT,
@@ -95,6 +102,13 @@ export const photoSlots: Record<string, Record<string, readonly PhotoSlot[]>> = 
         ],
     },
     story: {
+        artist: [
+            {
+                id: 'story.artist',
+                label: 'Singer',
+                hint: 'A portrait of the singer, shown in a round frame under the spotlight',
+            },
+        ],
         portraits: [
             {
                 id: 'story.one',

@@ -5,6 +5,7 @@ import { type ReactNode, useId } from 'react';
 
 import { Agni } from './agni';
 import { Bangles } from './bangles';
+import { Bhojan } from './bhojan';
 import { Cake } from './cake';
 import { Chuppah } from './chuppah';
 import { Cradle } from './cradle';
@@ -49,6 +50,7 @@ const drawings: Record<CeremonyPropId, (props: Art) => ReactNode> = {
     lantern: Lantern,
     chuppah: Chuppah,
     thali: Thali,
+    bhojan: Bhojan,
     cradle: Cradle,
     cake: Cake,
     dove: Dove,

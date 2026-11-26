@@ -1,12 +1,15 @@
 // Paying for a design. A checkout holds the buyer's words while they pay; the order, the invoice and
 // the invitation are made only after the payment has arrived, whichever hears of it first: the
 // buyer's page, the payment service's webhook, or the job that picks up anything left half done.
+import type { RateSnapshot } from '@shared/fx';
+import { MADE_CODE, MADE_NAME, madePrice } from '@shared/made';
 import type { CheckoutState } from '@shared/schemas/checkout';
 import { and, eq, isNull, lt, or } from 'drizzle-orm';
 
 import { checkouts } from '../db/schema';
 import { getPlatform } from '../platform/context';
-import { OrderError } from './orders';
+import { addMade, canAddMade } from './made';
+import { type AddonLine, OrderError } from './orders';
 import {
     balanceOf,
     type CustomerContent,
@@ -17,6 +20,16 @@ import {
     type ShopWhere,
     templateOffer,
 } from './store';
+
+function madeLine(currency: string, rates: RateSnapshot | null): AddonLine {
+    const amount = madePrice(currency, rates);
+    if (amount === null) throw new OrderError(`No ${currency} price for this yet`);
+    return {
+        code: MADE_CODE,
+        name: MADE_NAME,
+        amount,
+    };
+}
 
 type Checkout = typeof checkouts.$inferSelect;
 type Provider = Checkout['provider'];
@@ -33,8 +46,10 @@ export async function startDesignCheckout(
     input: CustomerContent,
     where: ShopWhere,
     provider: Provider,
+    made = false,
 ): Promise<Checkout> {
     const { templateId, price } = await templateOffer(slug, where);
+    const extras = made ? [madeLine(where.currency, where.rates)] : [];
     const [row] = await getPlatform()
         .db.insert(checkouts)
         .values({
@@ -42,9 +57,10 @@ export async function startDesignCheckout(
             templateId,
             content: input.content,
             events: input.events,
+            addons: extras,
             country: where.country,
             currency: where.currency,
-            amount: price,
+            amount: price + extras.reduce((sum, e) => sum + e.amount, 0),
             provider,
         })
         .returning();
@@ -68,6 +84,34 @@ export async function startOrderCheckout(
             orderId: order.id,
             currency: order.currency,
             amount,
+            provider,
+        })
+        .returning();
+    if (!row) throw new OrderError('Could not start the payment');
+    return row;
+}
+
+// Done-for-you added to a design they already have.
+export async function startMadeCheckout(
+    customerId: string,
+    orderId: string,
+    rates: RateSnapshot | null,
+    provider: Provider,
+): Promise<Checkout> {
+    const order = await ownedOrder(customerId, orderId);
+    if (!(await canAddMade(order.id)))
+        throw new OrderError('This can’t be added to the invitation any more');
+    if ((await balanceOf(order.id)) > 0)
+        throw new OrderError('Complete payment for your invitation first');
+    const extra = madeLine(order.currency, rates);
+    const [row] = await getPlatform()
+        .db.insert(checkouts)
+        .values({
+            customerId,
+            orderId: order.id,
+            addons: [extra],
+            currency: order.currency,
+            amount: extra.amount,
             provider,
         })
         .returning();
@@ -143,6 +187,9 @@ async function fulfil(id: string): Promise<CheckoutState> {
           }
         : null;
     let orderId = row.orderId;
+    const extras = row.addons ?? [];
+    const extra = extras.find((e) => e.code === MADE_CODE);
+    if (orderId && !templateId && extra) await addMade(orderId, extra.amount, null);
     if (!orderId) {
         if (!templateId || !words) throw new OrderError('Nothing to make for this payment');
         orderId = await orderForDesign(
@@ -150,7 +197,8 @@ async function fulfil(id: string): Promise<CheckoutState> {
                 customerId: row.customerId,
                 templateId,
                 currency: row.currency,
-                price: row.amount,
+                price: row.amount - extras.reduce((sum, e) => sum + e.amount, 0),
+                extras,
                 country: row.country,
             },
             words,

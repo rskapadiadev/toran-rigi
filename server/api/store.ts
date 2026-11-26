@@ -1,14 +1,18 @@
 // The self-serve shop. Public: the catalogue and a template to try. Signed-in customers: buy, pay,
 // and edit / publish their own invitations. Customers sign in with an emailed code.
+import { madePrice } from '@shared/made';
 import { PHOTO_MAX_BYTES, type PhotoMime, photoMimes, photoUrl } from '@shared/photos';
 import { emailInput, verifyInput } from '@shared/schemas/admin';
 import { type CheckoutStart, razorpayProof } from '@shared/schemas/checkout';
 import { customerInput, slugInput, wishModerationInput } from '@shared/schemas/composer';
+import { briefInput, changesInput, type MyMadeView } from '@shared/schemas/made';
 import type { Context, MiddlewareHandler } from 'hono';
 import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
+import { z } from 'zod';
 
 import type { AppEnv } from '../app';
+import { briefDownload, briefUpload } from '../lib/brief-files';
 import { randomCode, randomToken, sha256, timingSafeEqual } from '../lib/crypto';
 import { clientIp, fail } from '../lib/http';
 import {
@@ -24,10 +28,22 @@ import {
     ownedCheckout,
     setProviderOrder,
     startDesignCheckout,
+    startMadeCheckout,
     startOrderCheckout,
 } from '../repos/checkouts';
 import { refreshIfLive, setSlug } from '../repos/composer';
 import { listWishes, moderateWish } from '../repos/guests';
+import {
+    addBriefFile,
+    askForChanges,
+    briefFile,
+    canAddMade,
+    madeView,
+    orderOfInvitation,
+    removeBriefFile,
+    saveBrief,
+    sendBrief,
+} from '../repos/made';
 import { listTracks } from '../repos/music';
 import { OrderError } from '../repos/orders';
 import { storePhoto } from '../repos/photos';
@@ -47,6 +63,7 @@ import {
     type StoreCustomer,
     storeTemplate,
 } from '../repos/store';
+import { tellStudio } from '../services/made';
 import { sendMail } from '../services/mailer';
 import { paymentMode, takePayment } from '../services/payments';
 import {
@@ -109,6 +126,8 @@ const contentInput = customerInput.pick({
     content: true,
     events: true,
 });
+
+const checkoutInput = contentInput.extend({ made: z.boolean().default(false) });
 
 const isPhotoMime = (type: string): type is PhotoMime =>
     (photoMimes as readonly string[]).includes(type);
@@ -264,7 +283,7 @@ async function start(c: Context<StoreEnv>, make: (provider: 'razorpay' | 'fake')
 }
 
 storeApi.post('/me/checkout/:slug', async (c) => {
-    const parsed = contentInput.safeParse(await json(c));
+    const parsed = checkoutInput.safeParse(await json(c));
     if (!parsed.success)
         return fail(c, 422, parsed.error.issues[0]?.message ?? 'Check your details');
     const where = await shopWhere(c);
@@ -275,6 +294,7 @@ storeApi.post('/me/checkout/:slug', async (c) => {
             parsed.data,
             where,
             provider,
+            parsed.data.made,
         ),
     );
 });
@@ -330,6 +350,83 @@ storeApi.route(
         refundable: refundIsOpen,
     }),
 );
+
+// Done-for-you: what they send us, the first look, and rounds of changes.
+const ownMade = async (c: Context<StoreEnv>, id: string) => {
+    await ownsInvitation(c.get('customer').id, id);
+    return orderOfInvitation(id);
+};
+
+const myMade = async (c: Context<StoreEnv>, orderId: string): Promise<MyMadeView> => {
+    const view = await madeView(orderId);
+    const { rates } = await shopWhere(c);
+    return {
+        ...view,
+        price: (await canAddMade(orderId)) ? madePrice(view.currency, rates) : null,
+        payments: paymentMode(c.env.config),
+    };
+};
+
+storeApi.get('/me/invitations/:id/made', async (c) =>
+    c.json(await myMade(c, await ownMade(c, c.req.param('id')))),
+);
+
+storeApi.put('/me/invitations/:id/made', async (c) => {
+    const orderId = await ownMade(c, c.req.param('id'));
+    const parsed = briefInput.safeParse(await json(c));
+    if (!parsed.success) return fail(c, 422, 'Some of that is too long. Send it as a file instead');
+    await saveBrief(orderId, parsed.data);
+    return c.json(await myMade(c, orderId));
+});
+
+storeApi.post('/me/invitations/:id/made/files', async (c) => {
+    const orderId = await ownMade(c, c.req.param('id'));
+    if (!(await c.env.rateLimit.limit(`brief:${orderId}`)).success)
+        return fail(c, 429, 'Give it a minute, then send the rest');
+    const form = (await c.req.parseBody()) as Record<string, unknown>;
+    const file = await briefUpload(form.file);
+    if (typeof file === 'string') return fail(c, 422, file);
+    await addBriefFile(orderId, file);
+    return c.json(await myMade(c, orderId), 201);
+});
+
+storeApi.get('/me/invitations/:id/made/files/:fileId', async (c) => {
+    const { id, fileId } = c.req.param();
+    const file = await briefFile(await ownMade(c, id), fileId);
+    return file ? briefDownload(file) : fail(c, 404, 'File not found');
+});
+
+storeApi.delete('/me/invitations/:id/made/files/:fileId', async (c) => {
+    const { id, fileId } = c.req.param();
+    const orderId = await ownMade(c, id);
+    await removeBriefFile(orderId, fileId);
+    return c.json(await myMade(c, orderId));
+});
+
+storeApi.post('/me/invitations/:id/made/send', async (c) => {
+    const orderId = await ownMade(c, c.req.param('id'));
+    await sendBrief(orderId);
+    await tellStudio(orderId, 'sent');
+    return c.json(await myMade(c, orderId));
+});
+
+storeApi.post('/me/invitations/:id/made/changes', async (c) => {
+    const orderId = await ownMade(c, c.req.param('id'));
+    const parsed = changesInput.safeParse(await json(c));
+    if (!parsed.success)
+        return fail(c, 422, parsed.error.issues[0]?.message ?? 'Tell us what to change');
+    await askForChanges(orderId, parsed.data.text);
+    await tellStudio(orderId, 'changes');
+    return c.json(await myMade(c, orderId));
+});
+
+storeApi.post('/me/invitations/:id/made/checkout', async (c) => {
+    const orderId = await ownMade(c, c.req.param('id'));
+    const { rates } = await shopWhere(c);
+    return start(c, (provider) =>
+        startMadeCheckout(c.get('customer').id, orderId, rates, provider),
+    );
+});
 
 storeApi.get('/me/invitations/:id', async (c) =>
     c.json(await myInvitation(c.get('customer').id, c.req.param('id'))),

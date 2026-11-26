@@ -85,6 +85,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             hint: 'Your photo fills the screen, then settles into a torn-paper frame as you scroll',
         },
         {
+            id: 'darbar',
+            label: 'Darbar',
+            hint: 'A night stage: a marigold toran, swinging temple bells and a row of diyas lighting up around your photo in a gold arch',
+        },
+        {
             id: 'premiere',
             label: 'Premiere',
             hint: 'A film title sequence: your photo seen through your names, then the camera flies through them into the picture',
@@ -171,6 +176,11 @@ export const blockVariants: Partial<Record<SectionType, VariantInfo[]>> = {
             id: 'chapters',
             label: 'Memory chapters',
             hint: 'Your story as a timeline: each paragraph a chapter with its own photo, joined by a golden thread',
+        },
+        {
+            id: 'artist',
+            label: 'Singer spotlight',
+            hint: 'A spotlit stage portrait in a marigold ring: the first line is the singer’s name, the rest a line about them',
         },
         {
             id: 'portraits',
@@ -363,6 +373,13 @@ export const openingChoices: OpeningInfo[] = [
         hint: 'A short cinematic film the studio uploads: a tap plays it, the names rise at its brightest moment and it settles into the cover',
         gesture: 'Tap',
         gentle: true,
+    },
+    {
+        id: 'jyot',
+        label: 'Light the jyot',
+        hint: 'Chunri curtains under a marigold toran: a tap lights the akhand jyot, a row of diyas catches one by one and the curtains part onto the darbar',
+        gesture: 'Tap the diya',
+        gentle: false,
     },
     {
         id: 'jewellery-box',

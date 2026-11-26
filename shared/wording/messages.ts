@@ -120,6 +120,16 @@ export const wordingMessages: WordingMessage[] = [
         ),
     },
     {
+        id: 'message-jagran',
+        occasion: 'jagran',
+        name: 'Jagran or bhajan sandhya',
+        text: t(
+            'Namaste {name}. Our mandal is holding a bhajan sandhya and we would love you and your family to come. The time and place are here: {link}',
+            'नमस्ते {name}। हमारे मंडल की भजन संध्या में आप सपरिवार पधारें। समय और स्थान यहाँ है: {link}',
+            'નમસ્તે {name}. અમારા મંડળની ભજન સંધ્યામાં આપ સહકુટુંબ પધારશો. સમય અને સ્થળ અહીં છે: {link}',
+        ),
+    },
+    {
         id: 'message-thread',
         occasion: 'upanayan',
         name: 'Thread ceremony',

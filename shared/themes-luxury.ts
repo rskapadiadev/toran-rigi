@@ -797,6 +797,32 @@ export const luxuryThemes: ThemeDefinition[] = [
             ],
         },
     }),
+    // A night of bhajans: the hosts' own darbar photo under a marigold toran, lit by a row of diyas.
+    {
+        ...theme({
+            slug: 'jagran',
+            name: 'Jagran',
+            culture: 'hindu',
+            category: 'luxury',
+            description:
+                'A night of bhajans: tap to light the akhand jyot and chunri curtains part onto a darbar with a marigold toran, swinging bells and your photo in a gold arch strung with lights.',
+            palette: {
+                bg: '#1c0710',
+                surface: '#2b0b16',
+                ink: '#f8ead2',
+                muted: '#d6b98f',
+                primary: '#e8731c',
+                accent: '#a3122a',
+                gold: '#e9b949',
+            },
+            display: 'marcellus',
+            body: 'cormorant',
+            opening: 'jyot',
+            generative: 'mandala',
+            texture: 'silk',
+        }),
+        suits: ['faith'],
+    },
 ];
 
 // Every Deepmala page sits on the same midnight paper, so no seams are drawn between them.
@@ -953,6 +979,47 @@ export const luxuryLayouts: Record<string, BlockPreset> = {
         closing: {
             ...overFilm,
             variant: 'rangoli',
+        },
+    },
+    // The darbar at night: every page on the same maroon midnight paper, diyas between them.
+    jagran: {
+        cover: {
+            variant: 'darbar',
+            scene: 'midnight',
+            edge: 'none',
+        },
+        countdown: {
+            ...night,
+            variant: 'diyas',
+        },
+        welcome: {
+            ...night,
+            variant: 'framed',
+        },
+        story: {
+            ...night,
+            variant: 'artist',
+        },
+        events: {
+            ...night,
+            variant: 'pavilions',
+        },
+        gallery: {
+            ...night,
+            variant: 'masks',
+        },
+        blessing: night,
+        venue: night,
+        rsvp: night,
+        wishes: {
+            ...night,
+            variant: 'default',
+        },
+        closing: {
+            ...night,
+            variant: 'rangoli',
+            edge: 'elephant',
+            edgeMotion: true,
         },
     },
     deepmala: {

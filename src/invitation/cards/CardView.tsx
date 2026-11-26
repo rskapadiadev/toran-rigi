@@ -13,6 +13,7 @@ import { renderSVG } from 'uqr';
 
 import { GenerativeOrnament } from '../../motion/GenerativeOrnament';
 import { InviteProvider, useInvite } from '../context';
+import { DiyaRow, MarigoldRing, MarigoldToran } from '../luxury/darbar/art';
 import { foilInk } from '../luxury/materials';
 import { CeremonyProp } from '../props';
 import { designStyle } from '../tokens';
@@ -53,6 +54,7 @@ function Card({ face, eventId, link, layer }: CardProps) {
         ...(layer === 'words' && { background: 'transparent' }),
     };
     const event = data.events.find((e) => e.id === eventId);
+    const darbar = useDarbar() && layer !== 'words';
     return (
         <div className="inv-root overflow-hidden" dir={dir} lang={locale} style={style} data-card>
             {face === 'save' && <SaveCard />}
@@ -60,6 +62,65 @@ function Card({ face, eventId, link, layer }: CardProps) {
             {face === 'front' && <FrontCard />}
             {face === 'back' && <BackCard link={link} />}
             {face === 'event' && event && <EventCard event={event} />}
+            {darbar && face !== 'story' && <DarbarDress face={face} />}
+        </div>
+    );
+}
+
+// ── Darbar ─────────────────────────────────────────────────────────────────
+
+// Invitations on the darbar cover (a jagran's stage) dress their cards to match.
+function useDarbar() {
+    const { data } = useInvite();
+    return data.invitation.sections.some((s) => s.type === 'cover' && s.variant === 'darbar');
+}
+
+interface DressProps {
+    face: CardFace;
+}
+
+// The marigold toran across the top of every card and lit diyas along the foot of the plain ones,
+// inside the trim so the printer never cuts them.
+function DarbarDress({ face }: DressProps) {
+    const box = faceSize[face];
+    const toran: CSSProperties = {
+        top: BLEED,
+        height: 74,
+    };
+    const lamps: CSSProperties = {
+        bottom: BLEED + 26,
+        width: box.width * 0.62,
+    };
+    // The front's foot already carries its motif band.
+    const footed = face === 'save' || face === 'back';
+    return (
+        <>
+            <div className="pointer-events-none absolute inset-x-0" style={toran}>
+                <MarigoldToran live={false} className="!h-full" />
+            </div>
+            {footed && (
+                <div
+                    className="pointer-events-none absolute start-1/2 -translate-x-1/2 rtl:translate-x-1/2"
+                    style={lamps}
+                >
+                    <DiyaRow count={7} lit className="w-full" />
+                </div>
+            )}
+        </>
+    );
+}
+
+// The hosts' own photo of the deity in a marigold ring, at the head of the printed front.
+function DarbarMedallion() {
+    const { data } = useInvite();
+    const key = data.invitation.content.coverPhotoKey;
+    if (!key) return null;
+    return (
+        <div className="relative mb-2 size-[128px] shrink-0">
+            <div className="absolute inset-[11%] overflow-hidden rounded-full ring-2 ring-(--inv-gold)">
+                <img src={photoUrl(key)} alt="" className="size-full object-cover object-top" />
+            </div>
+            <MarigoldRing className="absolute inset-0 size-full" />
         </div>
     );
 }
@@ -426,6 +487,7 @@ const archRoom: Record<CultureId, string> = {
 
 function FrontCard() {
     const { data, t, culture, occasion } = useInvite();
+    const darbar = useDarbar();
     const tones = useTones();
     const box = faceSize.front;
     const headline = t(data.invitation.content.headline);
@@ -446,6 +508,7 @@ function FrontCard() {
             <Ground {...box} />
             <ArchFrame {...box} left={BLEED + 34} top={BLEED + 20} right={box.width - BLEED - 34} />
             <Fit className={`inset-x-[92px] bottom-[100px] ${archRoom[culture.id]}`}>
+                {darbar && <DarbarMedallion />}
                 <Greeting />
                 <div className="h-3" />
                 {leads && line}

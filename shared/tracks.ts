@@ -198,6 +198,7 @@ const designTracks: Record<string, string> = {
     phulkari: 'tablas-and-sitars',
     zari: 'tablas-and-sitars',
     mehfil: 'tablas-and-sitars',
+    jagran: 'tablas-and-sitars',
     'palace-walk': 'veena-and-sitar',
     gulmohar: 'veena-and-sitar',
     deepmala: 'veena-and-sitar',

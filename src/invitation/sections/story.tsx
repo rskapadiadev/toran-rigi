@@ -396,6 +396,9 @@ function Rangoli({ seed, initials, motif }: RangoliProps) {
     );
 }
 
+// Openings that are a sealed envelope: only these are "sealed again"; the rest are watched again.
+const sealed = new Set(['envelope', 'sealed-letter']);
+
 // Closing: rangoli seal, a last line, the names, and the envelope can be sealed and opened again.
 export function RangoliClosing({ closing }: { closing: string }) {
     const { data, names, copy } = useInvite();
@@ -430,7 +433,7 @@ export function RangoliClosing({ closing }: { closing: string }) {
                     onClick={replay}
                     className="mt-8 inline-flex items-center gap-2 border-b border-dotted border-current pb-0.5 text-sm opacity-80 hover:opacity-100"
                 >
-                    ↻ {copy('sealAgain')}
+                    ↻ {copy(sealed.has(design.opening) ? 'sealAgain' : 'openAgain')}
                 </button>
             )}
         </section>

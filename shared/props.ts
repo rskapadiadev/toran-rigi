@@ -177,6 +177,13 @@ export const ceremonyProps = [
         cultures: dharmic,
     },
     {
+        id: 'bhojan',
+        label: 'Bhojan thali',
+        hint: 'A steel thali of puris, sabzi, dal, rice, halwa and kheer, for a bhandara or a community meal',
+        // Before the puja thali, so "Bhandara prasad" is served as a meal, not as an aarti plate.
+        match: ['bhandara', 'bhojan', 'mahaprasad'],
+    },
+    {
         id: 'thali',
         label: 'Puja thali',
         hint: 'A brass thali with a lit diya, kumkum, rice and flowers',

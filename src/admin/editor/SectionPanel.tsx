@@ -32,7 +32,10 @@ const fieldsFor: Partial<Record<SectionType, Fields>> = {
     welcome: { content: ['welcome'] },
     story: { content: ['story'] },
     family: { content: ['family'] },
-    closing: { content: ['closing', 'hashtag'] },
+    closing: {
+        content: ['closing', 'hashtag'],
+        extras: ['contacts'],
+    },
     events: { events: true },
     countdown: { events: true },
     shagun: { extras: ['gifts'] },

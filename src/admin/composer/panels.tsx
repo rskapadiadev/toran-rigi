@@ -46,6 +46,7 @@ import {
     MapPin,
     Music,
     PartyPopper,
+    Phone,
     Plus,
     Radio,
     Rocket,
@@ -1718,7 +1719,8 @@ export function EventsPanel({ draft, set, focus, limit }: EventsPanelProps) {
 
 // ── Extras ───────────────────────────────────────────────────────────────────
 
-export type ExtraPart = 'music' | 'rsvp' | 'wishes' | 'gifts' | 'live' | 'travel' | 'pdf';
+export type ExtraPart =
+    'music' | 'rsvp' | 'wishes' | 'gifts' | 'live' | 'travel' | 'pdf' | 'contacts';
 
 interface ExtrasPanelProps extends PanelProps {
     invitationId: string;
@@ -1742,7 +1744,10 @@ export function ExtrasPanel({ draft, set, invitationId, only, music }: ExtrasPan
         }));
     };
     return (
-        <Accordion type="multiple" defaultValue={['music', 'guests', 'gifts', 'live', 'travel']}>
+        <Accordion
+            type="multiple"
+            defaultValue={['music', 'guests', 'gifts', 'live', 'travel', 'contacts']}
+        >
             {show('music') && (
                 <AccordionItem value="music">
                     <AccordionTrigger className={sectionTrigger}>
@@ -1885,6 +1890,82 @@ export function ExtrasPanel({ draft, set, invitationId, only, music }: ExtrasPan
                                 setExtras({ live: v ? { youtubeUrl: v } : undefined });
                             }}
                         />
+                    </AccordionContent>
+                </AccordionItem>
+            )}
+            {show('contacts') && (
+                <AccordionItem value="contacts">
+                    <AccordionTrigger className={sectionTrigger}>
+                        <span className="flex items-center gap-2">
+                            <Phone className="size-4 text-muted-foreground" /> Contact numbers
+                        </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-3">
+                        <p className="text-xs text-muted-foreground">
+                            Shown at the end of the invitation: guests tap to call or WhatsApp. For
+                            a jagran it reads “सेवा के लिए संपर्क करें”.
+                        </p>
+                        {(x.contacts ?? []).map((c, i) => {
+                            const update = (patch: Partial<typeof c>) => {
+                                setExtras({
+                                    contacts: (x.contacts ?? []).map((k, j) =>
+                                        j === i
+                                            ? {
+                                                  ...k,
+                                                  ...patch,
+                                              }
+                                            : k,
+                                    ),
+                                });
+                            };
+                            return (
+                                <div key={i} className="space-y-3 rounded-lg border p-3">
+                                    <TextField
+                                        label="Name (optional)"
+                                        value={c.name}
+                                        placeholder="Ramesh ji"
+                                        onChange={(v) => {
+                                            update({ name: v || undefined });
+                                        }}
+                                    />
+                                    <TextField
+                                        label="Mobile number"
+                                        value={c.phone}
+                                        dir="ltr"
+                                        placeholder="+91 79790 00735"
+                                        onChange={(v) => {
+                                            update({ phone: v });
+                                        }}
+                                    />
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive"
+                                        onClick={() => {
+                                            const rest = (x.contacts ?? []).filter(
+                                                (_, j) => j !== i,
+                                            );
+                                            setExtras({ contacts: rest.length ? rest : undefined });
+                                        }}
+                                    >
+                                        Remove number
+                                    </Button>
+                                </div>
+                            );
+                        })}
+                        {(x.contacts ?? []).length < 8 && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full border-dashed"
+                                onClick={() => {
+                                    const added = [...(x.contacts ?? []), { phone: '' }];
+                                    setExtras({ contacts: added });
+                                }}
+                            >
+                                <Plus /> Add a number
+                            </Button>
+                        )}
                     </AccordionContent>
                 </AccordionItem>
             )}

@@ -44,6 +44,7 @@ export const openingKinds = [
     'sealed-letter',
     'portraits',
     'film',
+    'jyot',
 ] as const;
 
 export const generativeKinds = [
@@ -477,6 +478,16 @@ export const extrasSchema = z.object({
         })
         .optional(),
     wishes: z.object({ enabled: z.boolean() }).optional(),
+    // Numbers guests can call or WhatsApp (seva, directions, help on the day), shown at the close.
+    contacts: z
+        .array(
+            z.object({
+                name: z.string().max(80).optional(),
+                phone: z.string().min(6).max(32),
+            }),
+        )
+        .max(8)
+        .optional(),
     // The couple's reply settings and the words sent with each family's link (their Guests page).
     replies: z
         .object({

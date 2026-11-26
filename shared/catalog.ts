@@ -316,6 +316,7 @@ export const reservedSlugList = [
     'privacy',
     'refund',
     'delivery',
+    'made-for-you',
     'login',
     'logout',
     'couple',
