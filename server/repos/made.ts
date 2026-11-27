@@ -13,6 +13,7 @@ import {
     madeStage,
     roundsLeft,
 } from '@shared/made';
+import { photoPrefix } from '@shared/photos';
 import { type Brief, emptyBrief, type MadeView, missingFromBrief } from '@shared/schemas/made';
 import type { OrderStatus } from '@shared/types';
 import { and, asc, eq, inArray, ne } from 'drizzle-orm';
@@ -28,6 +29,7 @@ import {
 } from '../db/schema';
 import { getPlatform } from '../platform/context';
 import { createInvoice, invoicesForOrder } from './billing';
+import { addToGallery } from './composer';
 import { OrderError } from './orders';
 
 type Order = typeof orders.$inferSelect;
@@ -120,6 +122,7 @@ export async function madeView(orderId: string): Promise<MadeView> {
             kind: f.kind,
             mime: f.mime,
             size: f.size,
+            inInvitation: f.photoKey !== null,
         })),
         messages: events.map((e) => ({
             id: e.id,
@@ -327,6 +330,31 @@ export async function shareLook(orderId: string, text: string, userId: string) {
         patch: { deliveryDueAt: null },
     });
     return stage;
+}
+
+// A photo they sent, now in the invitation: its gallery has it, and the file remembers it.
+export async function placePhoto(orderId: string, fileId: string, key: string) {
+    const { db } = getPlatform();
+    const [file, invitation] = await Promise.all([
+        db
+            .select()
+            .from(orderAssets)
+            .where(and(eq(orderAssets.id, fileId), eq(orderAssets.orderId, orderId)))
+            .get(),
+        db
+            .select({ id: invitations.id })
+            .from(invitations)
+            .where(eq(invitations.orderId, orderId))
+            .get(),
+    ]);
+    if (file?.kind !== 'photo') throw new OrderError('That isn’t one of their photos');
+    if (!invitation) throw new OrderError('Create the invitation first');
+    if (file.photoKey) return;
+    // Only a photo stored under this invitation: never someone else's, never a path of our own.
+    if (!key.startsWith(photoPrefix(invitation.id)) || key.includes('..'))
+        throw new OrderError('That photo belongs to another invitation');
+    await addToGallery(invitation.id, key);
+    await db.update(orderAssets).set({ photoKey: key }).where(eq(orderAssets.id, fileId));
 }
 
 // Statuses in which the customer still has to send something.

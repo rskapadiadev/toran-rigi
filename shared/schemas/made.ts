@@ -36,6 +36,8 @@ export const changesInput = z.object({ text: changesText });
 
 // A first look or a question may go without a word of its own.
 const studioText = z.string().trim().max(2000).default('');
+export const placedPhotoInput = z.object({ key: z.string().min(1).max(300) });
+
 export const studioMessageInput = z.object({ text: studioText });
 
 export interface BriefFile {
@@ -44,6 +46,8 @@ export interface BriefFile {
     kind: string;
     mime: string;
     size: number;
+    // A photo the studio has already put in the invitation's gallery.
+    inInvitation: boolean;
 }
 
 export interface MadeMessage {

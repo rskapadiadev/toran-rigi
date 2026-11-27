@@ -7,7 +7,7 @@ import {
     recordPaymentInput,
     updateStatusInput,
 } from '@shared/schemas/admin';
-import { studioMessageInput } from '@shared/schemas/made';
+import { placedPhotoInput, studioMessageInput } from '@shared/schemas/made';
 import { type OrderStatus, orderStatuses } from '@shared/types';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -24,7 +24,15 @@ import {
 } from '../repos/billing';
 import { listCatalog } from '../repos/catalog';
 import { createInvitationForOrder } from '../repos/composer';
-import { addMade, askForDetails, briefFile, canAddMade, madeView, shareLook } from '../repos/made';
+import {
+    addMade,
+    askForDetails,
+    briefFile,
+    canAddMade,
+    madeView,
+    placePhoto,
+    shareLook,
+} from '../repos/made';
 import {
     addOrderNote,
     assignOrder,
@@ -214,6 +222,17 @@ adminApi.post('/orders/:id/made', requirePermission('orders.create'), async (c) 
     await addMade(orderId, price, c.get('user').id);
     return c.json({ ok: true });
 });
+
+adminApi.post(
+    '/orders/:id/made/files/:fileId/placed',
+    requirePermission('orders.update'),
+    async (c) => {
+        const parsed = await body(c, placedPhotoInput);
+        if (!parsed.success) return fail(c, 422, 'Which photo?');
+        await placePhoto(c.req.param('id'), c.req.param('fileId'), parsed.data.key);
+        return c.json({ ok: true });
+    },
+);
 
 adminApi.post('/orders/:id/made/look', requirePermission('orders.update'), async (c) => {
     const parsed = await body(c, studioMessageInput);

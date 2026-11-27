@@ -2,12 +2,24 @@
 // things only the studio does (ask for more, share the look).
 import { MADE_HOURS, MADE_ROUNDS } from '@shared/made';
 import { formatMoney } from '@shared/money';
-import type { MadeView } from '@shared/schemas/made';
+import type { BriefFile, MadeView } from '@shared/schemas/made';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Download, Eye, FileText, HelpCircle, ImageIcon, Music, Wand2 } from 'lucide-react';
+import {
+    Check,
+    Download,
+    Eye,
+    FileText,
+    HelpCircle,
+    ImageIcon,
+    ImagePlus,
+    Loader2,
+    Music,
+    Wand2,
+} from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { upload } from '@/admin/editor/PhotosPanel';
 import { FormField } from '@/admin/kit/form';
 import { Panel, ToneBadge } from '@/admin/kit/page';
 import type { Tone } from '@/admin/labels';
@@ -65,12 +77,20 @@ const kindIcon: Partial<Record<string, typeof FileText>> = {
 
 interface MadePanelProps {
     orderId: string;
+    // Where their photos go; none until the order has its invitation.
+    invitationId: string | null;
     canCreate: boolean;
 }
 
-export function MadePanel({ orderId, canCreate }: MadePanelProps) {
+interface Placing {
+    done: number;
+    of: number;
+}
+
+export function MadePanel({ orderId, invitationId, canCreate }: MadePanelProps) {
     const client = useQueryClient();
     const [text, setText] = useState('');
+    const [placing, setPlacing] = useState<Placing | null>(null);
     const { data: made } = useQuery({
         queryKey: ['order-made', orderId],
         queryFn: () => api<StudioMade>(`/admin/orders/${orderId}/made`),
@@ -97,6 +117,43 @@ export function MadePanel({ orderId, canCreate }: MadePanelProps) {
         onError: failed,
     });
 
+    // Shrunk in this browser like any photo the editor takes, then put at the end of the gallery.
+    const place = async (files: BriefFile[]) => {
+        if (!invitationId) return;
+        let added = 0;
+        setPlacing({
+            done: 0,
+            of: files.length,
+        });
+        for (const [i, f] of files.entries()) {
+            try {
+                const res = await fetch(`/api/admin/orders/${orderId}/made/files/${f.id}`);
+                if (!res.ok) throw new Error('It couldn’t be opened');
+                const photo = new File([await res.blob()], f.name, { type: f.mime });
+                const key = await upload(invitationId, photo);
+                await post(`/admin/orders/${orderId}/made/files/${f.id}/placed`, { key });
+                added++;
+            } catch (e) {
+                const heic = f.mime === 'image/heic' || f.mime === 'image/heif';
+                toast.error(
+                    heic
+                        ? `${f.name} is an iPhone HEIC photo this browser can’t read. Try Safari.`
+                        : `${f.name}: ${e instanceof Error ? e.message : 'it didn’t go in'}`,
+                );
+            }
+            setPlacing({
+                done: i + 1,
+                of: files.length,
+            });
+        }
+        setPlacing(null);
+        if (added > 0)
+            toast.success(
+                `${String(added)} photo${added === 1 ? '' : 's'} added to the gallery. Place them in the editor`,
+            );
+        await client.invalidateQueries({ queryKey: ['order-made', orderId] });
+    };
+
     if (!made) return null;
     if (!made.made)
         return made.canAdd && canCreate && made.price !== null ? (
@@ -122,6 +179,7 @@ export function MadePanel({ orderId, canCreate }: MadePanelProps) {
     const stage = stageLabels[made.stage];
     const ours = made.stage === 'making' || made.stage === 'changes';
     const lastAsk = made.messages.filter((m) => m.from === 'customer').at(-1);
+    const waiting = made.files.filter((f) => f.kind === 'photo' && !f.inInvitation);
     return (
         <Panel
             title="Done-for-you"
@@ -158,23 +216,73 @@ export function MadePanel({ orderId, canCreate }: MadePanelProps) {
                 ))}
             </dl>
             {made.files.length > 0 && (
-                <ul className="mt-4 grid gap-2 sm:grid-cols-2">
-                    {made.files.map((f) => {
-                        const Icon = kindIcon[f.kind] ?? FileText;
-                        return (
-                            <li key={f.id}>
-                                <a
-                                    href={`/api/admin/orders/${orderId}/made/files/${f.id}`}
-                                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1 ring-foreground/10 hover:bg-muted"
+                <div className="mt-4">
+                    {waiting.length > 0 && invitationId && (
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={placing !== null}
+                                onClick={() => {
+                                    void place(waiting);
+                                }}
+                            >
+                                {placing ? <Loader2 className="animate-spin" /> : <ImagePlus />}
+                                {placing
+                                    ? `Adding ${String(placing.done + 1)} of ${String(placing.of)}…`
+                                    : `Add ${waiting.length === 1 ? 'the photo' : `all ${String(waiting.length)} photos`} to the invitation`}
+                            </Button>
+                            <span className="text-xs text-muted-foreground">
+                                They go at the end of the gallery. Reload the editor if it’s open.
+                            </span>
+                        </div>
+                    )}
+                    <ul className="grid gap-2 sm:grid-cols-2">
+                        {made.files.map((f) => {
+                            const Icon = kindIcon[f.kind] ?? FileText;
+                            return (
+                                <li
+                                    key={f.id}
+                                    className="flex items-center rounded-lg ring-1 ring-foreground/10"
                                 >
-                                    <Icon className="size-4 shrink-0 text-muted-foreground" />
-                                    <span className="min-w-0 flex-1 truncate">{f.name}</span>
-                                    <Download className="size-3.5 shrink-0 text-muted-foreground" />
-                                </a>
-                            </li>
-                        );
-                    })}
-                </ul>
+                                    <a
+                                        href={`/api/admin/orders/${orderId}/made/files/${f.id}`}
+                                        className="flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted"
+                                    >
+                                        <Icon className="size-4 shrink-0 text-muted-foreground" />
+                                        <span className="min-w-0 flex-1 truncate">{f.name}</span>
+                                        <Download className="size-3.5 shrink-0 text-muted-foreground" />
+                                    </a>
+                                    {f.kind === 'photo' &&
+                                        (f.inInvitation ? (
+                                            <span
+                                                className="flex shrink-0 items-center gap-1 pe-3 text-xs text-success"
+                                                title="In the invitation’s gallery"
+                                            >
+                                                <Check className="size-3.5" />
+                                                <span className="max-sm:sr-only">In it</span>
+                                            </span>
+                                        ) : (
+                                            invitationId && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="me-1 size-7 shrink-0"
+                                                    aria-label={`Add ${f.name} to the invitation`}
+                                                    disabled={placing !== null}
+                                                    onClick={() => {
+                                                        void place([f]);
+                                                    }}
+                                                >
+                                                    <ImagePlus />
+                                                </Button>
+                                            )
+                                        ))}
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
             )}
             {ours && (
                 <div className="mt-5 space-y-3 border-t pt-4">

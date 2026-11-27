@@ -1,0 +1,1 @@
+ALTER TABLE `order_assets` ADD `photo_key` text;

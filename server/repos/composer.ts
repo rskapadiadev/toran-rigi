@@ -264,6 +264,27 @@ export async function refreshIfLive(id: string) {
     if (detail?.invitation.status === 'published') await setInvitationStatus(id, 'published', true);
 }
 
+// One more photo at the end of the gallery; live invitations show it straight away.
+export async function addToGallery(id: string, key: string) {
+    const { db } = getPlatform();
+    const current = await db.select().from(invitations).where(eq(invitations.id, id)).get();
+    if (!current) throw new OrderError('Invitation not found');
+    if (current.content.gallery.includes(key)) return;
+    const live = current.status === 'published';
+    await db
+        .update(invitations)
+        .set({
+            content: {
+                ...current.content,
+                gallery: [...current.content.gallery, key],
+            },
+            version: live ? current.version + 1 : current.version,
+            updatedAt: new Date().toISOString(),
+        })
+        .where(eq(invitations.id, id));
+    if (live) await invalidateInvitationCache(current.slug, current.version);
+}
+
 export async function setSlug(id: string, slug: string) {
     const { db } = getPlatform();
     if (!(await isSlugFree(slug, id))) throw new OrderError('That link is taken — try another');

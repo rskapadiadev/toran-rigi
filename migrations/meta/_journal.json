@@ -141,6 +141,13 @@
       "when": 1795624949212,
       "tag": "0019_made_for_you",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1795765503396,
+      "tag": "0020_brief_photos",
+      "breakpoints": true
     }
   ]
 }

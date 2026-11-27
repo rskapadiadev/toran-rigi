@@ -242,7 +242,11 @@ function OrderPage() {
                             </div>
                         )}
                     </Panel>
-                    <MadePanel orderId={order.id} canCreate={can(me?.role, 'orders.create')} />
+                    <MadePanel
+                        orderId={order.id}
+                        invitationId={data.invitation?.id ?? null}
+                        canCreate={can(me?.role, 'orders.create')}
+                    />
                     <Panel title="Timeline & notes" icon={StickyNote}>
                         <form onSubmit={submitNote} className="mb-6 space-y-2">
                             <Textarea

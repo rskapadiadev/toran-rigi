@@ -301,6 +301,8 @@ export const orderAssets = sqliteTable(
         kind: text('kind', { enum: ['photo', 'artwork', 'music', 'document', 'other'] }).notNull(),
         // The file's own name, as the customer knows it.
         name: text('name'),
+        // The invitation photo the studio made of it, so it is only ever added once.
+        photoKey: text('photo_key'),
         mime: text('mime').notNull(),
         size: integer('size').notNull(),
         createdAt: createdAt(),
