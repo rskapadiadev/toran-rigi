@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { cultureIds } from '../cultures';
 import { contentLocales } from '../locales';
+import { MAX_AVOID, MAX_OUTFITS, MAX_SWATCHES, outfitIds } from '../looks';
 import { occasionIds } from '../occasions';
 import {
     contentSchema,
@@ -12,6 +13,7 @@ import {
     sectionTypes,
 } from './invitation';
 
+const hex = z.string().regex(/^#[0-9a-f]{6}$/i);
 const localIso = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'Use YYYY-MM-DDTHH:mm');
 
 export const eventInput = z.object({
@@ -32,7 +34,12 @@ export const eventInput = z.object({
             note: localizedText.optional(),
             ladies: localizedText.optional(),
             gentlemen: localizedText.optional(),
-            swatches: z.array(z.string().regex(/^#[0-9a-f]{6}$/i)).max(6),
+            swatches: z.array(hex).max(MAX_SWATCHES),
+            // Colours to stay away from (the bride's red, white at a church wedding).
+            avoid: z.array(hex).max(MAX_AVOID).optional(),
+            // The drawn figures shown for this function; empty means ones that suit the tradition.
+            outfits: z.array(z.enum(outfitIds)).max(MAX_OUTFITS).optional(),
+            turban: z.boolean().optional(),
         })
         .optional(),
 });

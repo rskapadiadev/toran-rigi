@@ -1,5 +1,6 @@
 import { familyReplies } from '@shared/families';
 import { visibleEvents } from '@shared/guests';
+import { hasEnded } from '@shared/keepsake';
 import { heartInput, openedInput, rsvpInput, wishInput } from '@shared/schemas/guest';
 import { Hono } from 'hono';
 
@@ -30,6 +31,7 @@ invitationsApi.post('/:slug/rsvp', async (c) => {
     const invitation = await getInvitationIdBySlug(slug);
     if (!invitation || invitation.status !== 'published' || !invitation.rsvpEnabled)
         return fail(c, 404, 'Invitation not found');
+    if (hasEnded(invitation.expiresAt)) return fail(c, 409, 'This celebration has passed');
     if (!(await verifyTurnstile(parsed.data.turnstileToken, ip)))
         return fail(c, 403, 'Verification failed');
 
@@ -91,7 +93,8 @@ invitationsApi.post('/:slug/wishes', async (c) => {
     if (
         !invitation ||
         invitation.status !== 'published' ||
-        invitation.extras.wishes?.enabled === false
+        invitation.extras.wishes?.enabled === false ||
+        hasEnded(invitation.expiresAt)
     )
         return fail(c, 404, 'Invitation not found');
     if (!(await verifyTurnstile(parsed.data.turnstileToken, ip)))

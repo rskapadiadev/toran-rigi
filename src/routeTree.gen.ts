@@ -11,11 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as DevMailRouteImport } from './routes/dev-mail'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as MadeForYouRouteImport } from './routes/made-for-you'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -28,6 +30,7 @@ import { Route as AdminLibraryRouteImport } from './routes/admin/library'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminMusicRouteImport } from './routes/admin/music'
 import { Route as AdminPricingRouteImport } from './routes/admin/pricing'
+import { Route as BTokenRouteImport } from './routes/b.$token'
 import { Route as InvitationsIndexRouteImport } from './routes/invitations.index'
 import { Route as InvitationsPageRouteImport } from './routes/invitations.$page'
 import { Route as MyIndexRouteImport } from './routes/my.index'
@@ -45,12 +48,14 @@ import { Route as AdminOrdersIdRouteImport } from './routes/admin/orders/$id'
 import { Route as AdminOrdersNewRouteImport } from './routes/admin/orders/new'
 import { Route as AdminTemplatesIndexRouteImport } from './routes/admin/templates/index'
 import { Route as AdminTemplatesIdRouteImport } from './routes/admin/templates/$id'
+import { Route as MyIdBoardRouteImport } from './routes/my.$id_.board'
 import { Route as MyIdCardsRouteImport } from './routes/my.$id_.cards'
 import { Route as MyIdGuestsRouteImport } from './routes/my.$id_.guests'
 import { Route as MyIdMadeRouteImport } from './routes/my.$id_.made'
 import { Route as PTokenCardRouteImport } from './routes/p.$token_.card'
 import { Route as PTokenPostRouteImport } from './routes/p.$token_.post'
 import { Route as AdminInvitationsIdIndexRouteImport } from './routes/admin/invitations/$id.index'
+import { Route as AdminInvitationsIdBoardRouteImport } from './routes/admin/invitations/$id.board'
 import { Route as AdminInvitationsIdCardsRouteImport } from './routes/admin/invitations/$id.cards'
 import { Route as AdminInvitationsIdGuestsRouteImport } from './routes/admin/invitations/$id.guests'
 
@@ -62,6 +67,11 @@ const IndexRoute = IndexRouteImport.update({
 const SlugRoute = SlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRouteRoute = AdminRouteRouteImport.update({
@@ -87,6 +97,11 @@ const DeliveryRoute = DeliveryRouteImport.update({
 const DevMailRoute = DevMailRouteImport.update({
   id: '/dev-mail',
   path: '/dev-mail',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MadeForYouRoute = MadeForYouRouteImport.update({
@@ -148,6 +163,11 @@ const AdminPricingRoute = AdminPricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
   getParentRoute: () => AdminRouteRoute,
+} as any)
+const BTokenRoute = BTokenRouteImport.update({
+  id: '/b/$token',
+  path: '/b/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const InvitationsIndexRoute = InvitationsIndexRouteImport.update({
   id: '/invitations/',
@@ -234,6 +254,11 @@ const AdminTemplatesIdRoute = AdminTemplatesIdRouteImport.update({
   path: '/templates/$id',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const MyIdBoardRoute = MyIdBoardRouteImport.update({
+  id: '/$id_/board',
+  path: '/$id/board',
+  getParentRoute: () => MyRoute,
+} as any)
 const MyIdCardsRoute = MyIdCardsRouteImport.update({
   id: '/$id_/cards',
   path: '/$id/cards',
@@ -264,6 +289,11 @@ const AdminInvitationsIdIndexRoute = AdminInvitationsIdIndexRouteImport.update({
   path: '/invitations/$id/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminInvitationsIdBoardRoute = AdminInvitationsIdBoardRouteImport.update({
+  id: '/invitations/$id/board',
+  path: '/invitations/$id/board',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminInvitationsIdCardsRoute = AdminInvitationsIdCardsRouteImport.update({
   id: '/invitations/$id/cards',
   path: '/invitations/$id/cards',
@@ -280,10 +310,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/$slug': typeof SlugRoute
+  '/about': typeof AboutRoute
   '/collections': typeof CollectionsRoute
   '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/dev-mail': typeof DevMailRoute
+  '/help': typeof HelpRoute
   '/made-for-you': typeof MadeForYouRoute
   '/my': typeof MyRouteWithChildren
   '/privacy': typeof PrivacyRoute
@@ -295,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/pricing': typeof AdminPricingRoute
+  '/b/$token': typeof BTokenRoute
   '/invitations/$page': typeof InvitationsPageRoute
   '/my/$id': typeof MyIdRoute
   '/my/payments': typeof MyPaymentsRoute
@@ -309,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
+  '/my/$id/board': typeof MyIdBoardRoute
   '/my/$id/cards': typeof MyIdCardsRoute
   '/my/$id/guests': typeof MyIdGuestsRoute
   '/my/$id/made': typeof MyIdMadeRoute
@@ -318,6 +352,7 @@ export interface FileRoutesByFullPath {
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/admin/templates/': typeof AdminTemplatesIndexRoute
+  '/admin/invitations/$id/board': typeof AdminInvitationsIdBoardRoute
   '/admin/invitations/$id/cards': typeof AdminInvitationsIdCardsRoute
   '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
   '/admin/invitations/$id/': typeof AdminInvitationsIdIndexRoute
@@ -325,10 +360,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
+  '/about': typeof AboutRoute
   '/collections': typeof CollectionsRoute
   '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/dev-mail': typeof DevMailRoute
+  '/help': typeof HelpRoute
   '/made-for-you': typeof MadeForYouRoute
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
@@ -339,6 +376,7 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/pricing': typeof AdminPricingRoute
+  '/b/$token': typeof BTokenRoute
   '/invitations/$page': typeof InvitationsPageRoute
   '/my/$id': typeof MyIdRoute
   '/my/payments': typeof MyPaymentsRoute
@@ -353,6 +391,7 @@ export interface FileRoutesByTo {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
+  '/my/$id/board': typeof MyIdBoardRoute
   '/my/$id/cards': typeof MyIdCardsRoute
   '/my/$id/guests': typeof MyIdGuestsRoute
   '/my/$id/made': typeof MyIdMadeRoute
@@ -362,6 +401,7 @@ export interface FileRoutesByTo {
   '/admin/invitations': typeof AdminInvitationsIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
   '/admin/templates': typeof AdminTemplatesIndexRoute
+  '/admin/invitations/$id/board': typeof AdminInvitationsIdBoardRoute
   '/admin/invitations/$id/cards': typeof AdminInvitationsIdCardsRoute
   '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
   '/admin/invitations/$id': typeof AdminInvitationsIdIndexRoute
@@ -371,10 +411,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
   '/$slug': typeof SlugRoute
+  '/about': typeof AboutRoute
   '/collections': typeof CollectionsRoute
   '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/dev-mail': typeof DevMailRoute
+  '/help': typeof HelpRoute
   '/made-for-you': typeof MadeForYouRoute
   '/my': typeof MyRouteWithChildren
   '/privacy': typeof PrivacyRoute
@@ -386,6 +428,7 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/pricing': typeof AdminPricingRoute
+  '/b/$token': typeof BTokenRoute
   '/invitations/$page': typeof InvitationsPageRoute
   '/my/$id': typeof MyIdRoute
   '/my/payments': typeof MyPaymentsRoute
@@ -400,6 +443,7 @@ export interface FileRoutesById {
   '/admin/orders/$id': typeof AdminOrdersIdRoute
   '/admin/orders/new': typeof AdminOrdersNewRoute
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
+  '/my/$id_/board': typeof MyIdBoardRoute
   '/my/$id_/cards': typeof MyIdCardsRoute
   '/my/$id_/guests': typeof MyIdGuestsRoute
   '/my/$id_/made': typeof MyIdMadeRoute
@@ -409,6 +453,7 @@ export interface FileRoutesById {
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
   '/admin/templates/': typeof AdminTemplatesIndexRoute
+  '/admin/invitations/$id/board': typeof AdminInvitationsIdBoardRoute
   '/admin/invitations/$id/cards': typeof AdminInvitationsIdCardsRoute
   '/admin/invitations/$id/guests': typeof AdminInvitationsIdGuestsRoute
   '/admin/invitations/$id/': typeof AdminInvitationsIdIndexRoute
@@ -419,10 +464,12 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/$slug'
+    | '/about'
     | '/collections'
     | '/contact'
     | '/delivery'
     | '/dev-mail'
+    | '/help'
     | '/made-for-you'
     | '/my'
     | '/privacy'
@@ -434,6 +481,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/music'
     | '/admin/pricing'
+    | '/b/$token'
     | '/invitations/$page'
     | '/my/$id'
     | '/my/payments'
@@ -448,6 +496,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/orders/new'
     | '/admin/templates/$id'
+    | '/my/$id/board'
     | '/my/$id/cards'
     | '/my/$id/guests'
     | '/my/$id/made'
@@ -457,6 +506,7 @@ export interface FileRouteTypes {
     | '/admin/invitations/'
     | '/admin/orders/'
     | '/admin/templates/'
+    | '/admin/invitations/$id/board'
     | '/admin/invitations/$id/cards'
     | '/admin/invitations/$id/guests'
     | '/admin/invitations/$id/'
@@ -464,10 +514,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$slug'
+    | '/about'
     | '/collections'
     | '/contact'
     | '/delivery'
     | '/dev-mail'
+    | '/help'
     | '/made-for-you'
     | '/privacy'
     | '/refund'
@@ -478,6 +530,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/music'
     | '/admin/pricing'
+    | '/b/$token'
     | '/invitations/$page'
     | '/my/$id'
     | '/my/payments'
@@ -492,6 +545,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/orders/new'
     | '/admin/templates/$id'
+    | '/my/$id/board'
     | '/my/$id/cards'
     | '/my/$id/guests'
     | '/my/$id/made'
@@ -501,6 +555,7 @@ export interface FileRouteTypes {
     | '/admin/invitations'
     | '/admin/orders'
     | '/admin/templates'
+    | '/admin/invitations/$id/board'
     | '/admin/invitations/$id/cards'
     | '/admin/invitations/$id/guests'
     | '/admin/invitations/$id'
@@ -509,10 +564,12 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/$slug'
+    | '/about'
     | '/collections'
     | '/contact'
     | '/delivery'
     | '/dev-mail'
+    | '/help'
     | '/made-for-you'
     | '/my'
     | '/privacy'
@@ -524,6 +581,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/admin/music'
     | '/admin/pricing'
+    | '/b/$token'
     | '/invitations/$page'
     | '/my/$id'
     | '/my/payments'
@@ -538,6 +596,7 @@ export interface FileRouteTypes {
     | '/admin/orders/$id'
     | '/admin/orders/new'
     | '/admin/templates/$id'
+    | '/my/$id_/board'
     | '/my/$id_/cards'
     | '/my/$id_/guests'
     | '/my/$id_/made'
@@ -547,6 +606,7 @@ export interface FileRouteTypes {
     | '/admin/invitations/'
     | '/admin/orders/'
     | '/admin/templates/'
+    | '/admin/invitations/$id/board'
     | '/admin/invitations/$id/cards'
     | '/admin/invitations/$id/guests'
     | '/admin/invitations/$id/'
@@ -556,15 +616,18 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   SlugRoute: typeof SlugRoute
+  AboutRoute: typeof AboutRoute
   CollectionsRoute: typeof CollectionsRoute
   ContactRoute: typeof ContactRoute
   DeliveryRoute: typeof DeliveryRoute
   DevMailRoute: typeof DevMailRoute
+  HelpRoute: typeof HelpRoute
   MadeForYouRoute: typeof MadeForYouRoute
   MyRoute: typeof MyRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RefundRoute: typeof RefundRoute
   TermsRoute: typeof TermsRoute
+  BTokenRoute: typeof BTokenRoute
   InvitationsPageRoute: typeof InvitationsPageRoute
   PTokenRoute: typeof PTokenRoute
   TrySlugRoute: typeof TrySlugRoute
@@ -589,6 +652,13 @@ declare module '@tanstack/react-router' {
       path: '/$slug'
       fullPath: '/$slug'
       preLoaderRoute: typeof SlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -624,6 +694,13 @@ declare module '@tanstack/react-router' {
       path: '/dev-mail'
       fullPath: '/dev-mail'
       preLoaderRoute: typeof DevMailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/made-for-you': {
@@ -709,6 +786,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/pricing'
       preLoaderRoute: typeof AdminPricingRouteImport
       parentRoute: typeof AdminRouteRoute
+    }
+    '/b/$token': {
+      id: '/b/$token'
+      path: '/b/$token'
+      fullPath: '/b/$token'
+      preLoaderRoute: typeof BTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/invitations/': {
       id: '/invitations/'
@@ -829,6 +913,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTemplatesIdRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/my/$id_/board': {
+      id: '/my/$id_/board'
+      path: '/$id/board'
+      fullPath: '/my/$id/board'
+      preLoaderRoute: typeof MyIdBoardRouteImport
+      parentRoute: typeof MyRoute
+    }
     '/my/$id_/cards': {
       id: '/my/$id_/cards'
       path: '/$id/cards'
@@ -871,6 +962,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInvitationsIdIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/invitations/$id/board': {
+      id: '/admin/invitations/$id/board'
+      path: '/invitations/$id/board'
+      fullPath: '/admin/invitations/$id/board'
+      preLoaderRoute: typeof AdminInvitationsIdBoardRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/admin/invitations/$id/cards': {
       id: '/admin/invitations/$id/cards'
       path: '/invitations/$id/cards'
@@ -904,6 +1002,7 @@ interface AdminRouteRouteChildren {
   AdminInvitationsIndexRoute: typeof AdminInvitationsIndexRoute
   AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
   AdminTemplatesIndexRoute: typeof AdminTemplatesIndexRoute
+  AdminInvitationsIdBoardRoute: typeof AdminInvitationsIdBoardRoute
   AdminInvitationsIdCardsRoute: typeof AdminInvitationsIdCardsRoute
   AdminInvitationsIdGuestsRoute: typeof AdminInvitationsIdGuestsRoute
   AdminInvitationsIdIndexRoute: typeof AdminInvitationsIdIndexRoute
@@ -925,6 +1024,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminInvitationsIndexRoute: AdminInvitationsIndexRoute,
   AdminOrdersIndexRoute: AdminOrdersIndexRoute,
   AdminTemplatesIndexRoute: AdminTemplatesIndexRoute,
+  AdminInvitationsIdBoardRoute: AdminInvitationsIdBoardRoute,
   AdminInvitationsIdCardsRoute: AdminInvitationsIdCardsRoute,
   AdminInvitationsIdGuestsRoute: AdminInvitationsIdGuestsRoute,
   AdminInvitationsIdIndexRoute: AdminInvitationsIdIndexRoute,
@@ -938,6 +1038,7 @@ interface MyRouteChildren {
   MyIdRoute: typeof MyIdRoute
   MyPaymentsRoute: typeof MyPaymentsRoute
   MyIndexRoute: typeof MyIndexRoute
+  MyIdBoardRoute: typeof MyIdBoardRoute
   MyIdCardsRoute: typeof MyIdCardsRoute
   MyIdGuestsRoute: typeof MyIdGuestsRoute
   MyIdMadeRoute: typeof MyIdMadeRoute
@@ -947,6 +1048,7 @@ const MyRouteChildren: MyRouteChildren = {
   MyIdRoute: MyIdRoute,
   MyPaymentsRoute: MyPaymentsRoute,
   MyIndexRoute: MyIndexRoute,
+  MyIdBoardRoute: MyIdBoardRoute,
   MyIdCardsRoute: MyIdCardsRoute,
   MyIdGuestsRoute: MyIdGuestsRoute,
   MyIdMadeRoute: MyIdMadeRoute,
@@ -958,15 +1060,18 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   SlugRoute: SlugRoute,
+  AboutRoute: AboutRoute,
   CollectionsRoute: CollectionsRoute,
   ContactRoute: ContactRoute,
   DeliveryRoute: DeliveryRoute,
   DevMailRoute: DevMailRoute,
+  HelpRoute: HelpRoute,
   MadeForYouRoute: MadeForYouRoute,
   MyRoute: MyRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RefundRoute: RefundRoute,
   TermsRoute: TermsRoute,
+  BTokenRoute: BTokenRoute,
   InvitationsPageRoute: InvitationsPageRoute,
   PTokenRoute: PTokenRoute,
   TrySlugRoute: TrySlugRoute,

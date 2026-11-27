@@ -17,6 +17,7 @@ import {
 } from '../repos/composer';
 import { listRsvps, listWishes, moderateWish } from '../repos/guests';
 import { OrderError } from '../repos/orders';
+import { boardsApi } from './boards';
 import { cardsApi } from './cards';
 import { guestListApi } from './guest-list';
 import { uploadInvitationMusic } from './music';
@@ -38,6 +39,7 @@ composerApi.route(
         download: () => Promise.resolve(),
     }),
 );
+composerApi.route('/', boardsApi<AdminEnv>({ see: () => Promise.resolve() }));
 composerApi.onError((error, c) => {
     if (error instanceof OrderError) return fail(c, 409, error.message);
     console.error('[composer]', error);

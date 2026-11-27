@@ -10,7 +10,7 @@ export const COUNTDOWN_DAYS = [100, 60, ...Array.from({ length: 31 }, (_, i) => 
 export const postLooks = ['number', 'calendar', 'photo'] as const;
 export type PostLook = (typeof postLooks)[number];
 
-export const postFaces = ['count', 'ceremony', 'thanks', 'square', 'grid'] as const;
+export const postFaces = ['count', 'ceremony', 'thanks', 'square', 'grid', 'look'] as const;
 export type PostFace = (typeof postFaces)[number];
 
 // Tiles across and down a profile grid: three to a row, as Instagram shows them.
@@ -47,7 +47,7 @@ export function postSize(face: PostFace, tiles: GridSize = 6): Size {
     };
 }
 
-export type PostKind = 'countdown' | 'ceremony' | 'thanks' | 'square' | 'grid';
+export type PostKind = 'countdown' | 'ceremony' | 'thanks' | 'square' | 'grid' | 'look';
 
 export interface PostInfo {
     id: string;
@@ -60,6 +60,8 @@ export interface PostInfo {
     day?: number;
     eventId?: string;
     tiles?: GridSize;
+    // A function only some guests are invited to: send it to them, not to a status.
+    private?: boolean;
 }
 
 interface PostEvent {
@@ -77,6 +79,8 @@ interface PostsInput {
     solemn: boolean;
     // Today where the invitation is (yyyy-mm-dd): posts for days gone by aren't offered.
     today: string;
+    // Functions with a look to wear, private ones too: what to wear goes to the people invited.
+    looks?: readonly (PostEvent & { private: boolean })[];
 }
 
 export const addDays = (date: string, days: number): string => {
@@ -88,7 +92,7 @@ export const addDays = (date: string, days: number): string => {
 const daysLabel = (day: number) =>
     day === 0 ? 'The day' : day === 1 ? 'Tomorrow' : `${String(day)} days to go`;
 
-export function postsFor({ events, mainId, solemn, today }: PostsInput): PostInfo[] {
+export function postsFor({ events, mainId, solemn, today, looks = [] }: PostsInput): PostInfo[] {
     if (solemn || events.length === 0) return [];
     const main = events.find((e) => e.id === mainId) ?? events[0];
     if (!main) return [];
@@ -113,10 +117,23 @@ export function postsFor({ events, mainId, solemn, today }: PostsInput): PostInf
             on: e.date,
             eventId: e.id,
         }));
+    const wear: PostInfo[] = looks
+        .filter((e) => e.date >= today)
+        .map((e) => ({
+            id: `look:${e.id}`,
+            kind: 'look' as const,
+            face: 'look' as const,
+            title: `${e.title}: what to wear`,
+            size: story,
+            on: null,
+            eventId: e.id,
+            ...(e.private && { private: true }),
+        }));
     const last = events.reduce((a, e) => (e.date > a ? e.date : a), main.date);
     return [
         ...countdown,
         ...ceremonies,
+        ...wear,
         {
             id: 'thanks',
             kind: 'thanks',

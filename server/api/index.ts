@@ -5,6 +5,7 @@ import { listDevMail } from '../services/mailer';
 import { adminApi } from './admin';
 import { affiliatesApi } from './affiliates';
 import { authApi } from './auth';
+import { boardShotsApi } from './boards';
 import { composerApi } from './composer';
 import { filmsApi } from './films';
 import { inquiriesApi } from './inquiries';
@@ -29,6 +30,7 @@ api.get('/health', (c) =>
 );
 
 api.route('/i', invitationsApi);
+api.route('/board-shots', boardShotsApi);
 api.route('/inquiries', inquiriesApi);
 api.route('/store', storeApi);
 api.route('/wording', wordingApi);

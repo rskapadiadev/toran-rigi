@@ -13,6 +13,7 @@ export const brand = {
     address: 'Althan, Surat, Gujarat, India',
     // Indian e-commerce rules ask every shop to name who takes complaints.
     grievanceOfficer: 'Rishi Kapadia',
+    grievanceTitle: 'Grievance Officer',
     courts: 'Surat, Gujarat',
     socials: {
         instagram: 'https://instagram.com/toran.invites',

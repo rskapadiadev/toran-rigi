@@ -13,6 +13,9 @@ export interface PublicDressCode {
     ladies?: LocalizedText;
     gentlemen?: LocalizedText;
     swatches: string[];
+    avoid?: string[];
+    outfits?: string[];
+    turban?: boolean;
 }
 
 export interface PublicWishData {
@@ -61,6 +64,8 @@ export interface PublicInvitationData {
         status: string;
         musicBlobKey: string | null;
         isDemo: boolean;
+        // Its months online are over: shown as a thank-you keepsake.
+        ended?: boolean;
     };
     events: PublicInvitationEvent[];
     themeSlug: string | null;

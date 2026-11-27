@@ -354,6 +354,8 @@ export async function importStock(
         headers: { 'user-agent': USER_AGENT },
         redirect: 'follow',
     });
+    if (res.status === 429)
+        throw new StockError('The photo library is busy — try again in a minute');
     if (!res.ok || !res.body) throw new StockError('The file could not be downloaded');
     // Redirects must stay on public https hosts too.
     safeUrl(res.url || url.toString());

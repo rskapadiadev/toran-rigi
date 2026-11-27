@@ -72,6 +72,7 @@ import {
     PaymentError,
     razorpayKeyId,
 } from '../services/razorpay';
+import { boardsApi } from './boards';
 import { cardsApi } from './cards';
 import { guestListApi } from './guest-list';
 import { uploadInvitationMusic } from './music';
@@ -349,6 +350,12 @@ storeApi.route(
         downloaded: noteDownload,
         refundable: refundIsOpen,
     }),
+);
+
+// Their private mood board for each function, to send to the decorator.
+storeApi.route(
+    '/me/invitations',
+    boardsApi<StoreEnv>({ see: (c, id) => ownsInvitation(c.get('customer').id, id) }),
 );
 
 // Done-for-you: what they send us, the first look, and rounds of changes.

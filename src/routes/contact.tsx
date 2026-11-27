@@ -1,12 +1,13 @@
 import { brand } from '@shared/brand';
+import { REPLY_TIME } from '@shared/policies';
 import { createFileRoute } from '@tanstack/react-router';
 import { Mail, MapPin, MessageCircle, Phone } from 'lucide-react';
 
-import { Part, policyHead, PolicyPage, textLink } from '@/shop/policies/kit';
+import { Grievance, Part, Points, policyHead, PolicyPage } from '@/shop/policies/kit';
 
 import { fetchOrigin } from '../server-fns/store';
 
-const LEAD = 'Stuck on a design, a payment or a date? Write or call, and a person will answer.';
+const LEAD = `Stuck on a design, a payment or a date? Write or call, and a person will answer within ${REPLY_TIME}.`;
 
 export const Route = createFileRoute('/contact')({
     loader: () => fetchOrigin(),
@@ -67,16 +68,23 @@ function Contact() {
                     </address>
                 </li>
             </ul>
-            <Part title="Complaints">
+            <Part title="Before you write">
+                <p>Tell us these, and we can help on the first reply:</p>
+                <Points>
+                    <li>The email you sign in with.</li>
+                    <li>Your order number, under Payments in My invitations.</li>
+                    <li>
+                        For a payment: the payment ID from Razorpay’s email or message (it starts
+                        with “pay_”), the date and the amount.
+                    </li>
+                </Points>
                 <p>
-                    If something has gone wrong and we haven’t put it right, write to{' '}
-                    {brand.grievanceOfficer}, Grievance Officer, at{' '}
-                    <a href={`mailto:${brand.email}`} className={textLink}>
-                        {brand.email}
-                    </a>{' '}
-                    or {brand.phone}. We reply within 48 hours and settle every complaint within one
-                    month.
+                    Never send us a card number, UPI PIN, one-time code or password. We will never
+                    ask for them, and anyone who does isn’t us.
                 </p>
+            </Part>
+            <Part title="Complaints">
+                <Grievance />
             </Part>
         </PolicyPage>
     );

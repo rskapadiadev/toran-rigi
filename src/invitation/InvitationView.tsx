@@ -86,6 +86,21 @@ const sectionRegistry: Record<RenderedSection, ComponentType<BlockProps>> = {
     closing: Closing,
 };
 
+// After its months online, the invitation is kept as a thank-you: no replies, no venues.
+function Keepsake() {
+    const { copy } = useInvite();
+    return (
+        <section className="px-6 py-16 text-center">
+            <p className="inv-script text-[clamp(2.4rem,12cqw,3.6rem)] leading-tight text-(--inv-gold)">
+                {copy('thankYou')}
+            </p>
+            <p className="mt-2 text-[clamp(1.05rem,4.6cqw,1.3rem)] italic opacity-80">
+                {copy('thankYouLine')}
+            </p>
+        </section>
+    );
+}
+
 // Stock media credits, required by Creative Commons licences; quiet, at the very foot of the page.
 function Credits() {
     const { data } = useInvite();
@@ -294,6 +309,7 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
         if (player && musicStartsItself(invitation)) void player.play().catch(() => undefined);
     };
 
+    const ended = data.invitation.ended === true;
     const blocks = useMemo(() => {
         const list: ResolvedBlock[] = [];
         for (const section of invitation.sections) {
@@ -465,6 +481,7 @@ function Experience({ embedded, skipOpening, print }: ExperienceProps) {
                                                 <Scene block={block} index={i}>
                                                     <Section variant={block.variant} />
                                                 </Scene>
+                                                {block.type === 'cover' && ended && <Keepsake />}
                                             </Fragment>
                                         );
                                     })}

@@ -14,6 +14,7 @@ import {
     type EditableInvitation,
     type OrderLimits,
 } from '@/admin/composer/draft';
+import { LooksPanel } from '@/admin/composer/LooksPanel';
 import {
     ContentPanel,
     type ContentPart,
@@ -141,6 +142,12 @@ export function FormEditor({
                       title: 'Ceremonies',
                       hint: 'Dates, times and venues. Guests can add them to their calendar',
                       body: <EventsPanel draft={draft} set={set} limit={limits?.events} />,
+                  },
+                  {
+                      id: 'looks',
+                      title: 'What to wear',
+                      hint: 'Colours and outfits for each function, for your guests',
+                      body: <LooksPanel draft={draft} set={set} sectionSwitch={owned} />,
                   },
               ]
             : []),

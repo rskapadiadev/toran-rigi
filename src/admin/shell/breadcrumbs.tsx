@@ -87,6 +87,13 @@ export function AdminBreadcrumbs() {
             });
             crumbs.push({ label: 'Cards' });
         }
+        if (routeId === '/admin/invitations/$id/board') {
+            crumbs.push({
+                label: labels.invitation ?? 'Invitation',
+                to: '/admin/invitations/$id',
+            });
+            crumbs.push({ label: 'Mood boards' });
+        }
     }
     if (routeId.startsWith('/admin/customers')) {
         crumbs.push({

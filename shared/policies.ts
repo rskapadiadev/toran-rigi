@@ -27,6 +27,15 @@ export const POLICIES_UPDATED = '27 November 2026';
 
 export const REFUND_DAYS = 7;
 
+// Promises the policy pages make, kept in one place so every page says the same.
+// IT Rules 2021 r.3(2) and the Consumer Protection (E-Commerce) Rules 2020 set the first two.
+export const GRIEVANCE_ACK_HOURS = 24;
+export const GRIEVANCE_DAYS = 15;
+export const DELETE_DAYS = 7;
+// Indian tax law asks for invoices and payment records to be kept about this long.
+export const RECORDS_YEARS = 8;
+export const REPLY_TIME = '1 working day';
+
 interface RefundFacts {
     paidAt: string | null;
     publishedAt: string | null;

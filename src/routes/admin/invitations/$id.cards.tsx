@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { Images, PenLine, Users } from 'lucide-react';
+import { Images, LayoutGrid, PenLine, Users } from 'lucide-react';
 import { useState } from 'react';
 
 import { PanelCard } from '@/admin/kit/card';
@@ -47,6 +47,11 @@ function CardsPage() {
                         <Button variant="outline" asChild>
                             <Link to="/admin/invitations/$id/guests" params={{ id }}>
                                 <Users /> Guests
+                            </Link>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link to="/admin/invitations/$id/board" params={{ id }}>
+                                <LayoutGrid /> Mood boards
                             </Link>
                         </Button>
                     </>

@@ -130,6 +130,7 @@ const pageNames: Record<string, string> = {
     '/my/payments': 'Payments',
     '/my/$id_/guests': 'Guests & replies',
     '/my/$id_/cards': 'Cards',
+    '/my/$id_/board': 'Mood boards',
     '/my/$id_/made': 'We make it for you',
 };
 

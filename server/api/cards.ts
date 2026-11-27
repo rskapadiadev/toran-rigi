@@ -21,7 +21,7 @@ import {
     renderCards,
 } from '../services/cards';
 import { invitationPdf } from '../services/pdf';
-import { postData, postList, renderPosts } from '../services/posts';
+import { postData, postList, postWear, renderPosts } from '../services/posts';
 import type { CallerOf } from './guest-list';
 
 interface Checks<E extends Env> {
@@ -174,6 +174,7 @@ export function cardsApi<E extends AppEnv>({ see, download, downloaded, refundab
             posts: postList(source.full, v.who, v.lang),
             photo: postPhoto(data.invitation) !== undefined,
             data,
+            wear: postWear(source.full, v.who),
         });
     });
 

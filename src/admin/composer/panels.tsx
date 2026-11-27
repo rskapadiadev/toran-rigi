@@ -155,7 +155,7 @@ export const sectionNames: Record<SectionType, string> = {
 
 const NONE = '__none__';
 
-const setText = (
+export const setText = (
     text: LocalizedText | undefined,
     locale: string,
     value: string,
@@ -331,7 +331,7 @@ interface ColorSwatchProps {
 }
 
 /** Native colour picker dressed as a swatch, so it stays keyboard and screen-reader friendly. */
-function ColorSwatch({ value, label, onChange, className }: ColorSwatchProps) {
+export function ColorSwatch({ value, label, onChange, className }: ColorSwatchProps) {
     return (
         <span
             className={cn(
@@ -1619,63 +1619,6 @@ export function EventsPanel({ draft, set, focus, limit }: EventsPanelProps) {
                                     update(i, { mapsUrl: v });
                                 }}
                             />
-                            <TextField
-                                label="Dress code note"
-                                value={e.dressCode?.note?.[locale]}
-                                onChange={(v) => {
-                                    update(i, {
-                                        dressCode: {
-                                            swatches: e.dressCode?.swatches ?? [],
-                                            note: setText(e.dressCode?.note, locale, v),
-                                        },
-                                    });
-                                }}
-                            />
-                            <div className="space-y-2">
-                                <p className="text-[13px] font-medium text-foreground/80">
-                                    Dress colours
-                                </p>
-                                <div className="flex items-center gap-1.5">
-                                    {(e.dressCode?.swatches ?? []).map((sw, k) => (
-                                        <ColorSwatch
-                                            key={k}
-                                            value={sw}
-                                            label={`Dress colour ${String(k + 1)}`}
-                                            onChange={(v) => {
-                                                update(i, {
-                                                    dressCode: {
-                                                        ...e.dressCode,
-                                                        swatches: (e.dressCode?.swatches ?? []).map(
-                                                            (x, j) => (j === k ? v : x),
-                                                        ),
-                                                    },
-                                                });
-                                            }}
-                                        />
-                                    ))}
-                                    {(e.dressCode?.swatches.length ?? 0) < 4 && (
-                                        <Button
-                                            size="icon"
-                                            variant="outline"
-                                            aria-label="Add colour"
-                                            className="border-dashed"
-                                            onClick={() => {
-                                                update(i, {
-                                                    dressCode: {
-                                                        ...e.dressCode,
-                                                        swatches: [
-                                                            ...(e.dressCode?.swatches ?? []),
-                                                            '#c39a4e',
-                                                        ],
-                                                    },
-                                                });
-                                            }}
-                                        >
-                                            <Plus />
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
                         </AccordionContent>
                     </AccordionItem>
                 ))}

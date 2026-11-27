@@ -1,4 +1,5 @@
 import { forViewer } from '@shared/families';
+import { asKeepsake, hasEnded } from '@shared/keepsake';
 import { createServerFn } from '@tanstack/react-start';
 import { z } from 'zod';
 
@@ -23,8 +24,9 @@ export const fetchInvitation = createServerFn({ method: 'GET' })
         }),
     )
     .handler(async ({ data }) => {
-        const cached = await getPublishedInvitation(data.slug);
-        if (!cached) return null;
+        const published = await getPublishedInvitation(data.slug);
+        if (!published) return null;
+        const cached = hasEnded(published.invitation.expiresAt) ? asKeepsake(published) : published;
         const { guest, viewer } = await resolveLink(cached.invitation.id, data.guestToken);
         // Each link shows its own functions and family version; the rest never leaves the server.
         const invitation = forViewer(cached, viewer);
@@ -86,11 +88,16 @@ export const fetchPost = createServerFn({ method: 'GET' })
         z.object({
             token: z.string().min(10).max(64),
             who: z.enum(['one', 'two']).optional(),
+            // What to wear to one function: drawn even when the function is private.
+            wear: z.string().max(64).optional(),
         }),
     )
     .handler(async ({ data }) => {
         const full = await getInvitationByPreviewToken(data.token);
-        return full ? postData(full, data.who ?? null) : null;
+        if (!full) return null;
+        return data.wear
+            ? cardData(full, data.who ?? null, data.wear)
+            : postData(full, data.who ?? null);
     });
 
 export const fetchDemos = createServerFn({ method: 'GET' }).handler(() => listDemoInvitations());

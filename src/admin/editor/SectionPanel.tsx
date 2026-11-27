@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 
 import type { Draft } from '../composer/draft';
+import { LooksPanel } from '../composer/LooksPanel';
 import {
     ContentPanel,
     type ContentPart,
@@ -22,6 +23,7 @@ interface Fields {
     content?: readonly ContentPart[];
     extras?: readonly ExtraPart[];
     events?: boolean;
+    looks?: boolean;
 }
 
 // What each section on the canvas is made of, so clicking it shows exactly those fields.
@@ -37,6 +39,7 @@ const fieldsFor: Partial<Record<SectionType, Fields>> = {
         extras: ['contacts'],
     },
     events: { events: true },
+    dressCode: { looks: true },
     countdown: { events: true },
     shagun: { extras: ['gifts'] },
     rsvp: { extras: ['rsvp'] },
@@ -179,6 +182,7 @@ export function SectionPanel({
                 limit={eventLimit}
             />,
         );
+    if (fields.looks) parts.push(<LooksPanel key="looks" draft={draft} set={set} />);
     if (fields.extras)
         parts.push(
             <ExtrasPanel

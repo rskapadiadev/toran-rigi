@@ -4,6 +4,7 @@ import {
     CreditCard,
     ExternalLink,
     Images,
+    LayoutGrid,
     LayoutTemplate,
     LogOut,
     type LucideIcon,
@@ -53,7 +54,7 @@ interface Page {
 }
 
 interface InvitationPage {
-    to: '/my/$id' | '/my/$id/guests' | '/my/$id/cards' | '/my/$id/made';
+    to: '/my/$id' | '/my/$id/guests' | '/my/$id/cards' | '/my/$id/board' | '/my/$id/made';
     label: string;
     icon: LucideIcon;
 }
@@ -73,6 +74,11 @@ const invitationPages: InvitationPage[] = [
         to: '/my/$id/cards',
         label: 'Cards',
         icon: Images,
+    },
+    {
+        to: '/my/$id/board',
+        label: 'Mood boards',
+        icon: LayoutGrid,
     },
 ];
 

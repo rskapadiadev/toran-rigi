@@ -29,6 +29,8 @@ seo.get('/sitemap.xml', async (c) => {
         '/invitations',
         '/wording',
         '/made-for-you',
+        '/about',
+        '/help',
         ...guides
             .filter((g) => guideDesigns(g, designs).own.length > 0)
             .map((g) => `/invitations/${g.slug}`),

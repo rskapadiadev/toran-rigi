@@ -3,7 +3,16 @@
 // and the studio's Cards pages.
 import { type GridSize, gridSizes, type PostInfo, type PostLook, postSize } from '@shared/posts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, Download, Grid3x3, Hash, ImageIcon, Loader2, Lock } from 'lucide-react';
+import {
+    CalendarDays,
+    Download,
+    Grid3x3,
+    Hash,
+    ImageIcon,
+    Loader2,
+    Lock,
+    Shirt,
+} from 'lucide-react';
 import { lazy, type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -21,12 +30,19 @@ const PostView = lazy(() =>
     import('@/invitation/cards/PostView').then((mod) => ({ default: mod.PostView })),
 );
 
+interface WearPost {
+    id: string;
+    event: PublicInvitationData['events'][number];
+}
+
 interface PostsSet {
     ready: boolean;
     refundable: boolean;
     posts: PostInfo[];
     photo: boolean;
     data: PublicInvitationData;
+    // Each function with a look to wear, private ones too, as its own picture draws it.
+    wear: WearPost[];
     version: {
         who: string | null;
         lang: string;
@@ -105,10 +121,21 @@ export function PostsGrid({ base, choice, buttonClass = '' }: PostsGridProps) {
         }
     };
 
+    const wearOf = (post: PostInfo) => set.wear.find((w) => w.id === post.eventId)?.event;
+    const dataOf = (post: PostInfo): PublicInvitationData => {
+        const event = post.kind === 'look' ? wearOf(post) : undefined;
+        return event
+            ? {
+                  ...set.data,
+                  events: [event],
+              }
+            : set.data;
+    };
+
     const draw = (post: PostInfo, grid?: GridSize) => (
         <Scaled size={postSize(post.face, grid)}>
             <PostView
-                data={set.data}
+                data={dataOf(post)}
                 face={post.face}
                 locale={set.version.lang}
                 look={shown}
@@ -145,6 +172,7 @@ export function PostsGrid({ base, choice, buttonClass = '' }: PostsGridProps) {
     const countdown = set.posts.filter((p) => p.kind === 'countdown');
     const ceremonies = set.posts.filter((p) => p.kind === 'ceremony');
     const thanks = set.posts.find((p) => p.kind === 'thanks');
+    const wear = set.posts.filter((p) => p.kind === 'look');
     const square = set.posts.find((p) => p.kind === 'square');
     const grid = set.posts.find((p) => p.kind === 'grid' && p.tiles === tiles);
 
@@ -278,6 +306,32 @@ export function PostsGrid({ base, choice, buttonClass = '' }: PostsGridProps) {
                         />
                     )}
                 </div>
+
+                {wear.length > 0 && (
+                    <Group
+                        title="What to wear"
+                        icon={Shirt}
+                        hint="Each function’s colours and outfits, to send in your family groups before the day."
+                    >
+                        <div className="grid grid-cols-2 items-start gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
+                            {wear.map((p) => (
+                                <Tile
+                                    key={p.id}
+                                    preview={draw(p)}
+                                    title={
+                                        wearOf(p) ? p.title.replace(/: what to wear$/, '') : p.title
+                                    }
+                                    hint={
+                                        p.private
+                                            ? 'Only for the guests invited to it'
+                                            : '1080 × 1920, for status and groups'
+                                    }
+                                    action={get(p)}
+                                />
+                            ))}
+                        </div>
+                    </Group>
+                )}
 
                 {grid && (
                     <Group

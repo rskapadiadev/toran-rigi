@@ -1,6 +1,7 @@
 // Portable schema: text/integer/real only, JSON stored as text, ISO-8601 timestamps,
 // booleans as 0/1 and money as integer minor units. Keep server/db/schema.pg.ts in sync.
 import { newId } from '@shared/ids';
+import type { BoardInput as BoardData } from '@shared/schemas/board';
 import type { EventInput } from '@shared/schemas/composer';
 import type { Brief } from '@shared/schemas/made';
 import type {
@@ -33,8 +34,14 @@ interface CheckoutAddon {
 }
 
 interface DressCode {
+    title?: LocalizedText;
     note?: LocalizedText;
+    ladies?: LocalizedText;
+    gentlemen?: LocalizedText;
     swatches: string[];
+    avoid?: string[];
+    outfits?: string[];
+    turban?: boolean;
 }
 
 const id = () =>
@@ -308,6 +315,24 @@ export const orderAssets = sqliteTable(
         createdAt: createdAt(),
     },
     (t) => [index('order_assets_order_idx').on(t.orderId)],
+);
+
+// The couple's private mood board for one function: words, colours and pinned photos. Never part
+// of anything a guest is sent. `shotToken` lets only our own browser photograph it.
+export const moodBoards = sqliteTable(
+    'mood_boards',
+    {
+        id: id(),
+        invitationId: text('invitation_id')
+            .notNull()
+            .references(() => invitations.id, { onDelete: 'cascade' }),
+        eventId: text('event_id').notNull(),
+        data: json<BoardData>('data').notNull(),
+        shotToken: text('shot_token').notNull().unique(),
+        createdAt: createdAt(),
+        updatedAt: text('updated_at').notNull().default(now()),
+    },
+    (t) => [uniqueIndex('mood_boards_event_idx').on(t.invitationId, t.eventId)],
 );
 
 export const capacitySlots = sqliteTable(

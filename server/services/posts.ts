@@ -24,6 +24,24 @@ export function postData(full: PublicInvitation, who: Side | null) {
     };
 }
 
+const dressed = (e: PublicInvitation['events'][number]) =>
+    Boolean(e.dressCode && (e.dressCode.swatches.length > 0 || e.dressCode.outfits?.length));
+
+// What to wear to a function goes to the people invited to it, so private ones are drawn too.
+export function postWear(full: PublicInvitation, who: Side | null) {
+    return full.events.filter(dressed).flatMap((e) => {
+        const event = cardData(full, who, e.id).events[0];
+        return event
+            ? [
+                  {
+                      id: e.id,
+                      event,
+                  },
+              ]
+            : [];
+    });
+}
+
 // Today where the celebration is, so a countdown turns over at its own midnight.
 const todayIn = (timeZone: string) =>
     new Intl.DateTimeFormat('en-CA', {
@@ -45,6 +63,12 @@ export function postList(full: PublicInvitation, who: Side | null, lang: string)
         mainId: main?.id ?? null,
         solemn: isSolemn(occasionOf(invitation.eventKind)),
         today: todayIn(main?.timezone ?? 'Asia/Kolkata'),
+        looks: full.events.filter(dressed).map((e) => ({
+            id: e.id,
+            title: pickText(e.title, lang) || eventLabel(invitation.culture, e.kind, lang),
+            date: e.startsAt.slice(0, 10),
+            private: Boolean(e.audience?.length),
+        })),
     });
 }
 

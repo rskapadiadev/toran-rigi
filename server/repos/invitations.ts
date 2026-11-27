@@ -140,6 +140,7 @@ export async function getInvitationIdBySlug(slug: string) {
             extras: invitations.extras,
             slug: invitations.slug,
             version: invitations.version,
+            expiresAt: invitations.expiresAt,
         })
         .from(invitations)
         .where(eq(invitations.slug, slug))

@@ -21,7 +21,10 @@ export const Route = createFileRoute('/p/$token_/post')({
             .pipe(z.union(gridSizes.map((n) => z.literal(n))))
             .optional(),
     }),
-    loaderDeps: ({ search: { who } }) => ({ who }),
+    loaderDeps: ({ search: { who, face, event } }) => ({
+        who,
+        wear: face === 'look' ? event : undefined,
+    }),
     loader: async ({ params, deps }) => {
         const post = await fetchPost({
             data: {

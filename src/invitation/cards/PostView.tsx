@@ -2,6 +2,7 @@
 // colours, lettering and art: a countdown in three looks, a ceremony on its day, a thank-you, a
 // square save-the-date and a grid that reads as one picture.
 import { mainEvent } from '@shared/cards';
+import { colourName, outfitInfo, outfitsFor } from '@shared/looks';
 import { photoUrl } from '@shared/photos';
 import { type GridSize, type PostFace, type PostLook, postPhoto, postSize } from '@shared/posts';
 import { placeLine } from '@shared/share';
@@ -9,6 +10,8 @@ import { zonedToUtc } from '@shared/time';
 import type { CSSProperties, ReactNode } from 'react';
 
 import { InviteProvider, useInvite } from '../context';
+import { Outfit } from '../looks/Outfit';
+import { outfitColours } from '../luxury/night/DressCode';
 import { designStyle } from '../tokens';
 import type { PublicInvitationData } from '../types';
 import {
@@ -82,6 +85,9 @@ function Post({ face, look, day, eventId, tiles }: PostProps) {
                 {face === 'count' && look === 'photo' && <PhotoLook day={day} />}
                 {face === 'ceremony' && event && <CeremonyPost box={area} event={event} />}
                 {face === 'thanks' && <ThanksPost box={area} />}
+                {face === 'look' && event?.dressCode && (
+                    <LookPost box={area} event={event} look={event.dressCode} />
+                )}
                 {face === 'square' && <SquarePost box={area} />}
                 {face === 'grid' && <GridPost box={area} rows={(tiles ?? 6) / 3} />}
             </div>
@@ -409,6 +415,129 @@ function CeremonyPost({ box, event }: CeremonyProps) {
                 </p>
             </Fit>
             <MotifBand {...box} y={box.height - 74} />
+        </>
+    );
+}
+
+interface LookPostProps extends CeremonyProps {
+    look: NonNullable<PublicInvitationData['events'][number]['dressCode']>;
+}
+
+// What to wear to one function, for the family group: its colours, the outfits drawn in them,
+// and the notes for ladies and gentlemen.
+function LookPost({ box, event, look }: LookPostProps) {
+    const { copy, names, t, data } = useInvite();
+    const tones = useTones();
+    const foil = useFoil();
+    const title = useTitle()(event);
+    const { date } = useWhen(event);
+    const figures = outfitsFor(look.outfits, data.invitation.culture);
+    const theme = look.title ? t(look.title) : '';
+    const note = look.note ? t(look.note) : '';
+    const ladies = look.ladies ? t(look.ladies) : '';
+    const gentlemen = look.gentlemen ? t(look.gentlemen) : '';
+    const avoid = look.avoid ?? [];
+    const halo = `radial-gradient(closest-side, ${tones.gold}40, transparent)`;
+    const glow: CSSProperties = { background: halo };
+    const label: CSSProperties = { color: tones.goldInk };
+    return (
+        <>
+            <RuledFrame {...box} inset={24} />
+            <Fit className="inset-x-[60px] top-[70px] bottom-[70px]">
+                <p className="text-[17px] tracking-[0.4em] uppercase" style={label}>
+                    {copy('whatToWear')}
+                </p>
+                <p
+                    className="inv-script mt-3 px-3 leading-[1.15] whitespace-nowrap"
+                    style={{
+                        ...foil,
+                        fontSize: nameSize(title, 380, 80),
+                    }}
+                >
+                    {title}
+                </p>
+                <p className="inv-display text-[20px]">{date}</p>
+                {theme && (
+                    <p className="mt-1 text-[24px] italic" style={label}>
+                        {theme}
+                    </p>
+                )}
+                <div className="relative mt-6 flex items-end justify-center gap-3">
+                    <span className="absolute inset-x-0 -bottom-4 h-14" style={glow} />
+                    {figures.map((o, k) => (
+                        <Outfit
+                            key={o}
+                            id={o}
+                            {...outfitColours(look.swatches, k)}
+                            trim={tones.gold}
+                            turban={look.turban}
+                            title={outfitInfo[o].label}
+                            className={
+                                figures.length > 2
+                                    ? 'relative h-[300px] w-auto'
+                                    : 'relative h-[360px] w-auto'
+                            }
+                        />
+                    ))}
+                </div>
+                {look.swatches.length > 0 && (
+                    <div className="mt-8 flex justify-center gap-3">
+                        {look.swatches.map((c, k) => (
+                            <span
+                                key={`${c}-${String(k)}`}
+                                aria-label={colourName(c)}
+                                className="size-11 rounded-full shadow-[inset_0_-3px_6px_rgba(0,0,0,0.25)] ring-2 ring-white/40"
+                                style={{ background: c }}
+                            />
+                        ))}
+                    </div>
+                )}
+                {note && <p className="mt-4 text-[21px] italic">{note}</p>}
+                {(ladies || gentlemen) && (
+                    <div className="mt-5 flex justify-center gap-8 text-[18px]">
+                        {ladies && (
+                            <div className="max-w-[200px]">
+                                <p className="text-[13px] tracking-[0.3em] uppercase" style={label}>
+                                    {copy('ladies')}
+                                </p>
+                                <p className="mt-1">{ladies}</p>
+                            </div>
+                        )}
+                        {gentlemen && (
+                            <div className="max-w-[200px]">
+                                <p className="text-[13px] tracking-[0.3em] uppercase" style={label}>
+                                    {copy('gentlemen')}
+                                </p>
+                                <p className="mt-1">{gentlemen}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+                {avoid.length > 0 && (
+                    <div className="mt-5 flex items-center justify-center gap-3 text-[17px]">
+                        <span style={{ color: tones.muted }}>{copy('pleaseAvoid')}</span>
+                        {avoid.map((c) => (
+                            <span
+                                key={c}
+                                aria-label={colourName(c)}
+                                className="relative size-8 overflow-hidden rounded-full ring-1 ring-black/20"
+                                style={{ background: c }}
+                            >
+                                <span
+                                    className="absolute inset-x-[-20%] top-1/2 h-[2px] -rotate-45"
+                                    style={{ background: tones.ink }}
+                                />
+                            </span>
+                        ))}
+                    </div>
+                )}
+                <div className="my-5">
+                    <Divider width={150} />
+                </div>
+                <p className="inv-script text-[32px]" style={label}>
+                    {names.title}
+                </p>
+            </Fit>
         </>
     );
 }
