@@ -7,6 +7,7 @@ import { EmptyState, PageHeader, PageSkeleton, Panel } from '@/admin/kit/page';
 import { Button } from '@/components/ui/button';
 import { CardsGrid } from '@/shop/cards/CardsGrid';
 import { type CardsChoice, useCards } from '@/shop/cards/model';
+import { PostsGrid } from '@/shop/cards/PostsGrid';
 
 export const Route = createFileRoute('/admin/invitations/$id/cards')({ component: CardsPage });
 
@@ -57,6 +58,7 @@ function CardsPage() {
             >
                 <CardsGrid base={base} set={set} choice={choice} onChoice={setChoice} />
             </Panel>
+            <PostsGrid base={base} choice={choice} />
         </>
     );
 }

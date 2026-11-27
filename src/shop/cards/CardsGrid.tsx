@@ -241,7 +241,7 @@ function Preview({ card, set }: PreviewProps) {
           }
         : set.data;
     const draw = (face: CardInfo['face']) => (
-        <Scaled face={face}>
+        <Scaled size={faceSize[face]}>
             <CardView
                 data={data}
                 face={face}
@@ -262,13 +262,15 @@ function Preview({ card, set }: PreviewProps) {
 }
 
 interface ScaledProps {
-    face: CardInfo['face'];
+    size: {
+        width: number;
+        height: number;
+    };
     children: ReactNode;
 }
 
 // A card keeps its own size and is scaled to the space it has, so what you see is what is made.
-function Scaled({ face, children }: ScaledProps) {
-    const { width, height } = faceSize[face];
+export function Scaled({ size: { width, height }, children }: ScaledProps) {
     const hold = useCallback(
         (el: HTMLDivElement | null) => {
             if (!el) return;
@@ -286,7 +288,7 @@ function Scaled({ face, children }: ScaledProps) {
         [width],
     );
     const ratio = { aspectRatio: `${String(width)} / ${String(height)}` };
-    const size = {
+    const box = {
         width,
         height,
     };
@@ -298,7 +300,7 @@ function Scaled({ face, children }: ScaledProps) {
             dir="ltr"
             aria-hidden
         >
-            <div className="absolute start-0 top-0 origin-top-left" style={size}>
+            <div className="absolute start-0 top-0 origin-top-left" style={box}>
                 <Suspense fallback={null}>{children}</Suspense>
             </div>
         </div>

@@ -49,6 +49,7 @@ import { Route as MyIdCardsRouteImport } from './routes/my.$id_.cards'
 import { Route as MyIdGuestsRouteImport } from './routes/my.$id_.guests'
 import { Route as MyIdMadeRouteImport } from './routes/my.$id_.made'
 import { Route as PTokenCardRouteImport } from './routes/p.$token_.card'
+import { Route as PTokenPostRouteImport } from './routes/p.$token_.post'
 import { Route as AdminInvitationsIdIndexRouteImport } from './routes/admin/invitations/$id.index'
 import { Route as AdminInvitationsIdCardsRouteImport } from './routes/admin/invitations/$id.cards'
 import { Route as AdminInvitationsIdGuestsRouteImport } from './routes/admin/invitations/$id.guests'
@@ -253,6 +254,11 @@ const PTokenCardRoute = PTokenCardRouteImport.update({
   path: '/p/$token/card',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PTokenPostRoute = PTokenPostRouteImport.update({
+  id: '/p/$token_/post',
+  path: '/p/$token/post',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminInvitationsIdIndexRoute = AdminInvitationsIdIndexRouteImport.update({
   id: '/invitations/$id/',
   path: '/invitations/$id/',
@@ -307,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/my/$id/guests': typeof MyIdGuestsRoute
   '/my/$id/made': typeof MyIdMadeRoute
   '/p/$token/card': typeof PTokenCardRoute
+  '/p/$token/post': typeof PTokenPostRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
@@ -350,6 +357,7 @@ export interface FileRoutesByTo {
   '/my/$id/guests': typeof MyIdGuestsRoute
   '/my/$id/made': typeof MyIdMadeRoute
   '/p/$token/card': typeof PTokenCardRoute
+  '/p/$token/post': typeof PTokenPostRoute
   '/admin/customers': typeof AdminCustomersIndexRoute
   '/admin/invitations': typeof AdminInvitationsIndexRoute
   '/admin/orders': typeof AdminOrdersIndexRoute
@@ -396,6 +404,7 @@ export interface FileRoutesById {
   '/my/$id_/guests': typeof MyIdGuestsRoute
   '/my/$id_/made': typeof MyIdMadeRoute
   '/p/$token_/card': typeof PTokenCardRoute
+  '/p/$token_/post': typeof PTokenPostRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
   '/admin/orders/': typeof AdminOrdersIndexRoute
@@ -443,6 +452,7 @@ export interface FileRouteTypes {
     | '/my/$id/guests'
     | '/my/$id/made'
     | '/p/$token/card'
+    | '/p/$token/post'
     | '/admin/customers/'
     | '/admin/invitations/'
     | '/admin/orders/'
@@ -486,6 +496,7 @@ export interface FileRouteTypes {
     | '/my/$id/guests'
     | '/my/$id/made'
     | '/p/$token/card'
+    | '/p/$token/post'
     | '/admin/customers'
     | '/admin/invitations'
     | '/admin/orders'
@@ -531,6 +542,7 @@ export interface FileRouteTypes {
     | '/my/$id_/guests'
     | '/my/$id_/made'
     | '/p/$token_/card'
+    | '/p/$token_/post'
     | '/admin/customers/'
     | '/admin/invitations/'
     | '/admin/orders/'
@@ -560,6 +572,7 @@ export interface RootRouteChildren {
   InvitationsIndexRoute: typeof InvitationsIndexRoute
   WordingIndexRoute: typeof WordingIndexRoute
   PTokenCardRoute: typeof PTokenCardRoute
+  PTokenPostRoute: typeof PTokenPostRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -844,6 +857,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PTokenCardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/p/$token_/post': {
+      id: '/p/$token_/post'
+      path: '/p/$token/post'
+      fullPath: '/p/$token/post'
+      preLoaderRoute: typeof PTokenPostRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/invitations/$id/': {
       id: '/admin/invitations/$id/'
       path: '/invitations/$id'
@@ -954,6 +974,7 @@ const rootRouteChildren: RootRouteChildren = {
   InvitationsIndexRoute: InvitationsIndexRoute,
   WordingIndexRoute: WordingIndexRoute,
   PTokenCardRoute: PTokenCardRoute,
+  PTokenPostRoute: PTokenPostRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

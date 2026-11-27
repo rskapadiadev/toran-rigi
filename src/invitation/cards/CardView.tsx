@@ -91,7 +91,7 @@ interface MarkProps {
 }
 
 // Every card carries the studio's name and number on its own strip, never over the design.
-function StudioMark({ face, layer }: MarkProps) {
+export function StudioMark({ face, layer }: MarkProps) {
     const tones = useTones();
     const strip: CSSProperties = {
         height: stripOf(face),
@@ -176,7 +176,7 @@ function DarbarMedallion() {
 
 // ── Shared pieces ──────────────────────────────────────────────────────────
 
-function useFoil(): CSSProperties {
+export function useFoil(): CSSProperties {
     const { data } = useInvite();
     const tones = useTones();
     const { gold } = data.invitation.design.palette;
@@ -190,7 +190,7 @@ function useFoil(): CSSProperties {
 }
 
 // Long names are set smaller, so each stays on one line.
-const nameSize = (name: string, width: number, largest: number) =>
+export const nameSize = (name: string, width: number, largest: number) =>
     Math.min(largest, (width * 1.75) / Math.max(5, Array.from(name).length));
 
 interface NamesProps {
@@ -199,7 +199,7 @@ interface NamesProps {
     parents?: boolean;
 }
 
-function Names({ width, largest, parents = false }: NamesProps) {
+export function Names({ width, largest, parents = false }: NamesProps) {
     const { names, data, t, copy } = useInvite();
     const foil = useFoil();
     const tones = useTones();
@@ -262,7 +262,7 @@ function Names({ width, largest, parents = false }: NamesProps) {
 }
 
 // The couple's own medallion, their initials at its heart.
-function Crest({ size }: { size: number }) {
+export function Crest({ size }: { size: number }) {
     const { data, names } = useInvite();
     const foil = useFoil();
     const { design, seed } = data.invitation;
@@ -310,7 +310,7 @@ function Greeting() {
     );
 }
 
-function useWhen(event: PublicInvitationEvent | undefined) {
+export function useWhen(event: PublicInvitationEvent | undefined) {
     const { locale } = useInvite();
     if (!event)
         return {
@@ -328,7 +328,7 @@ function useWhen(event: PublicInvitationEvent | undefined) {
     };
 }
 
-function useTitle() {
+export function useTitle() {
     const { data, t, locale } = useInvite();
     return (event: PublicInvitationEvent) =>
         t(event.title) || eventLabel(data.invitation.culture, event.kind, locale);
@@ -336,7 +336,7 @@ function useTitle() {
 
 // ── Save the date ──────────────────────────────────────────────────────────
 
-function Announcement({ width, largest }: Pick<NamesProps, 'width' | 'largest'>) {
+export function Announcement({ width, largest }: Pick<NamesProps, 'width' | 'largest'>) {
     const { data, copy } = useInvite();
     const tones = useTones();
     const main = mainEvent(data.events);
@@ -435,7 +435,7 @@ function StoryCard({ layer }: Pick<CardProps, 'layer'>) {
 
 // ── One function ───────────────────────────────────────────────────────────
 
-function Painting({ event }: { event: PublicInvitationEvent }) {
+export function Painting({ event }: { event: PublicInvitationEvent }) {
     const { data, culture } = useInvite();
     const painted = data.invitation.design.art?.pavilions?.[event.kind];
     if (painted)

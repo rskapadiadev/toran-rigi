@@ -10,6 +10,7 @@ import {
     listDemoInvitations,
 } from '../../server/repos/invitations';
 import { cardData, cardLink } from '../../server/services/cards';
+import { postData } from '../../server/services/posts';
 
 // Absolute origin for share previews: crawlers need full URLs in og:url and og:image.
 const shareOrigin = () => getPlatform().config.APP_ORIGIN;
@@ -77,6 +78,19 @@ export const fetchCard = createServerFn({ method: 'GET' })
             data: cardData(full, who, data.event),
             link: await cardLink(full, who),
         };
+    });
+
+// What one post is drawn from: only the functions everyone is invited to.
+export const fetchPost = createServerFn({ method: 'GET' })
+    .validator(
+        z.object({
+            token: z.string().min(10).max(64),
+            who: z.enum(['one', 'two']).optional(),
+        }),
+    )
+    .handler(async ({ data }) => {
+        const full = await getInvitationByPreviewToken(data.token);
+        return full ? postData(full, data.who ?? null) : null;
     });
 
 export const fetchDemos = createServerFn({ method: 'GET' }).handler(() => listDemoInvitations());

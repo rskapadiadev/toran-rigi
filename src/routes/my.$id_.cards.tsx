@@ -8,6 +8,7 @@ import { EmptyState, PageHeader, PageSkeleton, Panel } from '@/admin/kit/page';
 import { Button } from '@/components/ui/button';
 import { CardsGrid } from '@/shop/cards/CardsGrid';
 import { type CardsChoice, useCards } from '@/shop/cards/model';
+import { PostsGrid } from '@/shop/cards/PostsGrid';
 
 export const Route = createFileRoute('/my/$id_/cards')({
     head: () => ({ meta: [{ title: 'Your cards · Toran' }] }),
@@ -58,8 +59,8 @@ function MyCards() {
             )}
             {set.refundable && (
                 <p className="mb-4 rounded-xl bg-warning/10 px-4 py-3 text-sm ring-1 ring-warning/30">
-                    Look at every card here first: downloading one, the PDF or the story video ends
-                    your {REFUND_DAYS}-day refund.
+                    Look at every card and post here first: downloading one, the PDF or the story
+                    video ends your {REFUND_DAYS}-day refund.
                 </p>
             )}
             <Panel
@@ -68,6 +69,7 @@ function MyCards() {
             >
                 <CardsGrid base={base} set={set} choice={choice} onChoice={setChoice} />
             </Panel>
+            <PostsGrid base={base} choice={choice} />
         </>
     );
 }

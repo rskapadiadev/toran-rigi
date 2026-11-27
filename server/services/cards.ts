@@ -185,7 +185,7 @@ export async function printPdf(sides: Uint8Array[], title: string): Promise<Uint
     return pdf.save();
 }
 
-const prefixOf = (source: CardSource) =>
+export const prefixOf = (source: CardSource) =>
     `cards/${source.full.invitation.id}/${source.full.invitation.status === 'published' ? 'live' : 'draft'}-v${String(source.full.invitation.version)}-${source.updatedAt.replace(/[^0-9]/g, '')}/`;
 
 const keyOf = (source: CardSource, card: CardInfo, v: CardVersion) =>
@@ -198,7 +198,7 @@ async function forgetOld(source: CardSource) {
     for (const key of all) if (!key.startsWith(prefixOf(source))) await blob.delete(key);
 }
 
-async function read(key: string): Promise<Uint8Array | null> {
+export async function read(key: string): Promise<Uint8Array | null> {
     const stored = await getPlatform().blob.get(key);
     return stored ? new Uint8Array(await new Response(stored.body).arrayBuffer()) : null;
 }

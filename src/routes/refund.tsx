@@ -28,7 +28,7 @@ function Refund() {
                 <Points>
                     <li>
                         You ask within {REFUND_DAYS} days of paying, and you have never published
-                        your invitation or downloaded any of its cards, PDFs or videos.
+                        your invitation or downloaded any of its cards, posts, PDFs or videos.
                     </li>
                     <li>
                         You were charged twice, or charged the wrong amount. We return the extra.

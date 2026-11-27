@@ -3,6 +3,8 @@
 import { cardFileName, cardLayers, storyLayer } from '@shared/cards';
 import { isSide } from '@shared/guests';
 import { namesOf } from '@shared/people';
+import { postById, postFileName, postLooks, postPhoto } from '@shared/posts';
+import { zipStore } from '@shared/zip';
 import type { Context, Env } from 'hono';
 import { Hono } from 'hono';
 
@@ -19,6 +21,7 @@ import {
     renderCards,
 } from '../services/cards';
 import { invitationPdf } from '../services/pdf';
+import { postData, postList, renderPosts } from '../services/posts';
 import type { CallerOf } from './guest-list';
 
 interface Checks<E extends Env> {
@@ -145,6 +148,95 @@ export function cardsApi<E extends AppEnv>({ see, download, downloaded, refundab
                 cardFileName(source.full.invitation.slug, card, suffix(v, source)),
                 card.ext === 'pdf' ? 'application/pdf' : 'image/png',
             );
+        } catch (error) {
+            return failed(c, error);
+        }
+    });
+
+    // Posts for status, stories and the profile grid.
+    app.get('/:id/posts', async (c) => {
+        const id = c.req.param('id');
+        await see(c, id);
+        const source = await cardSource({ id });
+        if (!source) return fail(c, 404, 'Invitation not found');
+        const v = versionOf(c, source);
+        const ready = await download(c, id).then(
+            () => true,
+            () => false,
+        );
+        const data = postData(source.full, v.who);
+        return c.json({
+            version: v,
+            ready,
+            refundable: ready && ((await refundable?.(id)) ?? false),
+            locales: source.full.invitation.locales,
+            names: namesOf(source.full.invitation.content, v.lang),
+            posts: postList(source.full, v.who, v.lang),
+            photo: postPhoto(data.invitation) !== undefined,
+            data,
+        });
+    });
+
+    // One post's picture; a grid comes as a zip of its tiles, numbered in the order to post them.
+    app.get('/:id/posts/:post', async (c) => {
+        const id = c.req.param('id');
+        await download(c, id);
+        const source = await cardSource({ id });
+        if (!source) return fail(c, 404, 'Invitation not found');
+        const v = versionOf(c, source);
+        const post = postById(postList(source.full, v.who, v.lang), c.req.param('post'));
+        if (!post) return fail(c, 404, 'That post isn’t part of this invitation');
+        const asked = postLooks.find((l) => l === c.req.query('look')) ?? 'number';
+        // No photo to frame: the number stands in, as the page offers.
+        const look =
+            asked === 'photo' && !postPhoto(postData(source.full, v.who).invitation)
+                ? 'number'
+                : asked;
+        if (!(await c.env.rateLimit.limit(`cards:${id}`)).success)
+            return fail(c, 429, 'Give it a minute, then try again');
+        const slug = source.full.invitation.slug;
+        const variant = suffix(v, source);
+        try {
+            if (post.tiles) {
+                const tiles = Array.from({ length: post.tiles }, (_, i) => i + 1);
+                const images = await renderPosts(
+                    source,
+                    tiles.map((tile) => ({
+                        post,
+                        look,
+                        tile,
+                    })),
+                    v,
+                    new URL(c.req.url).origin,
+                );
+                await taken(id);
+                const zip = zipStore(
+                    images.map((data, i) => ({
+                        name: postFileName(slug, post, variant, i + 1),
+                        data,
+                    })),
+                );
+                return file(
+                    zip,
+                    `${postFileName(slug, post, variant).replace('.png', '')}.zip`,
+                    'application/zip',
+                );
+            }
+            const [bytes] = await renderPosts(
+                source,
+                [
+                    {
+                        post,
+                        look,
+                    },
+                ],
+                v,
+                new URL(c.req.url).origin,
+            );
+            if (!bytes) throw new CardUnavailable('That post couldn’t be made');
+            await taken(id);
+            const named = post.kind === 'countdown' ? `${look}-${variant}` : variant;
+            return file(bytes, postFileName(slug, post, named.replace(/-$/, '')), 'image/png');
         } catch (error) {
             return failed(c, error);
         }
