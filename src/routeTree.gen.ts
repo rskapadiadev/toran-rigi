@@ -29,6 +29,7 @@ import { Route as AdminBillingRouteImport } from './routes/admin/billing'
 import { Route as AdminLibraryRouteImport } from './routes/admin/library'
 import { Route as AdminLoginRouteImport } from './routes/admin/login'
 import { Route as AdminMusicRouteImport } from './routes/admin/music'
+import { Route as AdminPortraitsRouteImport } from './routes/admin/portraits'
 import { Route as AdminPricingRouteImport } from './routes/admin/pricing'
 import { Route as BTokenRouteImport } from './routes/b.$token'
 import { Route as InvitationsIndexRouteImport } from './routes/invitations.index'
@@ -157,6 +158,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
 const AdminMusicRoute = AdminMusicRouteImport.update({
   id: '/music',
   path: '/music',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminPortraitsRoute = AdminPortraitsRouteImport.update({
+  id: '/portraits',
+  path: '/portraits',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminPricingRoute = AdminPricingRouteImport.update({
@@ -326,6 +332,7 @@ export interface FileRoutesByFullPath {
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
+  '/admin/portraits': typeof AdminPortraitsRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/b/$token': typeof BTokenRoute
   '/invitations/$page': typeof InvitationsPageRoute
@@ -375,6 +382,7 @@ export interface FileRoutesByTo {
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
+  '/admin/portraits': typeof AdminPortraitsRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/b/$token': typeof BTokenRoute
   '/invitations/$page': typeof InvitationsPageRoute
@@ -427,6 +435,7 @@ export interface FileRoutesById {
   '/admin/library': typeof AdminLibraryRoute
   '/admin/login': typeof AdminLoginRoute
   '/admin/music': typeof AdminMusicRoute
+  '/admin/portraits': typeof AdminPortraitsRoute
   '/admin/pricing': typeof AdminPricingRoute
   '/b/$token': typeof BTokenRoute
   '/invitations/$page': typeof InvitationsPageRoute
@@ -480,6 +489,7 @@ export interface FileRouteTypes {
     | '/admin/library'
     | '/admin/login'
     | '/admin/music'
+    | '/admin/portraits'
     | '/admin/pricing'
     | '/b/$token'
     | '/invitations/$page'
@@ -529,6 +539,7 @@ export interface FileRouteTypes {
     | '/admin/library'
     | '/admin/login'
     | '/admin/music'
+    | '/admin/portraits'
     | '/admin/pricing'
     | '/b/$token'
     | '/invitations/$page'
@@ -580,6 +591,7 @@ export interface FileRouteTypes {
     | '/admin/library'
     | '/admin/login'
     | '/admin/music'
+    | '/admin/portraits'
     | '/admin/pricing'
     | '/b/$token'
     | '/invitations/$page'
@@ -778,6 +790,13 @@ declare module '@tanstack/react-router' {
       path: '/music'
       fullPath: '/admin/music'
       preLoaderRoute: typeof AdminMusicRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/portraits': {
+      id: '/admin/portraits'
+      path: '/portraits'
+      fullPath: '/admin/portraits'
+      preLoaderRoute: typeof AdminPortraitsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/pricing': {
@@ -992,6 +1011,7 @@ interface AdminRouteRouteChildren {
   AdminLibraryRoute: typeof AdminLibraryRoute
   AdminLoginRoute: typeof AdminLoginRoute
   AdminMusicRoute: typeof AdminMusicRoute
+  AdminPortraitsRoute: typeof AdminPortraitsRoute
   AdminPricingRoute: typeof AdminPricingRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCustomersIdRoute: typeof AdminCustomersIdRoute
@@ -1014,6 +1034,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminLibraryRoute: AdminLibraryRoute,
   AdminLoginRoute: AdminLoginRoute,
   AdminMusicRoute: AdminMusicRoute,
+  AdminPortraitsRoute: AdminPortraitsRoute,
   AdminPricingRoute: AdminPricingRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCustomersIdRoute: AdminCustomersIdRoute,

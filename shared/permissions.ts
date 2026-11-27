@@ -14,6 +14,8 @@ const matrix = {
     'billing.manage': ['super_admin', 'owner'],
     'catalog.manage': ['super_admin', 'owner'],
     'users.manage': ['super_admin'],
+    // Trying the AI portrait models on the founders' own photos.
+    'portraits.test': ['super_admin', 'owner'],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof matrix;

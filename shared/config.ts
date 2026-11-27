@@ -44,6 +44,9 @@ export const configSchema = z.object({
     // Cloudflare Workers AI, for auto-translate in the editor. Without both, it is off.
     CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
     CLOUDFLARE_AI_TOKEN: z.string().optional(),
+    // Google Gemini image model, for the AI portrait test. Must be a billed project: unpaid keys let
+    // Google learn from what is sent.
+    GEMINI_API_KEY: z.string().optional(),
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
     GOOGLE_REFRESH_TOKEN: z.string().optional(),

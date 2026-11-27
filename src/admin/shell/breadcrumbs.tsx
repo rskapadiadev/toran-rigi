@@ -104,6 +104,7 @@ export function AdminBreadcrumbs() {
     }
     if (routeId === '/admin/billing') crumbs.push({ label: 'Billing' });
     if (routeId === '/admin/library') crumbs.push({ label: 'Library' });
+    if (routeId === '/admin/portraits') crumbs.push({ label: 'AI photo lab' });
     if (routeId === '/admin/music') crumbs.push({ label: 'Music' });
     if (routeId === '/admin/pricing') crumbs.push({ label: 'Pricing' });
     if (routeId === '/admin/affiliates') crumbs.push({ label: 'Affiliates' });

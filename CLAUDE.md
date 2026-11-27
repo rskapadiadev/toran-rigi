@@ -157,6 +157,12 @@ scripts/dev/   Playwright scripts that drive the real app (journey, responsive, 
 4. **Schema changes** go through a drizzle-kit migration, applied locally. Mention in the summary that production needs `npm run db:migrate:remote`. Never edit an applied migration; write a new one.
 5. **Ask before anything hard to reverse:** deleting data, destructive SQL, force pushes, publishing, sending to external services. Commit only when asked.
 6. **External calls** (rates, stock photos, AI) live in `server/services/*`, are cached where possible, and never send customer or user data.
+   - **One exception: AI pre-wedding photos** (`server/services/portraits.ts`) send the couple's own photos to the image model, and only:
+     - after both partners have agreed on screen and are 18 or older;
+     - once the photos are paid for;
+     - with no names, emails or other details;
+     - to a provider that doesn't train on them.
+   - Uploaded photos are deleted after 30 days. Every result is marked as made with AI.
 7. **Report like a teammate.**
    - Lead with the outcome.
    - Name the files that matter and give any numbers (load times, totals).

@@ -24,7 +24,8 @@ export type NavPath =
     | '/admin/affiliates'
     | '/admin/music'
     | '/admin/customers'
-    | '/admin/billing';
+    | '/admin/billing'
+    | '/admin/portraits';
 
 export interface NavChild {
     to: NavPath;
@@ -144,6 +145,13 @@ export const navGroups: NavGroup[] = [
                 icon: Library,
                 permission: 'orders.view',
                 keywords: ['components', 'openings', 'blocks', 'themes'],
+            },
+            {
+                to: '/admin/portraits',
+                label: 'AI photo lab',
+                icon: Sparkles,
+                permission: 'portraits.test',
+                keywords: ['ai', 'pre-wedding', 'portraits', 'photos', 'gemini', 'flux'],
             },
         ],
     },
