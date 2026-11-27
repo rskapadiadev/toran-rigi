@@ -1,3 +1,4 @@
+import { MADE_HOURS } from '@shared/made';
 import { occasionOf } from '@shared/occasions';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { Eye, PenLine, Send } from 'lucide-react';
@@ -94,8 +95,8 @@ const faqs = [
         a: 'Hindu, Muslim, Sikh, Jain, Christian, Jewish and secular celebrations, with English, Hindi, Gujarati, Arabic and Urdu.',
     },
     {
-        q: 'Want us to make it for you?',
-        a: 'Our studio can design it end to end, including custom illustrations. Write to us from any design page.',
+        q: 'Can you make it for me?',
+        a: `Yes. Send us your details or a photo of your printed card and our studio makes it, with your first look within ${String(MADE_HOURS)} hours. See “We make it for you” at the foot of this page.`,
     },
 ];
 

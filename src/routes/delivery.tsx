@@ -1,4 +1,5 @@
 import { brand } from '@shared/brand';
+import { MADE_HOURS } from '@shared/made';
 import { createFileRoute, Link } from '@tanstack/react-router';
 
 import { Part, policyHead, PolicyPage, textLink } from '@/shop/policies/kit';
@@ -37,6 +38,13 @@ function Delivery() {
                     </Link>{' '}
                     with the email you used to buy. Your invitation stays private until you publish
                     it. Then you share its link yourself, on WhatsApp or anywhere else.
+                </p>
+            </Part>
+            <Part title="If we make it for you">
+                <p>
+                    Your invitation appears in your account straight away, and we make it there.
+                    Your first look comes within {MADE_HOURS} hours of your complete details, and we
+                    email you when it’s ready.
                 </p>
             </Part>
             <Part title="Cards and PDFs">

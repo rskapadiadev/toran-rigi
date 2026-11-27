@@ -1,3 +1,4 @@
+import { isMade } from '@shared/made';
 import { occasionOf } from '@shared/occasions';
 import { can } from '@shared/permissions';
 import { themeCatalog } from '@shared/themes';
@@ -24,6 +25,7 @@ import { CopyField, FormField } from '@/admin/kit/form';
 import { PageHeader, PageSkeleton, Panel, ToneBadge } from '@/admin/kit/page';
 import { InvitationStatusBadge, OrderStatusBadge, slaFor } from '@/admin/kit/status';
 import { cultureLabel, statusLabel } from '@/admin/labels';
+import { MadePanel } from '@/admin/orders/MadePanel';
 import { initials } from '@/admin/shell/nav';
 import { type TemplateRow, templatesQuery } from '@/admin/templates/types';
 import type { InvitationRef, OrderDetail } from '@/admin/types';
@@ -111,7 +113,10 @@ function OrderPage() {
         ? null
         : slaFor(order.deliveryDueAt, now);
     const canBill = can(me?.role, 'billing.view');
-    const portalUrl = `${window.location.origin}/portal/${order.portalToken}`;
+    // Where the customer signs in to send details, follow the work and pay.
+    const portalUrl = data.invitation
+        ? `${window.location.origin}/my/${data.invitation.id}${isMade(order.addons) ? '/made' : ''}`
+        : `${window.location.origin}/my`;
 
     const submitStatus = (e: SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -141,6 +146,7 @@ function OrderPage() {
                 description={
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="capitalize">{order.packageCode}</span>
+                        {isMade(order.addons) && <ToneBadge tone="violet">Done-for-you</ToneBadge>}
                         <span aria-hidden>·</span>
                         <span>{cultureLabel[order.culture] ?? order.culture}</span>
                         {order.weddingDate && (
@@ -181,7 +187,7 @@ function OrderPage() {
                     <Panel
                         title="Move order"
                         icon={ArrowRightLeft}
-                        description={`“Ready to start” starts the delivery clock (${order.packageCode === 'signature' ? '48h' : 'per package'}).`}
+                        description={`“Ready to start” starts the delivery clock (${isMade(order.addons) || order.packageCode === 'signature' ? '48h' : 'per package'}).`}
                     >
                         <form
                             onSubmit={submitStatus}
@@ -236,6 +242,7 @@ function OrderPage() {
                             </div>
                         )}
                     </Panel>
+                    <MadePanel orderId={order.id} canCreate={can(me?.role, 'orders.create')} />
                     <Panel title="Timeline & notes" icon={StickyNote}>
                         <form onSubmit={submitNote} className="mb-6 space-y-2">
                             <Textarea
@@ -293,7 +300,9 @@ function OrderPage() {
                                             dateStyle: 'medium',
                                             timeStyle: 'short',
                                         })}{' '}
-                                        · {ev.userName ?? 'System'}
+                                        ·{' '}
+                                        {ev.userName ??
+                                            (ev.kind === 'revision' ? 'Customer' : 'System')}
                                     </p>
                                 </li>
                             ))}
@@ -380,7 +389,7 @@ function OrderPage() {
                             </FormField>
                             <div className="space-y-2">
                                 <p className="text-[13px] font-medium text-foreground/80">
-                                    Customer portal (details & uploads)
+                                    Customer’s page (they sign in with their email)
                                 </p>
                                 <CopyField value={portalUrl} label="Portal link" />
                             </div>

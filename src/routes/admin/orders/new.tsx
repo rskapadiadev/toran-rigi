@@ -1,3 +1,4 @@
+import { MADE_CODE, MADE_HOURS, MADE_NAME, madePrice } from '@shared/made';
 import { formatMoney } from '@shared/money';
 import { occasionOf } from '@shared/occasions';
 import { photoUrl } from '@shared/photos';
@@ -27,6 +28,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { api, ApiError, post } from '@/lib/api';
@@ -47,6 +49,8 @@ function NewOrder() {
     const [currency, setCurrency] = useState<OrderCurrency>('INR');
     const [templateId, setTemplateId] = useState<string | null>(null);
     const [query, setQuery] = useState('');
+    const [made, setMade] = useState(false);
+    const madeAmount = madePrice(currency) ?? 0;
     const create = useMutation({
         mutationFn: (body: CreateOrderInput) => post<{ id: string }>('/admin/orders', body),
         onSuccess: async ({ id }) => {
@@ -69,7 +73,8 @@ function NewOrder() {
     );
     const picked = live.find((t) => t.id === templateId);
     const priceOf = (t: TemplateRow) => shopPrice(t.prices, t.comparePrices, currency);
-    const total = picked ? (priceOf(picked)?.price ?? 0) : 0;
+    const design = picked ? (priceOf(picked)?.price ?? 0) : 0;
+    const total = design + (made ? madeAmount : 0);
 
     const submit = (e: SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -88,7 +93,7 @@ function NewOrder() {
             },
             templateId: picked.id,
             packageCode: picked.fromPackage,
-            addons: [],
+            addons: made ? [MADE_CODE] : [],
             currency,
             occasion: occasionOf(picked.eventKind).id,
             culture: (picked.culture.split('.')[0] ?? 'hindu') as CreateOrderInput['culture'],
@@ -252,8 +257,28 @@ function NewOrder() {
                                 <span>
                                     {picked ? `${picked.name} invitation` : 'No design picked yet'}
                                 </span>
-                                <span className="tabular-nums">{formatMoney(total, currency)}</span>
+                                <span className="tabular-nums">
+                                    {formatMoney(design, currency)}
+                                </span>
                             </p>
+                            {made && (
+                                <p className="flex justify-between gap-3">
+                                    <span>{MADE_NAME}</span>
+                                    <span className="tabular-nums">
+                                        {formatMoney(madeAmount, currency)}
+                                    </span>
+                                </p>
+                            )}
+                            <div className="flex items-start gap-3 rounded-lg border border-dashed px-3 py-2.5">
+                                <Switch id="made" checked={made} onCheckedChange={setMade} />
+                                <Label htmlFor="made" className="grid gap-0.5 font-normal">
+                                    <span className="text-sm font-medium">Done-for-you</span>
+                                    <span className="text-xs text-muted-foreground">
+                                        We make it from their details: first look in{' '}
+                                        {String(MADE_HOURS)} hours. Needs their email.
+                                    </span>
+                                </Label>
+                            </div>
                             <Separator />
                             <p className="flex items-baseline justify-between">
                                 <span className="font-medium">Total</span>

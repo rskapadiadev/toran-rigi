@@ -1,3 +1,4 @@
+import { canPublishMade, studioHasIt } from '@shared/made';
 import { formatMoney } from '@shared/money';
 import type { CustomerInput } from '@shared/schemas/composer';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,6 +13,7 @@ import {
     Lock,
     PenLine,
     Users,
+    Wand2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -100,9 +102,13 @@ function Editor({ data, onChanged }: EditorProps) {
     const pay = usePayOrder();
     const dirty = draft !== initial;
     // Read once: the lock only matters at the moment the editor opens.
-    const [locked] = useState(
+    const [over] = useState(
         () => data.lockedAfter !== null && Date.now() > Date.parse(data.lockedAfter),
     );
+    // Done-for-you: while the studio has it, theirs is the only hand on it.
+    const studioBusy = data.made !== null && studioHasIt(data.made);
+    const locked = over || studioBusy;
+    const madeWaits = data.made !== null && !canPublishMade(data.made);
     const live = base.invitation.status === 'published';
     const link = `${window.location.origin}/${base.invitation.slug}`;
 
@@ -187,7 +193,10 @@ function Editor({ data, onChanged }: EditorProps) {
             </Button>
             {locked ? (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Lock className="size-3.5" /> Editing closed after the celebration
+                    <Lock className="size-3.5" />{' '}
+                    {studioBusy
+                        ? 'Our studio is making it'
+                        : 'Editing closed after the celebration'}
                 </span>
             ) : (
                 <Button
@@ -213,6 +222,13 @@ function Editor({ data, onChanged }: EditorProps) {
                 >
                     {pay.isPending && <Loader2 className="animate-spin" />}
                     Pay {formatMoney(data.balance, data.currency)}
+                </Button>
+            ) : madeWaits ? (
+                <Button asChild>
+                    <Link to="/my/$id/made" params={{ id }}>
+                        <Wand2 />
+                        <span className="max-sm:sr-only">We make it</span>
+                    </Link>
                 </Button>
             ) : live ? (
                 <>
@@ -258,11 +274,15 @@ function Editor({ data, onChanged }: EditorProps) {
             locked={locked}
             owned
             notice={
-                data.balance > 0
-                    ? 'Complete payment to publish your invitation.'
-                    : live
-                      ? 'Changes you save show on your live invitation straight away.'
-                      : 'When it looks right, publish to get your link.'
+                studioBusy
+                    ? 'Our studio is making your invitation. You can edit it after your first look.'
+                    : data.made === 'details'
+                      ? 'Send us your details under We make it, or start here yourself.'
+                      : data.balance > 0
+                        ? 'Complete payment to publish your invitation.'
+                        : live
+                          ? 'Changes you save show on your live invitation straight away.'
+                          : 'When it looks right, publish to get your link.'
             }
         />
     );

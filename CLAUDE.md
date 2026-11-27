@@ -6,8 +6,8 @@ The app has four faces:
 
 | Face | Who | Where |
 |---|---|---|
-| **Shop** | Customers: browse, read wording, try a design free, pay | `/`, `/collections`, `/invitations/*`, `/wording/*`, `/try/$slug` (`src/shop/*`) |
-| **Customer portal** | Customers after buying: their invitations, guests, cards, payments | `/my`, `/my/payments`, `/my/$id`, `/my/$id/guests`, `/my/$id/cards` (`src/shop/portal/*`) |
+| **Shop** | Customers: browse, read wording, try a design free, pay | `/`, `/collections`, `/invitations/*`, `/wording/*`, `/made-for-you`, `/try/$slug` (`src/shop/*`) |
+| **Customer portal** | Customers after buying: their invitations, guests, cards, payments | `/my`, `/my/payments`, `/my/$id`, `/my/$id/guests`, `/my/$id/cards`, `/my/$id/made` (`src/shop/portal/*`, `src/shop/made/*`) |
 | **Invitation** | Guests: the invitation itself | `/$slug`, `/p/$token` preview (`src/invitation/*`) |
 | **Studio admin** | Owners and designers: templates, orders, billing, pricing | `/admin/*` (`src/admin/*`) |
 
@@ -85,6 +85,9 @@ scripts/dev/   Playwright scripts that drive the real app (journey, responsive, 
 - **Customers edit everything but the look**: words, photos, ceremonies, languages, music, replies, gifts, wishes, and which sections show and in what order (`customerInput`, `shared/sections.ts`).
   - The server takes the design and each section's styling from the database (`server/repos/store.ts → applyContent`). Never trust a design sent by a customer.
   - Cards follow the invitation: a ceremony removed, or Ceremonies switched off, removes its cards too (`shared/cards.ts`).
+- **Done-for-you** (`shared/made.ts`, `server/repos/made.ts`): the studio makes the invitation from what the customer sends. An add-on on the order (`made_for_you`); the order's status says whose turn it is.
+  - While the studio has it (`studioHasIt`), the customer can't save or publish. Nothing is published before their first look.
+  - What they send lives under `orders/<id>/` in blob storage, never `public/`, and is only ever served as a download to the customer or the studio.
 - **Search engines** (`server/seo.ts`, `src/lib/share-meta.ts`): customers' invitations are always noindex; samples and guide pages may be listed, in production only. A new public page needs a canonical link and a sitemap entry.
 - **Cultural respect.**
   - Sacred text (mantras, Quranic verses, Gurbani, Hebrew blessings) comes from the vetted library or the customer, never from AI.

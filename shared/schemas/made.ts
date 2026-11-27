@@ -31,11 +31,12 @@ export function missingFromBrief(brief: Brief, files: number): string | null {
     return null;
 }
 
-export const changesInput = z.object({
-    text: z.string().trim().min(3, 'Tell us what to change').max(4000),
-});
+const changesText = z.string().trim().min(3, 'Tell us what to change').max(4000);
+export const changesInput = z.object({ text: changesText });
 
-export const studioMessageInput = z.object({ text: z.string().trim().max(2000).default('') });
+// A first look or a question may go without a word of its own.
+const studioText = z.string().trim().max(2000).default('');
+export const studioMessageInput = z.object({ text: studioText });
 
 export interface BriefFile {
     id: string;

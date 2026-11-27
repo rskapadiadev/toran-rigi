@@ -1,3 +1,4 @@
+import type { MadeStage } from '@shared/made';
 import type { PaymentMode } from '@shared/schemas/checkout';
 import type { InvitationDesign } from '@shared/types';
 
@@ -31,6 +32,8 @@ export interface StoreOffer {
     comparePrice: number | null;
     off: number | null;
     currency: string;
+    // What having the studio make it costs on top; null where it isn't sold.
+    madePrice: number | null;
 }
 
 export interface TryTemplate {
@@ -51,6 +54,8 @@ export interface MyInvitationRow {
     orderId: string;
     orderNumber: string;
     balance: number;
+    // Done-for-you: where the studio's work stands; null when they make it themselves.
+    made: MadeStage | null;
     design: InvitationDesign;
     createdAt: string;
 }
@@ -72,6 +77,7 @@ export interface MyInvitation {
     currency: string;
     price: number;
     lockedAfter: string | null;
+    made: MadeStage | null;
 }
 
 export interface MyOrder {

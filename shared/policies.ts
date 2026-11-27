@@ -23,7 +23,7 @@ export const policyPages = [
 ] as const;
 
 // Change it whenever the words of a policy change.
-export const POLICIES_UPDATED = '25 November 2026';
+export const POLICIES_UPDATED = '27 November 2026';
 
 export const REFUND_DAYS = 7;
 

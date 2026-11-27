@@ -1,3 +1,6 @@
+import { brand } from '@shared/brand';
+import { whatsappLink } from '@shared/guests';
+import { MADE_HOURS, MADE_NAME, MADE_ROUNDS, madeRequest } from '@shared/made';
 import { formatMoney } from '@shared/money';
 import type { CheckoutStart } from '@shared/schemas/checkout';
 import { applyWording, type Wording } from '@shared/wording/types';
@@ -12,6 +15,7 @@ import { type Draft, toDraft } from '@/admin/composer/draft';
 import { upload } from '@/admin/editor/PhotosPanel';
 import type { Uploader } from '@/admin/editor/uploader';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -324,7 +328,12 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
             : 'loading';
 
     const offer = data.offer;
-    const price = offer ? formatMoney(offer.price, offer.currency) : '';
+    // Done-for-you: a tick here once payments are on; until then they ask us on WhatsApp.
+    const [made, setMade] = useState(false);
+    const madeAmount = offer?.madePrice ?? null;
+    const madeOn = made && madeAmount !== null;
+    const total = offer ? offer.price + (madeOn ? madeAmount : 0) : 0;
+    const price = offer ? formatMoney(total, offer.currency) : '';
     // Every "blob:" photo in the draft was picked in this tab (stored drafts never keep them).
     const photoCount = localPhotos(draft.content).length;
 
@@ -337,10 +346,11 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
             const start = await post<CheckoutStart>(`/store/me/checkout/${data.template.slug}`, {
                 content: withoutLocalPhotos(draft.content),
                 events: draft.events,
+                made: madeOn,
             });
             const { invitationId } = await pay({
                 start,
-                description: `${data.template.name} invitation`,
+                description: `${data.template.name} invitation${madeOn ? `, ${MADE_NAME.toLowerCase()}` : ''}`,
                 onConfirming: () => {
                     setPaying(false);
                     setProgress('Confirming your payment…');
@@ -352,9 +362,13 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
             if (!invitationId) throw new Error('Your invitation is on its way to My invitations.');
             onBought();
             await keepPhotos(invitationId, photos);
-            toast.success('Paid. Your invitation is yours to keep');
+            toast.success(
+                madeOn
+                    ? 'Paid. Now send us your details'
+                    : 'Paid. Your invitation is yours to keep',
+            );
             void navigate({
-                to: '/my/$id',
+                to: madeOn ? '/my/$id/made' : '/my/$id',
                 params: { id: invitationId },
             });
         } catch (e) {
@@ -451,11 +465,55 @@ function BuyDialog({ data, draft, files, onClose, onBought }: BuyDialogProps) {
                                 uploaded with it.
                             </p>
                         )}
+                        {madeAmount !== null && offer && me?.payments !== 'off' && (
+                            <label
+                                htmlFor="made"
+                                className="flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 has-[:checked]:border-primary has-[:checked]:bg-primary/[0.03]"
+                            >
+                                <Checkbox
+                                    id="made"
+                                    checked={made}
+                                    onCheckedChange={(v) => {
+                                        setMade(v === true);
+                                    }}
+                                    className="mt-0.5"
+                                />
+                                <span className="grid gap-0.5 text-sm">
+                                    <span className="flex justify-between gap-3 font-medium">
+                                        {MADE_NAME}
+                                        <span className="tabular-nums">
+                                            +{formatMoney(madeAmount, offer.currency)}
+                                        </span>
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        Send us your details and our studio sets it all. First look
+                                        within {String(MADE_HOURS)} hours, {String(MADE_ROUNDS)}{' '}
+                                        rounds of changes.
+                                    </span>
+                                </span>
+                            </label>
+                        )}
+                        {madeAmount !== null && me?.payments === 'off' && (
+                            <p className="text-sm text-muted-foreground">
+                                Rather have us make it?{' '}
+                                <a
+                                    href={whatsappLink(
+                                        brand.whatsapp,
+                                        madeRequest(data.template.name),
+                                    )}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-foreground underline underline-offset-2"
+                                >
+                                    Ask us on WhatsApp
+                                </a>
+                            </p>
+                        )}
                         <div className="flex items-baseline justify-between border-t pt-4">
                             <span className="text-sm text-muted-foreground">Total</span>
                             {offer && (
                                 <span className="inline-flex items-baseline gap-2 font-display text-3xl text-ink">
-                                    {offer.comparePrice !== null && (
+                                    {offer.comparePrice !== null && !madeOn && (
                                         <s className="text-[0.6em] text-muted-foreground">
                                             <span className="sr-only">Was </span>
                                             {formatMoney(offer.comparePrice, offer.currency)}

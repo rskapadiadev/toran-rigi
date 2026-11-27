@@ -167,6 +167,9 @@ function ShopFooter({ dark, currency }: FooterProps) {
                     <Link to="/wording" className="hover:underline">
                         Wording
                     </Link>
+                    <Link to="/made-for-you" className="hover:underline">
+                        We make it for you
+                    </Link>
                     <p>Toran by Rigi</p>
                 </div>
             </div>

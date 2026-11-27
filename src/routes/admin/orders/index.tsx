@@ -1,3 +1,4 @@
+import { isMade } from '@shared/made';
 import { formatMoney } from '@shared/money';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
@@ -178,6 +179,11 @@ function orderColumns(now: number): ColumnDef<OrderRow>[] {
             filterFn: inFilter,
             cell: ({ row }) => (
                 <span className="capitalize">
+                    {isMade(row.original.addons) && (
+                        <ToneBadge tone="violet" className="me-1.5 normal-case">
+                            Done-for-you
+                        </ToneBadge>
+                    )}
                     {row.original.packageCode}
                     <span className="ms-1.5 text-xs text-muted-foreground">
                         {cultureLabel[row.original.culture] ?? row.original.culture}

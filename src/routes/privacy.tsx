@@ -54,6 +54,10 @@ function Privacy() {
                         reaches us until you press Pay: then we keep the words you send with it.
                     </li>
                     <li>
+                        <b className="text-ivory">If we make it for you</b>, the details and files
+                        you send us for it. Only you and our studio can open them.
+                    </li>
+                    <li>
                         <b className="text-ivory">If you message us</b>, what you send.
                     </li>
                 </Points>

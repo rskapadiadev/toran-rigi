@@ -16,6 +16,7 @@ import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DeliveryRouteImport } from './routes/delivery'
 import { Route as DevMailRouteImport } from './routes/dev-mail'
+import { Route as MadeForYouRouteImport } from './routes/made-for-you'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RefundRouteImport } from './routes/refund'
@@ -46,6 +47,7 @@ import { Route as AdminTemplatesIndexRouteImport } from './routes/admin/template
 import { Route as AdminTemplatesIdRouteImport } from './routes/admin/templates/$id'
 import { Route as MyIdCardsRouteImport } from './routes/my.$id_.cards'
 import { Route as MyIdGuestsRouteImport } from './routes/my.$id_.guests'
+import { Route as MyIdMadeRouteImport } from './routes/my.$id_.made'
 import { Route as PTokenCardRouteImport } from './routes/p.$token_.card'
 import { Route as AdminInvitationsIdIndexRouteImport } from './routes/admin/invitations/$id.index'
 import { Route as AdminInvitationsIdCardsRouteImport } from './routes/admin/invitations/$id.cards'
@@ -84,6 +86,11 @@ const DeliveryRoute = DeliveryRouteImport.update({
 const DevMailRoute = DevMailRouteImport.update({
   id: '/dev-mail',
   path: '/dev-mail',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MadeForYouRoute = MadeForYouRouteImport.update({
+  id: '/made-for-you',
+  path: '/made-for-you',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyRoute = MyRouteImport.update({
@@ -236,6 +243,11 @@ const MyIdGuestsRoute = MyIdGuestsRouteImport.update({
   path: '/$id/guests',
   getParentRoute: () => MyRoute,
 } as any)
+const MyIdMadeRoute = MyIdMadeRouteImport.update({
+  id: '/$id_/made',
+  path: '/$id/made',
+  getParentRoute: () => MyRoute,
+} as any)
 const PTokenCardRoute = PTokenCardRouteImport.update({
   id: '/p/$token_/card',
   path: '/p/$token/card',
@@ -266,6 +278,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/dev-mail': typeof DevMailRoute
+  '/made-for-you': typeof MadeForYouRoute
   '/my': typeof MyRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
@@ -292,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
   '/my/$id/cards': typeof MyIdCardsRoute
   '/my/$id/guests': typeof MyIdGuestsRoute
+  '/my/$id/made': typeof MyIdMadeRoute
   '/p/$token/card': typeof PTokenCardRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
@@ -308,6 +322,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/dev-mail': typeof DevMailRoute
+  '/made-for-you': typeof MadeForYouRoute
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
@@ -333,6 +348,7 @@ export interface FileRoutesByTo {
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
   '/my/$id/cards': typeof MyIdCardsRoute
   '/my/$id/guests': typeof MyIdGuestsRoute
+  '/my/$id/made': typeof MyIdMadeRoute
   '/p/$token/card': typeof PTokenCardRoute
   '/admin/customers': typeof AdminCustomersIndexRoute
   '/admin/invitations': typeof AdminInvitationsIndexRoute
@@ -351,6 +367,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/delivery': typeof DeliveryRoute
   '/dev-mail': typeof DevMailRoute
+  '/made-for-you': typeof MadeForYouRoute
   '/my': typeof MyRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
@@ -377,6 +394,7 @@ export interface FileRoutesById {
   '/admin/templates/$id': typeof AdminTemplatesIdRoute
   '/my/$id_/cards': typeof MyIdCardsRoute
   '/my/$id_/guests': typeof MyIdGuestsRoute
+  '/my/$id_/made': typeof MyIdMadeRoute
   '/p/$token_/card': typeof PTokenCardRoute
   '/admin/customers/': typeof AdminCustomersIndexRoute
   '/admin/invitations/': typeof AdminInvitationsIndexRoute
@@ -396,6 +414,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/delivery'
     | '/dev-mail'
+    | '/made-for-you'
     | '/my'
     | '/privacy'
     | '/refund'
@@ -422,6 +441,7 @@ export interface FileRouteTypes {
     | '/admin/templates/$id'
     | '/my/$id/cards'
     | '/my/$id/guests'
+    | '/my/$id/made'
     | '/p/$token/card'
     | '/admin/customers/'
     | '/admin/invitations/'
@@ -438,6 +458,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/delivery'
     | '/dev-mail'
+    | '/made-for-you'
     | '/privacy'
     | '/refund'
     | '/terms'
@@ -463,6 +484,7 @@ export interface FileRouteTypes {
     | '/admin/templates/$id'
     | '/my/$id/cards'
     | '/my/$id/guests'
+    | '/my/$id/made'
     | '/p/$token/card'
     | '/admin/customers'
     | '/admin/invitations'
@@ -480,6 +502,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/delivery'
     | '/dev-mail'
+    | '/made-for-you'
     | '/my'
     | '/privacy'
     | '/refund'
@@ -506,6 +529,7 @@ export interface FileRouteTypes {
     | '/admin/templates/$id'
     | '/my/$id_/cards'
     | '/my/$id_/guests'
+    | '/my/$id_/made'
     | '/p/$token_/card'
     | '/admin/customers/'
     | '/admin/invitations/'
@@ -524,6 +548,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DeliveryRoute: typeof DeliveryRoute
   DevMailRoute: typeof DevMailRoute
+  MadeForYouRoute: typeof MadeForYouRoute
   MyRoute: typeof MyRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RefundRoute: typeof RefundRoute
@@ -586,6 +611,13 @@ declare module '@tanstack/react-router' {
       path: '/dev-mail'
       fullPath: '/dev-mail'
       preLoaderRoute: typeof DevMailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/made-for-you': {
+      id: '/made-for-you'
+      path: '/made-for-you'
+      fullPath: '/made-for-you'
+      preLoaderRoute: typeof MadeForYouRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my': {
@@ -798,6 +830,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MyIdGuestsRouteImport
       parentRoute: typeof MyRoute
     }
+    '/my/$id_/made': {
+      id: '/my/$id_/made'
+      path: '/$id/made'
+      fullPath: '/my/$id/made'
+      preLoaderRoute: typeof MyIdMadeRouteImport
+      parentRoute: typeof MyRoute
+    }
     '/p/$token_/card': {
       id: '/p/$token_/card'
       path: '/p/$token/card'
@@ -881,6 +920,7 @@ interface MyRouteChildren {
   MyIndexRoute: typeof MyIndexRoute
   MyIdCardsRoute: typeof MyIdCardsRoute
   MyIdGuestsRoute: typeof MyIdGuestsRoute
+  MyIdMadeRoute: typeof MyIdMadeRoute
 }
 
 const MyRouteChildren: MyRouteChildren = {
@@ -889,6 +929,7 @@ const MyRouteChildren: MyRouteChildren = {
   MyIndexRoute: MyIndexRoute,
   MyIdCardsRoute: MyIdCardsRoute,
   MyIdGuestsRoute: MyIdGuestsRoute,
+  MyIdMadeRoute: MyIdMadeRoute,
 }
 
 const MyRouteWithChildren = MyRoute._addFileChildren(MyRouteChildren)
@@ -901,6 +942,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DeliveryRoute: DeliveryRoute,
   DevMailRoute: DevMailRoute,
+  MadeForYouRoute: MadeForYouRoute,
   MyRoute: MyRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RefundRoute: RefundRoute,

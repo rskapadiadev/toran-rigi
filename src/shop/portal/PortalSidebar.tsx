@@ -10,6 +10,7 @@ import {
     PenLine,
     Sparkles,
     Users,
+    Wand2,
 } from 'lucide-react';
 
 import { BrandMark } from '@/admin/shell/app-sidebar';
@@ -52,7 +53,7 @@ interface Page {
 }
 
 interface InvitationPage {
-    to: '/my/$id' | '/my/$id/guests' | '/my/$id/cards';
+    to: '/my/$id' | '/my/$id/guests' | '/my/$id/cards' | '/my/$id/made';
     label: string;
     icon: LucideIcon;
 }
@@ -166,7 +167,19 @@ export function PortalSidebar({ me, due, onSignOut }: PortalSidebarProps) {
                             <span className="truncate">{open.title}</span>
                         </SidebarGroupLabel>
                         <SidebarMenu>
-                            {invitationPages.map((page) => (
+                            {[
+                                // Theirs to follow when the studio is making it; theirs to add while it isn't live.
+                                ...(open.made !== null || open.status !== 'published'
+                                    ? [
+                                          {
+                                              to: '/my/$id/made' as const,
+                                              label: open.made ? 'We make it' : 'Let us make it',
+                                              icon: Wand2,
+                                          },
+                                      ]
+                                    : []),
+                                ...invitationPages,
+                            ].map((page) => (
                                 <SidebarMenuItem key={page.to}>
                                     <SidebarMenuButton
                                         asChild

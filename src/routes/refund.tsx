@@ -1,4 +1,5 @@
 import { brand } from '@shared/brand';
+import { MADE_NAME } from '@shared/made';
 import { REFUND_DAYS } from '@shared/policies';
 import { createFileRoute } from '@tanstack/react-router';
 
@@ -46,9 +47,14 @@ function Refund() {
                     broken and we can’t fix it. A change of plans, date or venue isn’t a fault: you
                     can edit your invitation until the day after your last ceremony, at no cost.
                 </p>
+                <p>Bespoke work our studio quotes for you follows what you agreed in the quote.</p>
+            </Part>
+            <Part title="If we make it for you">
                 <p>
-                    Invitations our studio makes for you by hand follow what you agreed with us in
-                    your quote.
+                    The {MADE_NAME.toLowerCase()} fee is refunded in full until you send us your
+                    details. Once you have, our studio has started on it, so the fee isn’t refunded,
+                    unless we can’t deliver your first look. The design itself follows the rules
+                    above.
                 </p>
             </Part>
             <Part title="How to cancel and ask for a refund">

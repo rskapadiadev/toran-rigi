@@ -1,4 +1,5 @@
 import { brand } from '@shared/brand';
+import { MADE_HOURS, MADE_ROUNDS } from '@shared/made';
 import { createFileRoute, Link } from '@tanstack/react-router';
 
 import { Part, Points, policyHead, PolicyPage, textLink } from '@/shop/policies/kit';
@@ -48,6 +49,23 @@ function Terms() {
                         different design is a new purchase.
                     </li>
                     <li>You may not resell an invitation or copy our designs.</li>
+                </Points>
+            </Part>
+            <Part title="If we make it for you">
+                <Points>
+                    <li>
+                        Our studio sets your words, photos, ceremonies and music from what you send.
+                        Your first look comes within {MADE_HOURS} hours of everything we need; the
+                        time waits while we ask you for anything missing.
+                    </li>
+                    <li>
+                        {MADE_ROUNDS} rounds of changes are included, with all your changes in each.
+                        More are priced before we start.
+                    </li>
+                    <li>
+                        We copy what you send. Please check names, dates and places in your first
+                        look before you publish.
+                    </li>
                 </Points>
             </Part>
             <Part title="Price and payment">

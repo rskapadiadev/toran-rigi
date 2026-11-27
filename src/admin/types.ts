@@ -17,6 +17,7 @@ export interface OrderRow {
     culture: string;
     weddingDate: string | null;
     deliveryDueAt: string | null;
+    addons: string[];
     createdAt: string;
     customerName: string;
     customerPhone: string | null;

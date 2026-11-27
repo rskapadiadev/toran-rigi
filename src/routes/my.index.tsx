@@ -1,6 +1,16 @@
+import type { MadeStage } from '@shared/made';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import type { ColumnDef } from '@tanstack/react-table';
-import { CreditCard, ExternalLink, Images, PenLine, Plus, Sparkles, Users } from 'lucide-react';
+import {
+    CreditCard,
+    ExternalLink,
+    Images,
+    PenLine,
+    Plus,
+    Sparkles,
+    Users,
+    Wand2,
+} from 'lucide-react';
 
 import { PanelCard } from '@/admin/kit/card';
 import { DataTable, SortHeader } from '@/admin/kit/data-table';
@@ -66,8 +76,29 @@ function Swatch({ inv }: { inv: MyInvitationRow }) {
     );
 }
 
+// Whose turn it is on one the studio is making.
+const madeStatuses: Record<MadeStage, Status | null> = {
+    details: {
+        label: 'Send us your details',
+        tone: 'warning',
+    },
+    making: {
+        label: 'We’re making it',
+        tone: 'violet',
+    },
+    look: {
+        label: 'Your first look is ready',
+        tone: 'info',
+    },
+    changes: {
+        label: 'Making your changes',
+        tone: 'violet',
+    },
+    done: null,
+};
+
 function StatusBadge({ inv }: { inv: MyInvitationRow }) {
-    const status = statusOf(inv);
+    const status = (inv.made && madeStatuses[inv.made]) ?? statusOf(inv);
     return (
         <span className="flex flex-wrap items-center gap-1.5">
             <ToneBadge tone={status.tone}>{status.label}</ToneBadge>
@@ -90,7 +121,23 @@ function Actions({ inv }: { inv: MyInvitationRow }) {
             }}
             role="presentation"
         >
-            <Button size="sm" asChild>
+            {inv.made && inv.made !== 'done' && (
+                <Button size="sm" asChild>
+                    <Link to="/my/$id/made" params={params}>
+                        <Wand2 />{' '}
+                        {inv.made === 'look'
+                            ? 'See it'
+                            : inv.made === 'details'
+                              ? 'Send details'
+                              : 'Follow it'}
+                    </Link>
+                </Button>
+            )}
+            <Button
+                size="sm"
+                variant={inv.made && inv.made !== 'done' ? 'outline' : 'default'}
+                asChild
+            >
                 <Link to="/my/$id" params={params}>
                     <PenLine /> Edit
                 </Link>
